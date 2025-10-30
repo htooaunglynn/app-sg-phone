@@ -1,0 +1,3856 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singapore Phone Detect</title>
+    <style>
+        /* CSS Variables for consistent theming and performance */
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --secondary-color: #6c757d;
+            --secondary-hover: #5a6268;
+            --success-color: #28a745;
+            --success-hover: #218838;
+            --danger-color: #dc3545;
+            --danger-hover: #c82333;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-color: #ddd;
+            --border-radius: 4px;
+            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s ease;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --max-width: 800px;
+            --focus-ring: 0 0 0 3px rgba(0, 123, 255, 0.25);
+            --hover-lift: translateY(-1px);
+            --active-press: translateY(0);
+        }
+
+        /* Performance optimizations */
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Reduce layout thrashing */
+        .container,
+        .modal-content,
+        .table-container {
+            contain: layout style;
+        }
+
+        /* GPU acceleration for animations */
+        .modal.show,
+        .modal-content,
+        button:hover,
+        .nav-button:hover,
+        .modal-button:hover {
+            will-change: transform;
+        }
+
+        /* Optimize repaints */
+        .records-table tr:hover {
+            contain: layout;
+        }
+
+        /* Improved base styles with accessibility */
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: #333;
+        }
+
+        /* Skip link for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 6px;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            z-index: 1001;
+        }
+
+        .skip-link:focus {
+            top: 6px;
+        }
+
+        /* Focus management */
+        :focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        /* Remove default focus for mouse users */
+        :focus:not(:focus-visible) {
+            outline: none;
+        }
+
+        /* Ensure sufficient color contrast */
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: none;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        /* Improved form input styles */
+        input[type="file"],
+        input[type="number"],
+        input[type="text"],
+        input[type="email"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: 14px;
+            transition: var(--transition);
+            background-color: white;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        input:hover:not(:disabled),
+        textarea:hover:not(:disabled),
+        select:hover:not(:disabled) {
+            border-color: #aaa;
+        }
+
+        input:disabled,
+        textarea:disabled,
+        select:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Improved button styles with CSS variables */
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        button:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .nav-button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .nav-button:hover {
+            background-color: var(--secondary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+        }
+
+        .nav-button:focus {
+            outline: 2px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        /* Enhanced error handling styles */
+        .retry-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+            margin-left: 10px;
+        }
+
+        .retry-button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+        }
+
+        .retry-button:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .validation-feedback {
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: var(--border-radius);
+            margin-top: 5px;
+        }
+
+        .validation-feedback.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .validation-feedback.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .validation-feedback.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Network failure fallback styles */
+        .network-error-state {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            border: 2px dashed #dee2e6;
+        }
+
+        .network-error-state .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .network-error-state .error-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .network-error-state .error-message {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .network-error-state .error-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .export-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .check-record {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .check-record-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .check-record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .check-record-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .check-record-label {
+            font-weight: bold;
+            color: #6c757d;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .check-record-value {
+            color: #495057;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.singapore {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.non-singapore {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+        }
+
+        .pagination-info {
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .file-type-info {
+            margin-bottom: 20px;
+        }
+
+        .file-format-guidance {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+
+        .file-format-guidance strong {
+            color: #007bff;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .file-format-guidance ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .file-format-guidance li {
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .processing-details {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        .processing-details h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+
+        .processing-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .processing-step .step-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+
+        .processing-step.pending .step-icon {
+            background-color: #6c757d;
+        }
+
+        .processing-step.processing .step-icon {
+            background-color: #007bff;
+            animation: pulse 1.5s infinite;
+        }
+
+        .processing-step.completed .step-icon {
+            background-color: #28a745;
+        }
+
+        .processing-step.error .step-icon {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .file-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        .extraction-report {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .report-section {
+            margin-bottom: 20px;
+        }
+
+        .report-section h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .report-item {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+
+        .report-item-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .report-item-value {
+            font-size: 18px;
+            color: #007bff;
+        }
+
+        .worksheet-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .worksheet-item {
+            background: white;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .worksheet-name {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .worksheet-stats {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .column-mapping {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .column-mapping h5 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+
+        .column-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .column-tag {
+            background: #e7f3ff;
+            color: #0c5460;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            border: 1px solid #bee5eb;
+        }
+
+        .column-tag.phone {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .column-tag.company {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffeaa7;
+        }
+
+        .error-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .error-item {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px 15px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 15px;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-buttons .nav-button {
+            white-space: nowrap;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
+        .header-buttons .nav-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .records-table th,
+        .records-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .records-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .records-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        /* Status styling for false records */
+        .records-table tr.status-false {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .records-table tr.status-false:hover {
+            background-color: #f5c6cb;
+        }
+
+        .records-table tr.status-false td {
+            color: #721c24;
+        }
+
+        /* Status styling for true records */
+        .records-table tr.status-true {
+            background-color: #ffffff;
+            color: #495057;
+        }
+
+        .edit-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .edit-button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+        }
+
+        .save-button {
+            background-color: var(--success-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .save-button:hover {
+            background-color: var(--success-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+        }
+
+        .cancel-button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .cancel-button:hover {
+            background-color: var(--secondary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(108, 117, 125, 0.3);
+        }
+
+        .edit-button:focus,
+        .save-button:focus,
+        .cancel-button:focus {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+
+        .edit-input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            box-sizing: border-box;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .edit-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .edit-textarea {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            resize: vertical;
+            min-height: 40px;
+            box-sizing: border-box;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .edit-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .search-highlight {
+            background-color: #fff3cd;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
+        .phone-search-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .phone-search-btn {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .phone-search-btn.plus65 {
+            background-color: #007bff;
+        }
+
+        .phone-search-btn.plus65:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .phone-search-btn.quotes {
+            background-color: #28a745;
+        }
+
+        .phone-search-btn.quotes:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+
+        .phone-search-btn:visited {
+            color: white;
+        }
+
+        .file-details {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--box-shadow);
+            background: white;
+            width: 100%;
+        }
+
+        /* Improved table scrollbar styling */
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        @media (max-width: 768px) {
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-container {
+                min-width: auto;
+            }
+
+            .header-buttons {
+                justify-content: center;
+                margin-top: 10px;
+            }
+
+            .header-buttons .nav-button {
+                flex: 1;
+                text-align: center;
+                min-width: 80px;
+            }
+
+            .records-table {
+                font-size: 12px;
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 8px 4px;
+            }
+        }
+
+        /* Enhanced Modal Styles with CSS variables */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: calc(var(--border-radius) * 2);
+            box-shadow: var(--box-shadow), 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: calc(var(--border-radius) * 2) calc(var(--border-radius) * 2) 0 0;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 20px;
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: var(--dark-color);
+            transform: scale(1.1);
+        }
+
+        .modal-close:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: calc(90vh - 140px);
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 0 0 calc(var(--border-radius) * 2) calc(var(--border-radius) * 2);
+        }
+
+        .modal-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 500;
+            transition: var(--transition);
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-button.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .modal-button.primary:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .modal-button.secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .modal-button.secondary:hover:not(:disabled) {
+            background-color: var(--secondary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+
+        .modal-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .modal-button:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        .modal-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Enhanced Modal responsive design */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 10px;
+                max-height: 95vh;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 20px;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .modal-button {
+                width: 100%;
+                padding: 12px 20px;
+                font-size: 16px;
+            }
+
+            .modal-close {
+                width: 40px;
+                height: 40px;
+                font-size: 28px;
+            }
+        }
+
+        /* Tablet responsive design */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            .modal-content {
+                width: 85%;
+                max-width: 700px;
+            }
+
+            .header-section {
+                gap: 10px;
+            }
+
+            .header-buttons .nav-button {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        /* Large screen optimizations */
+        @media (min-width: 1200px) {
+            .modal-content {
+                max-width: 800px;
+            }
+
+            .records-table {
+                font-size: 14px;
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 14px;
+            }
+        }
+
+        /* Small mobile devices */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            .section {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .header-section {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .search-container {
+                min-width: auto;
+            }
+
+            .header-buttons {
+                justify-content: space-between;
+                margin-top: 10px;
+            }
+
+            .header-buttons .nav-button {
+                flex: 1;
+                text-align: center;
+                min-width: 0;
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .records-table {
+                font-size: 11px;
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 6px 3px;
+            }
+
+            .modal-content {
+                width: 98%;
+                margin: 5px;
+                max-height: 98vh;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 15px;
+            }
+
+            .modal-title {
+                font-size: 18px;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .export-range {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                padding: 20px;
+            }
+
+            .header-buttons,
+            .modal,
+            .pagination,
+            .edit-button,
+            .save-button,
+            .cancel-button {
+                display: none !important;
+            }
+
+            .records-table {
+                font-size: 12px;
+            }
+
+            .records-table th,
+            .records-table td {
+                padding: 8px;
+                border: 1px solid #ddd;
+            }
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .container {
+                border: 2px solid #000;
+            }
+
+            .records-table th {
+                background-color: #000;
+                color: #fff;
+            }
+
+            .records-table tr:hover {
+                background-color: #f0f0f0;
+            }
+
+            .modal-content {
+                border: 2px solid #000;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            .modal.show {
+                animation: none;
+            }
+
+            .modal-content {
+                animation: none;
+            }
+
+            .progress-bar {
+                transition: none;
+            }
+
+            @keyframes pulse {
+
+                0%,
+                100% {
+                    opacity: 1;
+                }
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+            }
+
+            .container {
+                background: #2d2d2d;
+                color: #e0e0e0;
+            }
+
+            .section {
+                border-color: #444;
+                background: #333;
+            }
+
+            .records-table th {
+                background-color: #444;
+                color: #e0e0e0;
+            }
+
+            .records-table tr:hover {
+                background-color: #3a3a3a;
+            }
+
+            .modal-content {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+            }
+
+            .modal-header {
+                border-bottom-color: #444;
+            }
+
+            .modal-footer {
+                border-top-color: #444;
+            }
+
+            input,
+            textarea,
+            select {
+                background-color: #444;
+                color: #e0e0e0;
+                border-color: #666;
+            }
+
+            .search-box {
+                background-color: #444;
+                color: #e0e0e0;
+                border-color: #666;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Skip link for accessibility -->
+    <a href="#main-content" class="skip-link" style="display: none;">Skip to main content</a>
+
+    <!-- Modal Container -->
+    <div id="modal" class="modal" role="dialog" aria-hidden="true">
+        <div class="modal-content" role="document">
+            <div class="modal-header">
+                <h2 id="modalTitle" class="modal-title">Modal Title</h2>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close modal">&times;</button>
+            </div>
+            <div id="modalBody" class="modal-body">
+                <!-- Modal content will be inserted here -->
+            </div>
+            <div id="modalFooter" class="modal-footer" style="display: none;">
+                <!-- Modal footer buttons will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Singapore Phone Detect</h1>
+
+        <main id="main-content">
+
+
+
+
+
+            <!-- Check Table Records Section -->
+            <div class="section">
+                <h2>Check Table Records</h2>
+
+                <div class="header-section">
+                    <div class="search-container">
+                        <input type="text" id="searchBox" class="search-box"
+                            placeholder="Search across all fields (Id, Phone, Company Name, Address, Email, Website)...">
+                    </div>
+                    <div class="header-buttons">
+                        <button class="nav-button" onclick="openUploadModal()" style="background-color: #28a745;">
+                            📤 Upload
+                        </button>
+                        <button class="nav-button" onclick="openExportModal()" style="background-color: #17a2b8;">
+                            📥 Export
+                        </button>
+                        <a href="/file-manager" class="nav-button">File Manager</a>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="records-table" id="recordsTable">
+                        <thead>
+                            <tr>
+                                <th>Id</th>
+                                <th>Phone</th>
+                                <th>Company Name</th>
+                                <th>Physical Address</th>
+                                <th>Email</th>
+                                <th>Website</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordsTableBody">
+                            <tr>
+                                <td colspan="7" class="loading">Loading records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="paginationContainer">
+                    <!-- Pagination controls will be inserted here -->
+                </div>
+
+                <div class="status" id="checkTableStatus"></div>
+            </div>
+
+
+
+        </main>
+    </div>
+
+    <script>
+        // Global variables with performance optimizations
+        let allRecords = [];
+        let filteredRecords = [];
+        let currentPage = 1;
+        let recordsPerPage = 50; // Will be adaptive based on dataset size
+        let editingRecordId = null;
+        let searchTerm = '';
+        let performanceMode = 'normal'; // 'normal' or 'high-performance'
+
+        // Adaptive pagination based on dataset size and performance
+        function setOptimalPageSize() {
+            const totalRecords = allRecords.length;
+
+            if (totalRecords > 5000) {
+                recordsPerPage = 100; // Larger pages for very large datasets
+                performanceMode = 'high-performance';
+            } else if (totalRecords > 1000) {
+                recordsPerPage = 75; // Medium pages for large datasets
+                performanceMode = 'normal';
+            } else {
+                recordsPerPage = 50; // Standard page size for smaller datasets
+                performanceMode = 'normal';
+            }
+
+            console.log(`Adaptive pagination: ${recordsPerPage} records per page (${performanceMode} mode)`);
+        }
+
+        // Performance monitoring
+        const performanceMetrics = {
+            loadStart: 0,
+            loadEnd: 0,
+            searchTimes: [],
+            renderTimes: []
+        };
+
+        function trackPerformance(operation, startTime) {
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+
+            switch (operation) {
+                case 'load':
+                    performanceMetrics.loadEnd = endTime;
+                    console.log(`Records loaded in ${duration}ms`);
+                    break;
+                case 'search':
+                    performanceMetrics.searchTimes.push(duration);
+                    if (performanceMetrics.searchTimes.length > 10) {
+                        performanceMetrics.searchTimes.shift(); // Keep only last 10 measurements
+                    }
+                    break;
+                case 'render':
+                    performanceMetrics.renderTimes.push(duration);
+                    if (performanceMetrics.renderTimes.length > 10) {
+                        performanceMetrics.renderTimes.shift(); // Keep only last 10 measurements
+                    }
+                    break;
+            }
+        }
+
+        // Load page components on page load with performance tracking
+        document.addEventListener('DOMContentLoaded', function () {
+            performanceMetrics.loadStart = Date.now();
+            setupRealTimeValidation();
+            loadRecords();
+            setupSearch();
+        });
+
+        // Setup real-time validation for modal forms
+        function setupRealTimeValidation() {
+            // This function now handles validation for modal forms only
+            // The actual validation setup is done when modals are opened
+        }
+
+
+
+        // Validate Excel file type only
+        function validateExcelFileType(file) {
+            const allowedTypes = [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+                'application/vnd.ms-excel', // .xls
+                'application/octet-stream' // Sometimes Excel files are detected as this
+            ];
+            const allowedExtensions = ['.xlsx', '.xls'];
+
+            // Check file extension (more reliable for Excel files)
+            const fileName = file.name.toLowerCase();
+            const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+            // For Excel files, prioritize extension check
+            return hasValidExtension;
+        }
+
+        // Validate file size (10MB limit)
+        function validateFileSize(file) {
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            return file.size <= maxSize;
+        }
+
+        // Validate export range for check_table
+        function validateExportRange(start, end, totalRecords) {
+            const startNum = parseInt(start);
+            const endNum = parseInt(end);
+
+            if (isNaN(startNum) || isNaN(endNum)) {
+                return { valid: false, message: 'Start and end values must be valid numbers' };
+            }
+
+            if (startNum < 1) {
+                return { valid: false, message: 'Start record must be greater than 0' };
+            }
+
+            if (endNum < 1) {
+                return { valid: false, message: 'End record must be greater than 0' };
+            }
+
+            if (startNum > endNum) {
+                return { valid: false, message: 'Start record must be less than or equal to end record' };
+            }
+
+            if (totalRecords > 0 && endNum > totalRecords) {
+                return { valid: false, message: `End record cannot exceed check table records (${totalRecords})` };
+            }
+
+            if (totalRecords > 0 && startNum > totalRecords) {
+                return { valid: false, message: `Start record cannot exceed check table records (${totalRecords})` };
+            }
+
+            return { valid: true };
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Enhanced status message system with better error handling
+        function showStatus(elementId, message, type, options = {}) {
+            const statusElement = document.getElementById(elementId);
+            if (!statusElement) {
+                console.error(`Status element with ID '${elementId}' not found`);
+                return;
+            }
+
+            // Clear any existing timeout
+            if (statusElement._hideTimeout) {
+                clearTimeout(statusElement._hideTimeout);
+                delete statusElement._hideTimeout;
+            }
+
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+
+            // Add retry button for network errors
+            if (type === 'error' && options.retryAction) {
+                const retryButton = document.createElement('button');
+                retryButton.textContent = 'Retry';
+                retryButton.className = 'retry-button';
+                retryButton.style.marginLeft = '10px';
+                retryButton.onclick = options.retryAction;
+                statusElement.appendChild(retryButton);
+            }
+
+            // Auto-hide success and info messages after configurable time
+            const hideDelay = options.hideDelay || (type === 'success' || type === 'info' ? 5000 : 0);
+            if (hideDelay > 0) {
+                statusElement._hideTimeout = setTimeout(() => {
+                    statusElement.style.display = 'none';
+                    delete statusElement._hideTimeout;
+                }, hideDelay);
+            }
+
+            // Log errors for debugging
+            if (type === 'error') {
+                console.error(`Error in ${elementId}:`, message);
+            }
+        }
+
+        // Generate user-friendly duplicate handling explanation
+        function generateDuplicateExplanation(duplicateHandling) {
+            if (!duplicateHandling || !duplicateHandling.enabled) {
+                return null;
+            }
+
+            const duplicatesFound = duplicateHandling.duplicatesFound || 0;
+            const duplicatePercentage = duplicateHandling.duplicatePercentage || 0;
+            const newRecordsStored = duplicateHandling.newRecordsStored || 0;
+
+            if (duplicatesFound === 0) {
+                return "All records were new and successfully added to the system.";
+            }
+
+            if (duplicatePercentage >= 100) {
+                return "All records in this file already existed in the system, so no new data was added. This helps maintain data integrity.";
+            }
+
+            if (duplicatePercentage >= 50) {
+                return `This file contained a high percentage of duplicate data (${duplicatePercentage}%). The system automatically skipped duplicates to prevent data corruption while storing ${newRecordsStored} new records.`;
+            }
+
+            if (duplicatePercentage >= 10) {
+                return `The system found and automatically skipped ${duplicatesFound} duplicate records (${duplicatePercentage}%) to maintain data integrity. ${newRecordsStored} new records were successfully added.`;
+            }
+
+            return `A small number of duplicates (${duplicatesFound}) were automatically handled. This is normal and helps ensure data quality.`;
+        }
+
+        // Enhanced error message formatting with user-friendly suggestions
+        function formatErrorMessage(error, context = '') {
+            let message = '';
+            let suggestion = '';
+
+            if (typeof error === 'string') {
+                message = error;
+            } else if (error.message) {
+                message = error.message;
+            } else {
+                message = 'An unexpected error occurred';
+            }
+
+            // Network-related errors
+            if (error.name === 'TypeError' && message.includes('fetch')) {
+                message = 'Unable to connect to the server';
+                suggestion = 'Please check your internet connection and try again';
+            } else if (message.includes('timeout') || message.includes('Loading timeout')) {
+                message = 'Request timed out';
+                suggestion = 'The server may be busy. Please try again in a moment';
+            } else if (message.includes('NetworkError') || message.includes('Failed to fetch')) {
+                message = 'Network connection failed';
+                suggestion = 'Please check your internet connection';
+            }
+
+            // Server errors
+            else if (message.includes('500') || message.includes('Internal Server Error')) {
+                message = 'Server error occurred';
+                suggestion = 'Please try again later or contact support if the problem persists';
+            } else if (message.includes('404') || message.includes('Not Found')) {
+                message = 'Resource not found';
+                suggestion = 'The requested data may have been moved or deleted';
+            } else if (message.includes('403') || message.includes('Forbidden')) {
+                message = 'Access denied';
+                suggestion = 'You may not have permission to perform this action';
+            }
+
+            // File-related errors
+            else if (message.includes('Invalid Excel format') || message.includes('corrupted')) {
+                message = 'Invalid or corrupted Excel file';
+                suggestion = 'Please ensure the file is a valid Excel file (.xlsx or .xls)';
+            } else if (message.includes('No phone data found')) {
+                message = 'No phone numbers found in the file';
+                suggestion = 'Please ensure the Excel file contains phone numbers in recognizable columns';
+            } else if (message.includes('File size too large')) {
+                message = 'File size exceeds limit';
+                suggestion = 'Please select a file smaller than 10MB';
+            }
+
+            // Database errors
+            else if (message.includes('BACKUP_STORAGE_ERROR')) {
+                message = 'Failed to save data';
+                suggestion = 'Please try uploading the file again';
+            } else if (message.includes('NO_DATA')) {
+                message = 'No data available';
+                suggestion = 'Please upload and process some files first';
+            }
+
+            // Add context if provided
+            if (context) {
+                message = `${context}: ${message}`;
+            }
+
+            return suggestion ? `${message}. ${suggestion}` : message;
+        }
+
+        // Clear status message
+        function clearStatus(elementId) {
+            const statusElement = document.getElementById(elementId);
+            statusElement.style.display = 'none';
+        }
+
+        // Check if there are any active error messages
+        function hasActiveErrors() {
+            const checkTableStatus = document.getElementById('checkTableStatus');
+            const modalUploadStatus = document.getElementById('modalUploadStatus');
+            const modalExportStatus = document.getElementById('modalExportStatus');
+
+            return (checkTableStatus && checkTableStatus.style.display === 'block' && checkTableStatus.classList.contains('error')) ||
+                (modalUploadStatus && modalUploadStatus.style.display === 'block' && modalUploadStatus.classList.contains('error')) ||
+                (modalExportStatus && modalExportStatus.style.display === 'block' && modalExportStatus.classList.contains('error'));
+        }
+
+
+
+        // Enhanced range validation with user-friendly messages
+        function validateExportRangeEnhanced(start, end, totalRecords) {
+            const startNum = parseInt(start);
+            const endNum = parseInt(end);
+
+            // Basic number validation
+            if (isNaN(startNum) || isNaN(endNum)) {
+                return {
+                    valid: false,
+                    message: 'Please enter valid numbers for both start and end records',
+                    suggestion: 'Use whole numbers only (e.g., 1, 100, 500)'
+                };
+            }
+
+            // Range validation
+            if (startNum < 1) {
+                return {
+                    valid: false,
+                    message: 'Start record must be 1 or greater',
+                    suggestion: 'The first record is number 1'
+                };
+            }
+
+            if (endNum < 1) {
+                return {
+                    valid: false,
+                    message: 'End record must be 1 or greater',
+                    suggestion: 'The first record is number 1'
+                };
+            }
+
+            if (startNum > endNum) {
+                return {
+                    valid: false,
+                    message: 'Start record must be less than or equal to end record',
+                    suggestion: `Try: Start: ${Math.min(startNum, endNum)}, End: ${Math.max(startNum, endNum)}`
+                };
+            }
+
+            // Check against available records
+            if (totalRecords === 0) {
+                return {
+                    valid: false,
+                    message: 'No records available in check table for export',
+                    suggestion: 'Please upload and process some Excel files first'
+                };
+            }
+
+            if (startNum > totalRecords) {
+                return {
+                    valid: false,
+                    message: `Start record (${startNum}) exceeds available records (${totalRecords})`,
+                    suggestion: `Maximum start record is ${totalRecords}`
+                };
+            }
+
+            if (endNum > totalRecords) {
+                return {
+                    valid: false,
+                    message: `End record (${endNum}) exceeds available records (${totalRecords})`,
+                    suggestion: `Maximum end record is ${totalRecords}`
+                };
+            }
+
+            // Large range warning
+            const rangeSize = endNum - startNum + 1;
+            if (rangeSize > 10000) {
+                return {
+                    valid: true,
+                    warning: `Large export requested (${rangeSize} records). This may take some time.`,
+                    suggestion: 'Consider breaking into smaller ranges for faster processing'
+                };
+            }
+
+            return { valid: true };
+        }
+
+        // Display user-friendly error messages with suggestions
+        function showEnhancedStatus(elementId, validation, type = 'error') {
+            let message = validation.message;
+
+            if (validation.suggestion) {
+                message += '\n\nSuggestion: ' + validation.suggestion;
+            }
+
+            if (validation.warning && type !== 'error') {
+                message = validation.warning;
+                if (validation.suggestion) {
+                    message += '\n\n' + validation.suggestion;
+                }
+                type = 'info';
+            }
+
+            showStatus(elementId, message, type);
+        }
+
+
+
+
+
+        // Enhanced record loading with comprehensive error handling and fallback UI states
+        async function loadRecords() {
+            const startTime = Date.now();
+            const tbody = document.getElementById('recordsTableBody');
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            async function attemptLoad() {
+                try {
+                    // Show progressive loading indicator with spinner
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="loading">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                                    <div style="width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                    Loading records${retryCount > 0 ? ` (attempt ${retryCount + 1}/${maxRetries})` : ''}...
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+
+                    // Add CSS animation for spinner if not already present
+                    if (!document.getElementById('spinnerStyle')) {
+                        const style = document.createElement('style');
+                        style.id = 'spinnerStyle';
+                        style.textContent = `
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+
+                    // Set timeout for 3-second requirement (Requirement 2.1)
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Loading timeout')), 3000);
+                    });
+
+                    // Race between fetch and timeout to ensure fast loading
+                    const fetchPromise = fetch('/check?limit=1000');
+                    const response = await Promise.race([fetchPromise, timeoutPromise]);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    const loadTime = Date.now() - startTime;
+
+                    if (data.success) {
+                        allRecords = data.data.records;
+                        filteredRecords = allRecords;
+                        clearSearchCache(); // Clear search cache when new records are loaded
+                        setOptimalPageSize(); // Set adaptive pagination based on dataset size
+
+                        // Progressive display - show records immediately (Requirement 2.1, 2.2)
+                        if (allRecords.length > 0) {
+                            displayRecords();
+                            showStatus('checkTableStatus', `Loaded ${allRecords.length} records in ${loadTime}ms`, 'success');
+                        } else {
+                            showEmptyState();
+                            showStatus('checkTableStatus', 'No records found. Upload files to get started.', 'info');
+                        }
+
+                        // Log integration status for verification
+                        console.log('Unified Check Table Records interface successfully loaded');
+                        console.log(`Loaded ${allRecords.length} records from check_table in ${loadTime}ms`);
+
+                        // Verify libphonenumber-js validation results are displayed
+                        const singaporeCount = allRecords.filter(r => r.Status === true || r.Status === 1).length;
+                        const nonSingaporeCount = allRecords.filter(r => r.Status === false || r.Status === 0).length;
+                        console.log(`Singapore phones: ${singaporeCount}, Non-Singapore phones: ${nonSingaporeCount}`);
+
+                        // Log source file type breakdown for Excel integration verification
+                        const pdfRecords = allRecords.filter(r => r.source_file && r.source_file.toLowerCase().includes('.pdf')).length;
+                        const excelRecords = allRecords.filter(r => r.source_file && (r.source_file.toLowerCase().includes('.xlsx') || r.source_file.toLowerCase().includes('.xls'))).length;
+                        const unknownRecords = allRecords.length - pdfRecords - excelRecords;
+                        console.log(`Source breakdown: ${pdfRecords} PDF records, ${excelRecords} Excel records, ${unknownRecords} unknown source`);
+
+                        // Verify Excel records maintain same editing capabilities (Requirement 3.5)
+                        const editableExcelRecords = allRecords.filter(r => {
+                            const isExcel = r.source_file && (r.source_file.toLowerCase().includes('.xlsx') || r.source_file.toLowerCase().includes('.xls'));
+                            return isExcel && r.Id; // Has ID for editing
+                        }).length;
+                        console.log(`${editableExcelRecords} Excel records are editable (have IDs)`);
+                    } else {
+                        throw new Error(data.error || 'Failed to load records');
+                    }
+                } catch (error) {
+                    const loadTime = Date.now() - startTime;
+                    console.error('Failed to load records:', error);
+
+                    // Implement retry logic for network failures
+                    if (retryCount < maxRetries - 1 && isRetryableError(error)) {
+                        retryCount++;
+                        console.log(`Retrying record load (attempt ${retryCount + 1}/${maxRetries})`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                        return attemptLoad();
+                    }
+
+                    // Show appropriate error state based on error type
+                    showRecordLoadingError(error, loadTime, retryCount);
+                }
+            }
+
+            return attemptLoad();
+        }
+
+        // Check if error is retryable (network issues, timeouts, server errors)
+        function isRetryableError(error) {
+            const retryablePatterns = [
+                'Loading timeout',
+                'NetworkError',
+                'Failed to fetch',
+                'TypeError',
+                'HTTP 500',
+                'HTTP 502',
+                'HTTP 503',
+                'HTTP 504'
+            ];
+
+            return retryablePatterns.some(pattern =>
+                error.message.includes(pattern) || error.name === pattern
+            );
+        }
+
+        // Show appropriate error state for record loading failures
+        function showRecordLoadingError(error, loadTime, retryCount) {
+            const tbody = document.getElementById('recordsTableBody');
+            let errorMessage = '';
+            let fallbackContent = '';
+
+            if (error.message === 'Loading timeout') {
+                errorMessage = `Loading timeout after ${loadTime}ms`;
+                fallbackContent = `
+                    <tr>
+                        <td colspan="7" class="no-results">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 18px; margin-bottom: 10px;">⏱️</div>
+                                <div style="font-weight: bold; margin-bottom: 10px;">Loading is taking longer than expected</div>
+                                <div style="color: #666; margin-bottom: 15px;">This might be due to a slow connection or server load</div>
+                                <button onclick="loadRecords()" class="retry-button" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Try Again
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage = 'Unable to connect to server';
+                fallbackContent = `
+                    <tr>
+                        <td colspan="7" class="no-results">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 18px; margin-bottom: 10px;">🌐</div>
+                                <div style="font-weight: bold; margin-bottom: 10px;">Connection Failed</div>
+                                <div style="color: #666; margin-bottom: 15px;">Unable to connect to the server. Please check your internet connection.</div>
+                                <button onclick="loadRecords()" class="retry-button" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Retry Connection
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else if (error.message.includes('HTTP 500') || error.message.includes('Internal Server Error')) {
+                errorMessage = 'Server error occurred';
+                fallbackContent = `
+                    <tr>
+                        <td colspan="7" class="no-results">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 18px; margin-bottom: 10px;">⚠️</div>
+                                <div style="font-weight: bold; margin-bottom: 10px;">Server Error</div>
+                                <div style="color: #666; margin-bottom: 15px;">The server encountered an error. Please try again in a moment.</div>
+                                <button onclick="loadRecords()" class="retry-button" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Try Again
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                errorMessage = formatErrorMessage(error, 'Record loading failed');
+                fallbackContent = `
+                    <tr>
+                        <td colspan="7" class="no-results">
+                            <div style="text-align: center; padding: 20px;">
+                                <div style="font-size: 18px; margin-bottom: 10px;">❌</div>
+                                <div style="font-weight: bold; margin-bottom: 10px;">Failed to Load Records</div>
+                                <div style="color: #666; margin-bottom: 15px;">${errorMessage}</div>
+                                <button onclick="loadRecords()" class="retry-button" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Try Again
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            tbody.innerHTML = fallbackContent;
+
+            // Show status with retry option
+            showStatus('checkTableStatus', errorMessage, 'error', {
+                retryAction: () => loadRecords(),
+                hideDelay: 0 // Don't auto-hide error messages
+            });
+        }
+
+        // Show empty state when no records are available
+        function showEmptyState() {
+            const tbody = document.getElementById('recordsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="no-results">
+                        <div style="text-align: center; padding: 40px;">
+                            <div style="font-size: 24px; margin-bottom: 15px;">📋</div>
+                            <div style="font-weight: bold; margin-bottom: 10px;">No Records Available</div>
+                            <div style="color: #666; margin-bottom: 20px;">Upload Excel files to see phone validation records here</div>
+                            <button onclick="openUploadModal()" class="retry-button" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Upload Files
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Unified search functionality with debouncing for better performance
+        function setupSearch() {
+            const searchBox = document.getElementById('searchBox');
+            let searchTimeout;
+
+            // Debounced search to improve performance (Requirement 3.1)
+            searchBox.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                const newSearchTerm = this.value.toLowerCase().trim();
+
+                // Immediate update for empty search (clear results fast)
+                if (newSearchTerm === '' && searchTerm !== '') {
+                    searchTerm = newSearchTerm;
+                    filterRecords();
+                    currentPage = 1;
+                    displayRecords();
+                    return;
+                }
+
+                // Debounce other searches by 300ms to avoid excessive filtering
+                searchTimeout = setTimeout(() => {
+                    const searchStart = Date.now();
+                    searchTerm = newSearchTerm;
+                    filterRecords();
+                    currentPage = 1; // Reset to first page
+                    displayRecords();
+                    trackPerformance('search', searchStart);
+                }, 300);
+            });
+
+            // Also handle Enter key for immediate search
+            searchBox.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    clearTimeout(searchTimeout);
+                    searchTerm = this.value.toLowerCase().trim();
+                    filterRecords();
+                    currentPage = 1;
+                    displayRecords();
+                }
+            });
+        }
+
+        // Optimized filtering with indexed search for better performance on large datasets
+        let searchIndex = new Map(); // Cache for search optimization
+
+        function filterRecords() {
+            if (!searchTerm) {
+                filteredRecords = allRecords;
+                return;
+            }
+
+            // Use cached search index for better performance on repeated searches
+            const cacheKey = searchTerm;
+            if (searchIndex.has(cacheKey)) {
+                filteredRecords = searchIndex.get(cacheKey);
+                return;
+            }
+
+            // Optimized filtering with early termination and efficient string operations
+            filteredRecords = allRecords.filter(record => {
+                // Pre-build searchable text only once per record
+                if (!record._searchableText) {
+                    record._searchableText = [
+                        record.Id || '',
+                        record.Phone || '',
+                        record.CompanyName || '',
+                        record.PhysicalAddress || '',
+                        record.Email || '',
+                        record.Website || ''
+                    ].join(' ').toLowerCase();
+                }
+
+                return record._searchableText.includes(searchTerm);
+            });
+
+            // Cache results for repeated searches (limit cache size to prevent memory issues)
+            if (searchIndex.size > 50) {
+                searchIndex.clear(); // Clear cache when it gets too large
+            }
+            searchIndex.set(cacheKey, filteredRecords);
+        }
+
+        // Clear search cache when records are updated
+        function clearSearchCache() {
+            searchIndex.clear();
+            // Clear cached searchable text
+            allRecords.forEach(record => {
+                delete record._searchableText;
+            });
+        }
+
+        // Optimized record display with efficient DOM updates and virtual scrolling concepts
+        function displayRecords() {
+            const renderStart = Date.now();
+            const tbody = document.getElementById('recordsTableBody');
+
+            if (filteredRecords.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-results">
+                            ${searchTerm ? 'No records found matching your search.' : 'No records available.'}
+                        </td>
+                    </tr>
+                `;
+                updatePagination();
+                return;
+            }
+
+            // Calculate pagination with optimized page size for large datasets (Requirement 2.1, 2.2, 2.3)
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = startIndex + recordsPerPage;
+            const pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+            // Use DocumentFragment for efficient DOM manipulation
+            const fragment = document.createDocumentFragment();
+
+            // Pre-compile regex for search highlighting to avoid repeated compilation
+            let searchRegex = null;
+            if (searchTerm) {
+                try {
+                    searchRegex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+                } catch (e) {
+                    // Fallback for invalid regex
+                    searchRegex = null;
+                }
+            }
+
+            // Generate table rows with optimized rendering
+            pageRecords.forEach(record => {
+                const tr = document.createElement('tr');
+
+                // Handle both boolean and numeric status values from libphonenumber-js validation
+                const isValidSingapore = record.Status === true || record.Status === 1;
+                tr.className = isValidSingapore ? 'status-true' : 'status-false';
+                tr.setAttribute('data-record-id', record.Id);
+                tr.setAttribute('data-status', isValidSingapore);
+
+                // Generate search buttons for phone number
+                const phoneNumber = record.Phone || '';
+                const encodedPhone = encodeURIComponent(phoneNumber);
+                const searchButtons = phoneNumber ? `
+                    <div class="phone-search-buttons">
+                        <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" class="phone-search-btn plus65">+65 search</a>
+                        <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" class="phone-search-btn quotes">'quotes' search</a>
+                    </div>
+                ` : '';
+
+                // Optimized search highlighting function
+                const highlightText = (text) => {
+                    if (!searchRegex || !text) return text || '';
+                    return text.replace(searchRegex, '<span class="search-highlight">$1</span>');
+                };
+
+                tr.innerHTML = `
+                    <td>${highlightText(record.Id || '')}</td>
+                    <td>
+                        ${highlightText(record.Phone || '')}
+                        ${searchButtons}
+                    </td>
+                    <td class="company-name">${highlightText(record.CompanyName || 'Not set')}</td>
+                    <td class="physical-address">${highlightText(record.PhysicalAddress || 'Not set')}</td>
+                    <td class="email">${highlightText(record.Email || 'Not set')}</td>
+                    <td class="website">${highlightText(record.Website || 'Not set')}</td>
+                    <td>
+                        <button class="edit-button" onclick="startEdit('${record.Id}')">Edit</button>
+                    </td>
+                `;
+
+                fragment.appendChild(tr);
+            });
+
+            // Single DOM update for better performance
+            tbody.innerHTML = '';
+            tbody.appendChild(fragment);
+            updatePagination();
+
+            // Track render performance
+            trackPerformance('render', renderStart);
+
+            // Performance logging for debugging
+            if (performanceMode === 'high-performance') {
+                console.log(`High-performance mode: displayed ${pageRecords.length} records on page ${currentPage}`);
+            }
+        }
+
+        // Highlight search terms in text
+        function highlightSearchTerm(text) {
+            if (!searchTerm || !text) return text;
+
+            const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+            return text.replace(regex, '<span class="search-highlight">$1</span>');
+        }
+
+        // Escape special regex characters
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Unified pagination controls with enhanced navigation
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+            const paginationContainer = document.getElementById('paginationContainer');
+
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Previous button
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+
+            // Add page number buttons for better navigation (max 5 pages shown)
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)">1</button>`;
+                if (startPage > 2) {
+                    html += `<span class="pagination-info">...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const isActive = i === currentPage ? 'style="background-color: #0056b3; font-weight: bold;"' : '';
+                html += `<button onclick="changePage(${i})" ${isActive}>${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span class="pagination-info">...</span>`;
+                }
+                html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
+
+            // Page info
+            html += `<span class="pagination-info">Page ${currentPage} of ${totalPages} (${filteredRecords.length} records)</span>`;
+
+            // Next button
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+
+            paginationContainer.innerHTML = html;
+        }
+
+        // Change page
+        function changePage(newPage) {
+            const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                displayRecords();
+            }
+        }
+
+        // Start editing a record
+        function startEdit(recordId) {
+            // Cancel any existing edit
+            if (editingRecordId) {
+                cancelEdit();
+            }
+
+            editingRecordId = recordId;
+            const record = allRecords.find(r => r.Id === recordId);
+            if (!record) return;
+
+            const row = document.querySelector(`tr[data-record-id="${recordId}"]`);
+            if (!row) return;
+
+            // Replace editable cells with input fields
+            const companyNameCell = row.querySelector('.company-name');
+            const physicalAddressCell = row.querySelector('.physical-address');
+            const emailCell = row.querySelector('.email');
+            const websiteCell = row.querySelector('.website');
+            const actionCell = row.querySelector('td:last-child');
+
+            // Store original values
+            row.dataset.originalCompanyName = record.CompanyName || '';
+            row.dataset.originalPhysicalAddress = record.PhysicalAddress || '';
+            row.dataset.originalEmail = record.Email || '';
+            row.dataset.originalWebsite = record.Website || '';
+
+            // Replace with input fields
+            companyNameCell.innerHTML = `<input type="text" class="edit-input" value="${record.CompanyName || ''}" maxlength="255">`;
+            physicalAddressCell.innerHTML = `<textarea class="edit-textarea" maxlength="1000">${record.PhysicalAddress || ''}</textarea>`;
+            emailCell.innerHTML = `<input type="email" class="edit-input" value="${record.Email || ''}" maxlength="255">`;
+            websiteCell.innerHTML = `<input type="url" class="edit-input" value="${record.Website || ''}" maxlength="255">`;
+            actionCell.innerHTML = `
+                <button class="save-button" onclick="saveEdit('${recordId}')">Save</button>
+                <button class="cancel-button" onclick="cancelEdit()">Cancel</button>
+            `;
+        }
+
+        // Save edited record
+        async function saveEdit(recordId) {
+            const row = document.querySelector(`tr[data-record-id="${recordId}"]`);
+            if (!row) return;
+
+            // Get values from input fields
+            const companyName = row.querySelector('.company-name input').value.trim();
+            const physicalAddress = row.querySelector('.physical-address textarea').value.trim();
+            const email = row.querySelector('.email input').value.trim();
+            const website = row.querySelector('.website input').value.trim();
+
+            // Validate inputs
+            const validation = validateCompanyInfo({
+                companyName: companyName || null,
+                physicalAddress: physicalAddress || null,
+                email: email || null,
+                website: website || null
+            });
+
+            if (!validation.valid) {
+                showStatus('checkTableStatus', 'Validation failed: ' + validation.errors.join(', '), 'error');
+                return;
+            }
+
+            // Show confirmation
+            if (!confirm(`Are you sure you want to update record ${recordId}?`)) {
+                return;
+            }
+
+            try {
+                showStatus('checkTableStatus', 'Updating record...', 'info');
+
+                const response = await fetch(`/check/${recordId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        companyName: companyName || null,
+                        physicalAddress: physicalAddress || null,
+                        email: email || null,
+                        website: website || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update the record in our local data
+                    const recordIndex = allRecords.findIndex(r => r.Id === recordId);
+                    if (recordIndex !== -1) {
+                        allRecords[recordIndex].CompanyName = companyName || null;
+                        allRecords[recordIndex].PhysicalAddress = physicalAddress || null;
+                        allRecords[recordIndex].Email = email || null;
+                        allRecords[recordIndex].Website = website || null;
+                    }
+
+                    // Refresh the display
+                    filterRecords();
+                    displayRecords();
+                    editingRecordId = null;
+
+                    showStatus('checkTableStatus', `Successfully updated record ${recordId}`, 'success');
+                } else {
+                    let errorMessage = data.error || 'Update failed';
+                    if (data.code === 'EMAIL_ALREADY_EXISTS') {
+                        errorMessage = 'Email address already exists. Please use a different email address.';
+                    } else if (data.code === 'RECORD_NOT_FOUND') {
+                        errorMessage = `Record with ID "${recordId}" not found.`;
+                    }
+                    showStatus('checkTableStatus', errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                showStatus('checkTableStatus', 'Failed to update record: ' + error.message, 'error');
+            }
+        }
+
+        // Cancel editing
+        function cancelEdit() {
+            if (!editingRecordId) return;
+
+            const row = document.querySelector(`tr[data-record-id="${editingRecordId}"]`);
+            if (!row) return;
+
+            // Restore original values
+            const companyNameCell = row.querySelector('.company-name');
+            const physicalAddressCell = row.querySelector('.physical-address');
+            const emailCell = row.querySelector('.email');
+            const websiteCell = row.querySelector('.website');
+            const actionCell = row.querySelector('td:last-child');
+
+            const originalCompanyName = row.dataset.originalCompanyName || 'Not set';
+            const originalPhysicalAddress = row.dataset.originalPhysicalAddress || 'Not set';
+            const originalEmail = row.dataset.originalEmail || 'Not set';
+            const originalWebsite = row.dataset.originalWebsite || 'Not set';
+
+            companyNameCell.innerHTML = highlightSearchTerm(originalCompanyName);
+            physicalAddressCell.innerHTML = highlightSearchTerm(originalPhysicalAddress);
+            emailCell.innerHTML = highlightSearchTerm(originalEmail);
+            websiteCell.innerHTML = highlightSearchTerm(originalWebsite);
+            actionCell.innerHTML = `<button class="edit-button" onclick="startEdit('${editingRecordId}')">Edit</button>`;
+
+            editingRecordId = null;
+        }
+
+        // Validate company information
+        function validateCompanyInfo(companyData) {
+            const errors = [];
+
+            // Email validation
+            if (companyData.email && companyData.email.trim() !== '') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(companyData.email)) {
+                    errors.push('Please enter a valid email address');
+                }
+            }
+
+            // Website validation
+            if (companyData.website && companyData.website.trim() !== '') {
+                try {
+                    new URL(companyData.website);
+                } catch (e) {
+                    errors.push('Please enter a valid website URL (include http:// or https://)');
+                }
+            }
+
+            // Length validation
+            if (companyData.companyName && companyData.companyName.length > 255) {
+                errors.push('Company name must be less than 255 characters');
+            }
+
+            if (companyData.physicalAddress && companyData.physicalAddress.length > 1000) {
+                errors.push('Physical address must be less than 1000 characters');
+            }
+
+            return {
+                valid: errors.length === 0,
+                errors: errors
+            };
+        }
+
+        // Modal Management Functions
+        let currentModal = null;
+
+        function openModal(title, content, footerButtons = null) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+
+            // Set modal content
+            modalTitle.textContent = title;
+            modalBody.innerHTML = content;
+
+            // Set footer buttons if provided
+            if (footerButtons && footerButtons.length > 0) {
+                modalFooter.innerHTML = footerButtons.map(button =>
+                    `<button class="modal-button ${button.class || 'primary'}" 
+                             onclick="${button.onclick}" 
+                             ${button.disabled ? 'disabled' : ''}>
+                        ${button.text}
+                    </button>`
+                ).join('');
+                modalFooter.style.display = 'flex';
+            } else {
+                modalFooter.style.display = 'none';
+            }
+
+            // Show modal
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+            currentModal = modal;
+
+            // Focus management for accessibility
+            const firstFocusableElement = modal.querySelector('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            if (firstFocusableElement) {
+                firstFocusableElement.focus();
+            }
+
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+
+            return modal;
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+
+            if (modal && modal.classList.contains('show')) {
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                currentModal = null;
+
+                // Restore body scroll
+                document.body.style.overflow = '';
+
+                // Clear modal content after animation
+                setTimeout(() => {
+                    document.getElementById('modalBody').innerHTML = '';
+                    document.getElementById('modalFooter').innerHTML = '';
+                }, 300);
+            }
+        }
+
+        function updateModalContent(content) {
+            if (currentModal) {
+                document.getElementById('modalBody').innerHTML = content;
+            }
+        }
+
+        function updateModalFooter(footerButtons) {
+            const modalFooter = document.getElementById('modalFooter');
+
+            if (footerButtons && footerButtons.length > 0) {
+                modalFooter.innerHTML = footerButtons.map(button =>
+                    `<button class="modal-button ${button.class || 'primary'}" 
+                             onclick="${button.onclick}" 
+                             ${button.disabled ? 'disabled' : ''}>
+                        ${button.text}
+                    </button>`
+                ).join('');
+                modalFooter.style.display = 'flex';
+            } else {
+                modalFooter.style.display = 'none';
+            }
+        }
+
+        // Enhanced keyboard navigation support with better error handling
+        document.addEventListener('keydown', function (e) {
+            if (currentModal && currentModal.classList.contains('show')) {
+                if (e.key === 'Escape') {
+                    // Confirm before closing if there's unsaved work
+                    const hasUnsavedWork = checkForUnsavedModalWork();
+                    if (hasUnsavedWork) {
+                        if (confirm('You have unsaved changes. Are you sure you want to close?')) {
+                            closeModal();
+                        }
+                    } else {
+                        closeModal();
+                    }
+                } else if (e.key === 'Tab') {
+                    // Trap focus within modal
+                    const focusableElements = currentModal.querySelectorAll(
+                        'button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                    );
+                    const firstElement = focusableElements[0];
+                    const lastElement = focusableElements[focusableElements.length - 1];
+
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus();
+                        }
+                    }
+                }
+            }
+        });
+
+        // Check for unsaved work in modals
+        function checkForUnsavedModalWork() {
+            if (!currentModal) return false;
+
+            // Check upload modal for selected file
+            const fileInput = document.getElementById('modalFileInput');
+            if (fileInput && fileInput.files.length > 0) {
+                return true;
+            }
+
+            // Check export modal for filled fields
+            const startRecord = document.getElementById('modalStartRecord');
+            const endRecord = document.getElementById('modalEndRecord');
+            if ((startRecord && startRecord.value) || (endRecord && endRecord.value)) {
+                return true;
+            }
+
+            return false;
+        }
+
+        // Close modal when clicking backdrop
+        document.getElementById('modal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Enhanced Upload Modal with comprehensive validation
+        function openUploadModal() {
+            const uploadContent = `
+                <div class="file-type-info">
+                    <div style="padding: 15px; border: 2px solid #007bff; border-radius: 8px; background-color: #e7f3ff; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div style="margin-right: 10px; margin-top: 2px;">📊</div>
+                            <div>
+                                <strong style="font-size: 16px; color: #007bff; margin-bottom: 5px; display: block;">Excel File Upload</strong>
+                                <small style="color: #666; font-size: 14px; line-height: 1.3;">
+                                    Upload Excel files (.xlsx, .xls) with structured phone data. Multiple worksheets and flexible column layouts are supported.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="modalUploadForm">
+                    <div class="form-group">
+                        <label for="modalFileInput">Select Excel File:</label>
+                        <input type="file" id="modalFileInput" name="file" accept=".xlsx,.xls" required>
+                        <div id="modalFileValidation" class="validation-feedback" style="display: none; margin-top: 5px; padding: 8px; border-radius: 4px;"></div>
+                        <div class="file-format-guidance" style="margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #007bff;">
+                            <strong style="color: #007bff; display: block; margin-bottom: 8px;">Excel Format Guidelines:</strong>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li style="margin-bottom: 4px; font-size: 14px; color: #666;">Supports .xlsx and .xls formats</li>
+                                <li style="margin-bottom: 4px; font-size: 14px; color: #666;">Phone numbers can be in any column</li>
+                                <li style="margin-bottom: 4px; font-size: 14px; color: #666;">Multiple worksheets supported</li>
+                                <li style="margin-bottom: 4px; font-size: 14px; color: #666;">Headers are automatically detected</li>
+                                <li style="margin-bottom: 4px; font-size: 14px; color: #666;">Maximum file size: 10MB</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="progress" id="modalUploadProgress" style="display: none;">
+                        <div class="progress-bar" id="modalUploadProgressBar"></div>
+                    </div>
+                    
+                    <div class="processing-details" id="modalProcessingDetails" style="display: none;">
+                        <h4>Processing Status:</h4>
+                        <div id="modalProcessingSteps"></div>
+                    </div>
+                    
+                    <div class="status" id="modalUploadStatus"></div>
+                </form>
+            `;
+
+            openModal(
+                'Upload Excel File',
+                uploadContent,
+                [
+                    { text: 'Upload and Process', class: 'primary', onclick: 'processModalUpload()' },
+                    { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+                ]
+            );
+
+            // Setup file input validation for modal
+            setupModalFileValidation();
+        }
+
+        function setupModalFileValidation() {
+            const fileInput = document.getElementById('modalFileInput');
+            const validationDiv = document.getElementById('modalFileValidation');
+
+            if (!fileInput || !validationDiv) return;
+
+            fileInput.addEventListener('change', function () {
+                const file = this.files[0];
+                clearModalUploadStatus();
+
+                if (!file) {
+                    hideModalValidationFeedback();
+                    disableModalUploadButton('Select a file to upload');
+                    return;
+                }
+
+                // Comprehensive file validation with detailed feedback
+                const validationResult = validateModalFile(file);
+
+                if (!validationResult.valid) {
+                    showModalValidationFeedback(validationResult.message, 'error');
+                    disableModalUploadButton('Fix validation errors');
+                    this.value = ''; // Clear invalid file
+                    return;
+                }
+
+                if (validationResult.warnings.length > 0) {
+                    showModalValidationFeedback(validationResult.warnings.join('. '), 'warning');
+                }
+
+                // File is valid
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                const successMessage = validationResult.warnings.length > 0
+                    ? `✓ File selected (${fileSizeMB}MB) - See warnings above`
+                    : `✓ Valid Excel file selected (${fileSizeMB}MB)`;
+
+                if (validationResult.warnings.length === 0) {
+                    showModalValidationFeedback(successMessage, 'success');
+                }
+
+                enableModalUploadButton();
+                showModalUploadStatus(`Ready to upload: ${file.name}`, 'info');
+            });
+
+            // Initialize with disabled button
+            disableModalUploadButton('Select a file to upload');
+
+            // Add drag and drop support for better UX
+            const modalBody = document.getElementById('modalBody');
+            if (modalBody) {
+                modalBody.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.backgroundColor = '#f0f8ff';
+                });
+
+                modalBody.addEventListener('dragleave', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.backgroundColor = '';
+                });
+
+                modalBody.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.backgroundColor = '';
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const fileInput = document.getElementById('modalFileInput');
+                        if (fileInput) {
+                            fileInput.files = files;
+                            fileInput.dispatchEvent(new Event('change'));
+                        }
+                    }
+                });
+            }
+        }
+
+        // Comprehensive file validation for modal
+        function validateModalFile(file) {
+            const result = {
+                valid: true,
+                message: '',
+                warnings: []
+            };
+
+            // File type validation
+            if (!validateExcelFileType(file)) {
+                result.valid = false;
+                result.message = 'Invalid file type. Please select an Excel file (.xlsx or .xls).';
+                return result;
+            }
+
+            // File size validation
+            if (!validateFileSize(file)) {
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                result.valid = false;
+                result.message = `File size (${fileSizeMB}MB) exceeds the 10MB limit. Please select a smaller file.`;
+                return result;
+            }
+
+            // File name validation for potential issues
+            const fileName = file.name;
+            if (fileName.includes('#') || fileName.includes('&') || fileName.includes('%')) {
+                result.warnings.push('File name contains special characters that may cause processing issues');
+            }
+
+            if (fileName.length > 100) {
+                result.warnings.push('File name is very long and may be truncated');
+            }
+
+            // Check for suspicious file extensions
+            const lowerName = fileName.toLowerCase();
+            if (lowerName.endsWith('.xls') && file.size > 5 * 1024 * 1024) {
+                result.warnings.push('Large .xls files may have compatibility issues. Consider converting to .xlsx');
+            }
+
+            return result;
+        }
+
+        // Modal validation feedback functions
+        function showModalValidationFeedback(message, type) {
+            const validationDiv = document.getElementById('modalFileValidation');
+            if (!validationDiv) return;
+
+            validationDiv.textContent = message;
+            validationDiv.className = `validation-feedback ${type}`;
+
+            // Set appropriate styling based on type
+            switch (type) {
+                case 'error':
+                    validationDiv.style.backgroundColor = '#f8d7da';
+                    validationDiv.style.color = '#721c24';
+                    validationDiv.style.border = '1px solid #f5c6cb';
+                    break;
+                case 'warning':
+                    validationDiv.style.backgroundColor = '#fff3cd';
+                    validationDiv.style.color = '#856404';
+                    validationDiv.style.border = '1px solid #ffeaa7';
+                    break;
+                case 'success':
+                    validationDiv.style.backgroundColor = '#d4edda';
+                    validationDiv.style.color = '#155724';
+                    validationDiv.style.border = '1px solid #c3e6cb';
+                    break;
+            }
+
+            validationDiv.style.display = 'block';
+        }
+
+        function hideModalValidationFeedback() {
+            const validationDiv = document.getElementById('modalFileValidation');
+            if (validationDiv) {
+                validationDiv.style.display = 'none';
+            }
+        }
+
+        function enableModalUploadButton() {
+            updateModalFooter([
+                { text: 'Upload and Process', class: 'primary', onclick: 'processModalUpload()' },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+        }
+
+        function disableModalUploadButton(reason = 'Upload') {
+            updateModalFooter([
+                { text: reason, class: 'primary', onclick: 'processModalUpload()', disabled: true },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+        }
+
+        async function processModalUpload() {
+            const fileInput = document.getElementById('modalFileInput');
+            const progressContainer = document.getElementById('modalUploadProgress');
+            const progressBar = document.getElementById('modalUploadProgressBar');
+            const processingDetails = document.getElementById('modalProcessingDetails');
+
+            if (!fileInput.files[0]) {
+                showModalStatus('Please select an Excel file', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // Validate Excel file type
+            if (!validateExcelFileType(file)) {
+                showModalStatus('Invalid file type. Please select an Excel file (.xlsx or .xls) only.', 'error');
+                return;
+            }
+
+            // Validate file size
+            if (!validateFileSize(file)) {
+                showModalStatus('File size too large. Maximum allowed size is 10MB.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            // Update modal footer to show processing state
+            updateModalFooter([
+                { text: 'Processing...', class: 'primary', disabled: true },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '25%';
+
+            // Show processing details for Excel files
+            processingDetails.style.display = 'block';
+            showModalExcelProcessingSteps('uploading');
+
+            showModalStatus('Uploading and analyzing Excel file...', 'info');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                progressBar.style.width = '100%';
+
+                if (data.success) {
+                    // Show processing steps for Excel files
+                    showModalExcelProcessingSteps('completed', data.data);
+
+                    // Show detailed dual-table success message with duplicate handling information
+                    let successMessage = `Success! Processed ${data.data.extraction.recordsExtracted} records.\\n`;
+
+                    // Add duplicate handling information prominently
+                    if (data.data.duplicateHandling && data.data.duplicateHandling.enabled) {
+                        const duplicateInfo = data.data.duplicateHandling;
+                        if (duplicateInfo.duplicatesFound > 0) {
+                            successMessage += `📊 Duplicate Handling: ${duplicateInfo.newRecordsStored} new records stored, `;
+                            successMessage += `${duplicateInfo.duplicatesFound} duplicates skipped (${duplicateInfo.duplicatePercentage}%)\\n`;
+                        } else {
+                            successMessage += `📊 Duplicate Handling: All records were new (no duplicates found)\\n`;
+                        }
+                    }
+
+                    successMessage += `Backup Table: ${data.data.backupTable.recordsInserted} inserted, ${data.data.backupTable.recordsSkipped} skipped.\\n`;
+
+                    // Add Excel-specific details
+                    if (data.data.extraction.extractionReport) {
+                        const report = data.data.extraction.extractionReport;
+                        if (report.worksheetsProcessed) {
+                            successMessage += `Worksheets processed: ${report.worksheetsProcessed}\\n`;
+                        }
+                        if (report.phoneColumnsFound) {
+                            successMessage += `Phone columns detected: ${report.phoneColumnsFound}\\n`;
+                        }
+                    }
+
+                    if (data.data.checkTable.recordsValidated > 0) {
+                        successMessage += `Check Table: ${data.data.checkTable.recordsValidated} validated, `;
+                        successMessage += `${data.data.checkTable.singaporePhones} Singapore phones found.\\n`;
+                        successMessage += `Validation Status: ${data.data.fileManagement.phoneValidationStatus}`;
+                    } else {
+                        successMessage += `Phone validation will be processed in background.`;
+                    }
+
+                    // Add user-friendly duplicate handling explanation
+                    if (data.data.duplicateHandling && data.data.duplicateHandling.enabled) {
+                        const duplicateExplanation = generateDuplicateExplanation(data.data.duplicateHandling);
+                        if (duplicateExplanation) {
+                            successMessage += `\\n\\n💡 ${duplicateExplanation}`;
+                        }
+                    }
+
+                    showModalStatus(successMessage, 'success');
+
+                    // Update modal footer to show completion
+                    updateModalFooter([
+                        { text: 'Close', class: 'primary', onclick: 'closeModalAndRefresh()' }
+                    ]);
+
+                    // Refresh records
+                    setTimeout(() => {
+                        loadRecords();
+                    }, 1000);
+                } else {
+                    // Show error processing steps for Excel files
+                    showModalExcelProcessingSteps('error', data);
+
+                    // Provide specific error messages for Excel processing
+                    let errorMessage = data.error || 'Upload failed';
+                    if (errorMessage.includes('Invalid Excel format') || errorMessage.includes('corrupted')) {
+                        errorMessage = 'The uploaded Excel file appears to be corrupted or not a valid Excel file. Please try a different file.';
+                    } else if (errorMessage.includes('No phone data found') || errorMessage.includes('No data found')) {
+                        errorMessage = 'No phone data was found in the Excel file. Please ensure the Excel file contains phone numbers in recognizable columns.';
+                    } else if (errorMessage.includes('No worksheets')) {
+                        errorMessage = 'No valid worksheets found in the Excel file. Please ensure the file contains data in worksheet format.';
+                    } else if (errorMessage.includes('Column mapping failed')) {
+                        errorMessage = 'Could not identify phone number columns in the Excel file. Please ensure phone numbers are clearly labeled or in a recognizable format.';
+                    }
+
+                    if (errorMessage.includes('BACKUP_STORAGE_ERROR')) {
+                        errorMessage = 'Failed to store data in backup table. Please try again.';
+                    }
+
+                    showModalStatus(errorMessage, 'error');
+
+                    // Reset modal footer
+                    updateModalFooter([
+                        { text: 'Try Again', class: 'primary', onclick: 'resetModalUpload()' },
+                        { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+                    ]);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                let errorMessage = 'Upload failed: ';
+
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage += 'Unable to connect to server. Please check your internet connection.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage += 'Request timed out. The file might be too large or the server is busy.';
+                } else {
+                    errorMessage += error.message;
+                }
+
+                showModalStatus(errorMessage, 'error');
+
+                // Reset modal footer
+                updateModalFooter([
+                    { text: 'Try Again', class: 'primary', onclick: 'resetModalUpload()' },
+                    { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+                ]);
+            }
+        }
+
+        function resetModalUpload() {
+            // Reset form
+            document.getElementById('modalFileInput').value = '';
+            document.getElementById('modalUploadProgress').style.display = 'none';
+            document.getElementById('modalUploadProgressBar').style.width = '0%';
+            document.getElementById('modalProcessingDetails').style.display = 'none';
+            clearModalStatus();
+
+            // Reset modal footer
+            updateModalFooter([
+                { text: 'Upload and Process', class: 'primary', onclick: 'processModalUpload()' },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+        }
+
+        function closeModalAndRefresh() {
+            closeModal();
+            // Refresh the records table to show new data
+            loadRecords();
+        }
+
+        function showModalExcelProcessingSteps(status, data = null) {
+            const processingSteps = document.getElementById('modalProcessingSteps');
+
+            const steps = [
+                { id: 'upload', label: 'File Upload', icon: '↑' },
+                { id: 'parse', label: 'Excel Parsing', icon: '📊' },
+                { id: 'worksheets', label: 'Worksheet Detection', icon: '📋' },
+                { id: 'columns', label: 'Column Mapping', icon: '🔗' },
+                { id: 'validation', label: 'Data Validation', icon: '✓' },
+                { id: 'duplicates', label: 'Duplicate Detection', icon: '🔍' },
+                { id: 'storage', label: 'Backup Storage', icon: '💾' },
+                { id: 'phone', label: 'Phone Validation', icon: '📞' }
+            ];
+
+            let html = '';
+
+            steps.forEach((step, index) => {
+                let stepStatus = 'pending';
+                let statusText = '';
+
+                if (status === 'uploading') {
+                    if (index === 0) {
+                        stepStatus = 'processing';
+                        statusText = 'Uploading file...';
+                    }
+                } else if (status === 'completed' && data) {
+                    stepStatus = 'completed';
+
+                    // Add specific completion details
+                    if (step.id === 'worksheets' && data.extraction?.extractionReport?.worksheetsProcessed) {
+                        statusText = `${data.extraction.extractionReport.worksheetsProcessed} worksheets processed`;
+                    } else if (step.id === 'columns' && data.extraction?.extractionReport?.phoneColumnsFound) {
+                        statusText = `${data.extraction.extractionReport.phoneColumnsFound} phone columns detected`;
+                    } else if (step.id === 'duplicates' && data.duplicateHandling) {
+                        const duplicateInfo = data.duplicateHandling;
+                        if (duplicateInfo.duplicatesFound > 0) {
+                            statusText = `${duplicateInfo.duplicatesFound} duplicates found (${duplicateInfo.duplicatePercentage}%)`;
+                        } else {
+                            statusText = 'No duplicates found';
+                        }
+                    } else if (step.id === 'storage' && data.backupTable?.recordsInserted) {
+                        statusText = `${data.backupTable.recordsInserted} new records stored`;
+                    } else if (step.id === 'phone' && data.checkTable?.singaporePhones !== undefined) {
+                        statusText = `${data.checkTable.singaporePhones} Singapore phones found`;
+                    } else {
+                        statusText = 'Completed';
+                    }
+                } else if (status === 'error') {
+                    if (index <= 2) { // Assume error occurred in early stages
+                        stepStatus = 'error';
+                        statusText = 'Failed';
+                    }
+                }
+
+                html += `
+                    <div class="processing-step ${stepStatus}">
+                        <div class="step-icon">${step.icon}</div>
+                        <div class="step-content">
+                            <strong>${step.label}</strong>
+                            ${statusText ? `<div style="font-size: 12px; color: #666;">${statusText}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            processingSteps.innerHTML = html;
+        }
+
+        function showModalStatus(message, type) {
+            const statusElement = document.getElementById('modalUploadStatus');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+        }
+
+        function clearModalStatus() {
+            const statusElement = document.getElementById('modalUploadStatus');
+            statusElement.style.display = 'none';
+        }
+
+        // Export Modal Functions
+        function openExportModal() {
+            const exportContent = `
+                <div style="margin-bottom: 20px;">
+                    <div style="padding: 15px; border: 2px solid #17a2b8; border-radius: 8px; background-color: #e7f8ff;">
+                        <div style="display: flex; align-items: flex-start;">
+                            <div style="margin-right: 10px; margin-top: 2px;">📥</div>
+                            <div>
+                                <strong style="font-size: 16px; color: #17a2b8; margin-bottom: 5px; display: block;">Export Check Table Records</strong>
+                                <small style="color: #666; font-size: 14px; line-height: 1.3;">
+                                    Export phone validation records to Excel format. Choose a specific range or export all records.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="modalExportForm">
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="exportType" value="range" checked onchange="toggleExportOptions()"> 
+                            Export Range
+                        </label>
+                        <div id="rangeOptions" style="margin-left: 20px; margin-top: 10px;">
+                            <div class="export-range">
+                                <div class="form-group">
+                                    <label for="modalStartRecord">Start Record:</label>
+                                    <input type="number" id="modalStartRecord" name="startRecord" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="modalEndRecord">End Record:</label>
+                                    <input type="number" id="modalEndRecord" name="endRecord" min="1" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="exportType" value="all" onchange="toggleExportOptions()"> 
+                            Export All Records
+                        </label>
+                        <div style="margin-left: 20px; margin-top: 5px;">
+                            <small style="color: #666;">Export all available records from the check table</small>
+                        </div>
+                    </div>
+                    
+                    <div class="status" id="modalExportStatus"></div>
+                </form>
+            `;
+
+            openModal(
+                'Export Records to Excel',
+                exportContent,
+                [
+                    { text: 'Export', class: 'primary', onclick: 'processModalExport()' },
+                    { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+                ]
+            );
+
+            // Setup export validation
+            setupModalExportValidation();
+        }
+
+        function setupModalExportValidation() {
+            const startInput = document.getElementById('modalStartRecord');
+            const endInput = document.getElementById('modalEndRecord');
+
+            if (!startInput || !endInput) return;
+
+            // Enhanced range validation with comprehensive feedback (Requirement 4.4)
+            function validateModalRangeInputs() {
+                const startValue = startInput.value;
+                const endValue = endInput.value;
+                const totalRecords = allRecords.length; // Use actual record count for better validation
+                const exportType = document.querySelector('input[name="exportType"]:checked')?.value;
+
+                clearModalExportStatus();
+
+                // Validate based on export type
+                if (exportType === 'all') {
+                    if (totalRecords === 0) {
+                        showModalExportStatus('No records available for export. Please upload and process some files first.', 'error');
+                        disableModalExportButton('No Records Available');
+                        return;
+                    }
+
+                    // Show info about what will be exported
+                    showModalExportStatus(`Ready to export all ${totalRecords} records`, 'info');
+                    enableModalExportButton();
+                    return;
+                }
+
+                // Range export validation
+                if (exportType === 'range') {
+                    if (!startValue && !endValue) {
+                        showModalExportStatus('Enter start and end record numbers for range export', 'info');
+                        disableModalExportButton('Enter Range');
+                        return;
+                    }
+
+                    if (!startValue || !endValue) {
+                        showModalExportStatus('Please fill both start and end record numbers', 'error');
+                        disableModalExportButton('Complete Range');
+                        return;
+                    }
+
+                    // Comprehensive range validation
+                    const validation = validateModalExportRange(startValue, endValue, totalRecords);
+
+                    if (!validation.valid) {
+                        showModalExportStatus(validation.message, 'error');
+                        if (validation.suggestion) {
+                            showModalExportStatus(`${validation.message}. Suggestion: ${validation.suggestion}`, 'error');
+                        }
+                        disableModalExportButton('Fix Errors');
+                        return;
+                    }
+
+                    if (validation.warning) {
+                        showModalExportStatus(validation.warning, 'warning');
+                        enableModalExportButton('Export (Large Range)');
+                        return;
+                    }
+
+                    // Valid range
+                    const recordCount = parseInt(endValue) - parseInt(startValue) + 1;
+                    showModalExportStatus(`Ready to export ${recordCount} records (${startValue} to ${endValue})`, 'success');
+                    enableModalExportButton();
+                }
+            }
+
+            // Enhanced export range validation with detailed feedback
+            function validateModalExportRange(start, end, totalRecords) {
+                const startNum = parseInt(start);
+                const endNum = parseInt(end);
+
+                // Basic number validation
+                if (isNaN(startNum) || isNaN(endNum)) {
+                    return {
+                        valid: false,
+                        message: 'Please enter valid numbers for both start and end records',
+                        suggestion: 'Use whole numbers only (e.g., 1, 100, 500)'
+                    };
+                }
+
+                // Range validation
+                if (startNum < 1) {
+                    return {
+                        valid: false,
+                        message: 'Start record must be 1 or greater',
+                        suggestion: 'The first record is number 1'
+                    };
+                }
+
+                if (endNum < 1) {
+                    return {
+                        valid: false,
+                        message: 'End record must be 1 or greater',
+                        suggestion: 'The first record is number 1'
+                    };
+                }
+
+                if (startNum > endNum) {
+                    return {
+                        valid: false,
+                        message: 'Start record must be less than or equal to end record',
+                        suggestion: `Try: Start: ${Math.min(startNum, endNum)}, End: ${Math.max(startNum, endNum)}`
+                    };
+                }
+
+                // Check against available records
+                if (totalRecords === 0) {
+                    return {
+                        valid: false,
+                        message: 'No records available for export',
+                        suggestion: 'Please upload and process some files first'
+                    };
+                }
+
+                if (startNum > totalRecords) {
+                    return {
+                        valid: false,
+                        message: `Start record (${startNum}) exceeds available records (${totalRecords})`,
+                        suggestion: `Maximum start record is ${totalRecords}`
+                    };
+                }
+
+                if (endNum > totalRecords) {
+                    return {
+                        valid: false,
+                        message: `End record (${endNum}) exceeds available records (${totalRecords})`,
+                        suggestion: `Maximum end record is ${totalRecords}`
+                    };
+                }
+
+                // Large range warning
+                const rangeSize = endNum - startNum + 1;
+                if (rangeSize > 10000) {
+                    return {
+                        valid: true,
+                        warning: `Large export requested (${rangeSize} records). This may take some time.`
+                    };
+                }
+
+                return { valid: true };
+            }
+
+            function enableModalExportButton(text = 'Export') {
+                updateModalFooter([
+                    { text: text, class: 'primary', onclick: 'processModalExport()' },
+                    { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+                ]);
+            }
+
+            function disableModalExportButton(reason = 'Export') {
+                updateModalFooter([
+                    { text: reason, class: 'primary', onclick: 'processModalExport()', disabled: true },
+                    { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+                ]);
+            }
+
+            // Real-time validation on input
+            startInput.addEventListener('input', validateModalRangeInputs);
+            endInput.addEventListener('input', validateModalRangeInputs);
+            startInput.addEventListener('blur', validateModalRangeInputs);
+            endInput.addEventListener('blur', validateModalRangeInputs);
+
+            // Validate when export type changes
+            document.querySelectorAll('input[name="exportType"]').forEach(radio => {
+                radio.addEventListener('change', validateModalRangeInputs);
+            });
+
+            // Initial validation
+            setTimeout(validateModalRangeInputs, 100);
+        }
+
+        function toggleExportOptions() {
+            const rangeOptions = document.getElementById('rangeOptions');
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+
+            if (exportType === 'range') {
+                rangeOptions.style.display = 'block';
+                document.getElementById('modalStartRecord').required = true;
+                document.getElementById('modalEndRecord').required = true;
+            } else {
+                rangeOptions.style.display = 'none';
+                document.getElementById('modalStartRecord').required = false;
+                document.getElementById('modalEndRecord').required = false;
+            }
+
+            clearModalExportStatus();
+        }
+
+        async function processModalExport() {
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+
+            // Update modal footer to show processing state
+            updateModalFooter([
+                { text: 'Exporting...', class: 'primary', disabled: true },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+
+            if (exportType === 'range') {
+                await processModalRangeExport();
+            } else {
+                await processModalAllExport();
+            }
+        }
+
+        async function processModalRangeExport() {
+            const startRecord = document.getElementById('modalStartRecord').value;
+            const endRecord = document.getElementById('modalEndRecord').value;
+            const totalRecords = 0; // Statistics removed - validation will be handled server-side
+
+            if (!startRecord || !endRecord) {
+                showModalExportStatus('Please enter both start and end record numbers', 'error');
+                resetModalExportFooter();
+                return;
+            }
+
+            // Validate export range against check_table with enhanced feedback
+            const validation = validateExportRangeEnhanced(startRecord, endRecord, totalRecords);
+            if (!validation.valid) {
+                showModalExportStatus(validation.message, 'error');
+                resetModalExportFooter();
+                return;
+            }
+
+            // Show warning for large exports but continue
+            if (validation.warning) {
+                if (!confirm(validation.warning + '\\n\\nDo you want to continue?')) {
+                    resetModalExportFooter();
+                    return;
+                }
+            }
+
+            showModalExportStatus('Preparing export from check table...', 'info');
+
+            try {
+                const response = await fetch(`/export/${startRecord}/${endRecord}`);
+
+                if (response.ok) {
+                    // Get filename from response headers
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'check_table_export.xlsx';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+
+                    // Download the file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    const recordCount = response.headers.get('X-Export-Records');
+                    const exportSource = response.headers.get('X-Export-Source');
+                    showModalExportStatus(
+                        `Export completed! Downloaded ${recordCount} records from ${exportSource}.`,
+                        'success'
+                    );
+
+                    // Update modal footer to show completion
+                    updateModalFooter([
+                        { text: 'Close', class: 'primary', onclick: 'closeModal()' }
+                    ]);
+                } else {
+                    const errorData = await response.json();
+                    let errorMessage = errorData.error || 'Export failed';
+
+                    // Provide specific error messages based on error type
+                    if (errorMessage.includes('Invalid range')) {
+                        errorMessage = 'The specified range is invalid for check table. Please check your start and end record numbers.';
+                    } else if (errorMessage.includes('No records found')) {
+                        errorMessage = 'No records found in the specified range in check table. Please check your range values.';
+                    } else if (errorMessage.includes('NO_DATA')) {
+                        errorMessage = 'No records available in check table. Please upload and process some Excel files first.';
+                    }
+
+                    showModalExportStatus(errorMessage, 'error');
+                    resetModalExportFooter();
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                let errorMessage = 'Export failed: ';
+
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage += 'Unable to connect to server. Please check your internet connection.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage += 'Request timed out. Please try again.';
+                } else {
+                    errorMessage += error.message;
+                }
+
+                showModalExportStatus(errorMessage, 'error');
+                resetModalExportFooter();
+            }
+        }
+
+        async function processModalAllExport() {
+            showModalExportStatus('Preparing full export from check table...', 'info');
+
+            try {
+                const response = await fetch('/export/all');
+
+                if (response.ok) {
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'check_table_export_all.xlsx';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    const recordCount = response.headers.get('X-Export-Records');
+                    const exportSource = response.headers.get('X-Export-Source');
+                    showModalExportStatus(
+                        `Full export completed! Downloaded ${recordCount} records from ${exportSource}.`,
+                        'success'
+                    );
+
+                    // Update modal footer to show completion
+                    updateModalFooter([
+                        { text: 'Close', class: 'primary', onclick: 'closeModal()' }
+                    ]);
+                } else {
+                    const errorData = await response.json();
+                    let errorMessage = errorData.error || 'Export failed';
+
+                    // Provide specific error messages based on error type
+                    if (errorMessage.includes('No records found') || errorMessage.includes('NO_DATA')) {
+                        errorMessage = 'No records available in check table for export. Please upload and process some Excel files first.';
+                    } else if (errorMessage.includes('EXPORT_TOO_LARGE')) {
+                        errorMessage = 'Full export is too large. Please use range export instead.';
+                    }
+
+                    showModalExportStatus(errorMessage, 'error');
+                    resetModalExportFooter();
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                let errorMessage = 'Export failed: ';
+
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage += 'Unable to connect to server. Please check your internet connection.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage += 'Request timed out. Please try again.';
+                } else {
+                    errorMessage += error.message;
+                }
+
+                showModalExportStatus(errorMessage, 'error');
+                resetModalExportFooter();
+            }
+        }
+
+        function resetModalExportFooter() {
+            updateModalFooter([
+                { text: 'Export', class: 'primary', onclick: 'processModalExport()' },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+        }
+
+        function showModalExportStatus(message, type) {
+            const statusElement = document.getElementById('modalExportStatus');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+        }
+
+        function clearModalExportStatus() {
+            const statusElement = document.getElementById('modalExportStatus');
+            if (statusElement) {
+                statusElement.style.display = 'none';
+            }
+        }
+
+        // Enhanced modal status functions for comprehensive error handling
+        function showModalUploadStatus(message, type) {
+            const statusElement = document.getElementById('modalUploadStatus');
+            if (!statusElement) return;
+
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+        }
+
+        function clearModalUploadStatus() {
+            const statusElement = document.getElementById('modalUploadStatus');
+            if (statusElement) {
+                statusElement.style.display = 'none';
+            }
+        }
+
+        // Global error handler for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function (event) {
+            console.error('Unhandled promise rejection:', event.reason);
+
+            // Show user-friendly error message
+            const errorMessage = formatErrorMessage(event.reason, 'Unexpected error occurred');
+
+            // Try to show error in the most relevant status element
+            const activeStatusElements = [
+                'checkTableStatus',
+                'modalUploadStatus',
+                'modalExportStatus'
+            ];
+
+            for (const elementId of activeStatusElements) {
+                const element = document.getElementById(elementId);
+                if (element && element.style.display !== 'none') {
+                    showStatus(elementId, errorMessage, 'error');
+                    break;
+                }
+            }
+
+            // Prevent the default browser error handling
+            event.preventDefault();
+        });
+
+        // Global error handler for JavaScript errors
+        window.addEventListener('error', function (event) {
+            console.error('JavaScript error:', event.error);
+
+            // Only show user-friendly errors for network/fetch related issues
+            if (event.error && (event.error.name === 'TypeError' || event.error.message.includes('fetch'))) {
+                const errorMessage = formatErrorMessage(event.error, 'Connection error');
+
+                // Show in check table status as fallback
+                showStatus('checkTableStatus', errorMessage, 'error', {
+                    retryAction: () => loadRecords(),
+                    hideDelay: 0
+                });
+            }
+        });
+
+        // Enhanced network status monitoring
+        function monitorNetworkStatus() {
+            function updateNetworkStatus() {
+                if (!navigator.onLine) {
+                    // Show offline status
+                    const offlineMessage = 'You are currently offline. Some features may not work properly.';
+                    showStatus('checkTableStatus', offlineMessage, 'warning', {
+                        hideDelay: 0
+                    });
+                } else {
+                    // Clear offline status if it was shown
+                    const statusElement = document.getElementById('checkTableStatus');
+                    if (statusElement && statusElement.textContent.includes('offline')) {
+                        statusElement.style.display = 'none';
+                    }
+                }
+            }
+
+            window.addEventListener('online', updateNetworkStatus);
+            window.addEventListener('offline', updateNetworkStatus);
+
+            // Initial check
+            updateNetworkStatus();
+        }
+
+        // Initialize network monitoring when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            monitorNetworkStatus();
+        });
+
+    </script>
+</body>
+
+</html>

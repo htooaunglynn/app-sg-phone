@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager - Singapore Phone Detect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .search-container {
+            flex: 1;
+            min-width: 300px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .nav-button {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .nav-button:hover {
+            background-color: #5a6268;
+        }
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .files-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .files-table th,
+        .files-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .files-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .files-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .file-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .file-type-badge.pdf {
+            background-color: #dc3545;
+            color: white;
+        }
+        .file-type-badge.excel {
+            background-color: #28a745;
+            color: white;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-badge.processed {
+            background-color: #28a745;
+            color: white;
+        }
+        .status-badge.pending {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .status-badge.failed {
+            background-color: #dc3545;
+            color: white;
+        }
+        .action-button {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }
+        .action-button.danger {
+            background-color: #dc3545;
+        }
+        .action-button.danger:hover {
+            background-color: #c82333;
+        }
+        .action-button.secondary {
+            background-color: #6c757d;
+        }
+        .action-button.secondary:hover {
+            background-color: #5a6268;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background-color: #0056b3;
+        }
+        .pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .pagination-info {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .file-details {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .cleanup-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border-left: 4px solid #ffc107;
+        }
+        .cleanup-section h3 {
+            color: #856404;
+            margin-top: 0;
+        }
+        .cleanup-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .cleanup-controls label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .cleanup-controls input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            .header-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-container {
+                justify-content: center;
+            }
+            .search-container {
+                min-width: auto;
+            }
+            .files-table {
+                font-size: 12px;
+            }
+            .files-table th,
+            .files-table td {
+                padding: 8px 4px;
+            }
+            .cleanup-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>File Manager</h1>
+        
+        <div class="header-section">
+            <div class="filter-container">
+                <label for="fileTypeFilter">File Type:</label>
+                <select id="fileTypeFilter" class="filter-select">
+                    <option value="all">All Files</option>
+                    <option value="pdf">PDF Files</option>
+                    <option value="excel">Excel Files</option>
+                </select>
+                
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="processed">Processed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="searchBox" class="search-box" 
+                       placeholder="Search files by name...">
+            </div>
+            
+            <a href="/" class="nav-button">← Back to Main Page</a>
+        </div>
+
+        <div class="stats-section" id="fileStatsSection">
+            <div class="stat-item">
+                <div class="stat-value" id="totalFiles">-</div>
+                <div class="stat-label">Total Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="pdfFiles">-</div>
+                <div class="stat-label">PDF Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="excelFiles">-</div>
+                <div class="stat-label">Excel Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="processedFiles">-</div>
+                <div class="stat-label">Processed Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalSize">-</div>
+                <div class="stat-label">Total Size</div>
+            </div>
+            <div class="stat-item" style="border-left-color: #ffc107;">
+                <div class="stat-value" id="duplicatesHandled" style="color: #856404;">-</div>
+                <div class="stat-label">Duplicates Handled</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="files-table" id="filesTable">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Upload Date</th>
+                        <th>Status</th>
+                        <th>Records</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="filesTableBody">
+                    <tr>
+                        <td colspan="7" class="loading">Loading files...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="paginationContainer">
+            <!-- Pagination controls will be inserted here -->
+        </div>
+
+        <div class="cleanup-section">
+            <h3>File Management</h3>
+            <div class="cleanup-controls">
+                <label for="retentionDays">Archive files older than:</label>
+                <input type="number" id="retentionDays" value="30" min="1" max="365">
+                <span>days</span>
+                
+                <button class="action-button secondary" onclick="archiveOldFiles()">Archive Old Files</button>
+                <button class="action-button danger" onclick="cleanupFailedFiles()">Remove Failed Files</button>
+                <button class="action-button" onclick="refreshFileList()">Refresh List</button>
+            </div>
+        </div>
+
+        <div class="status" id="statusMessage"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let allFiles = [];
+        let filteredFiles = [];
+        let currentPage = 1;
+        let filesPerPage = 20;
+        let searchTerm = '';
+        let fileTypeFilter = 'all';
+        let statusFilter = 'all';
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFiles();
+            setupFilters();
+        });
+
+        // Load all files from the server
+        async function loadFiles() {
+            try {
+                showStatus('Loading files...', 'info');
+                
+                const response = await fetch('/files');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allFiles = data.data.files;
+                    updateFileStats();
+                    filterFiles();
+                    displayFiles();
+                    showStatus(`Loaded ${allFiles.length} files successfully`, 'success');
+                } else {
+                    showStatus('Failed to load files: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to load files:', error);
+                showStatus('Failed to connect to server', 'error');
+            }
+        }
+
+        // Setup filter functionality
+        function setupFilters() {
+            const searchBox = document.getElementById('searchBox');
+            const fileTypeFilter = document.getElementById('fileTypeFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            
+            searchBox.addEventListener('input', function() {
+                searchTerm = this.value.toLowerCase().trim();
+                filterFiles();
+                currentPage = 1;
+                displayFiles();
+            });
+            
+            fileTypeFilter.addEventListener('change', function() {
+                fileTypeFilter = this.value;
+                filterFiles();
+                currentPage = 1;
+                displayFiles();
+            });
+            
+            statusFilter.addEventListener('change', function() {
+                statusFilter = this.value;
+                filterFiles();
+                currentPage = 1;
+                displayFiles();
+            });
+        }
+
+        // Filter files based on search term and filters
+        function filterFiles() {
+            filteredFiles = allFiles.filter(file => {
+                // Search filter
+                const matchesSearch = !searchTerm || 
+                    file.original_filename.toLowerCase().includes(searchTerm) ||
+                    file.stored_filename.toLowerCase().includes(searchTerm);
+                
+                // File type filter
+                const matchesFileType = fileTypeFilter === 'all' || file.file_type === fileTypeFilter;
+                
+                // Status filter
+                const matchesStatus = statusFilter === 'all' || file.processing_status === statusFilter;
+                
+                return matchesSearch && matchesFileType && matchesStatus;
+            });
+        }
+
+        // Update file statistics
+        function updateFileStats() {
+            const totalFiles = allFiles.length;
+            const pdfFiles = allFiles.filter(f => f.file_type === 'pdf').length;
+            const excelFiles = allFiles.filter(f => f.file_type === 'excel').length;
+            const processedFiles = allFiles.filter(f => f.processing_status === 'processed').length;
+            const totalSize = allFiles.reduce((sum, f) => sum + (f.file_size || 0), 0);
+            
+            // Calculate duplicate statistics
+            const totalDuplicatesHandled = allFiles.reduce((sum, f) => {
+                return sum + (f.duplicate_handling?.duplicates_skipped || 0);
+            }, 0);
+            
+            document.getElementById('totalFiles').textContent = totalFiles.toLocaleString();
+            document.getElementById('pdfFiles').textContent = pdfFiles.toLocaleString();
+            document.getElementById('excelFiles').textContent = excelFiles.toLocaleString();
+            document.getElementById('processedFiles').textContent = processedFiles.toLocaleString();
+            document.getElementById('totalSize').textContent = formatFileSize(totalSize);
+            document.getElementById('duplicatesHandled').textContent = totalDuplicatesHandled.toLocaleString();
+        }
+
+        // Display files in the table
+        function displayFiles() {
+            const tbody = document.getElementById('filesTableBody');
+            
+            if (filteredFiles.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-results">
+                            ${searchTerm || fileTypeFilter !== 'all' || statusFilter !== 'all' ? 
+                              'No files found matching your filters.' : 'No files available.'}
+                        </td>
+                    </tr>
+                `;
+                updatePagination();
+                return;
+            }
+
+            // Calculate pagination
+            const startIndex = (currentPage - 1) * filesPerPage;
+            const endIndex = startIndex + filesPerPage;
+            const pageFiles = filteredFiles.slice(startIndex, endIndex);
+
+            // Generate table rows
+            let html = '';
+            pageFiles.forEach(file => {
+                const uploadDate = new Date(file.upload_timestamp).toLocaleDateString();
+                const uploadTime = new Date(file.upload_timestamp).toLocaleTimeString();
+                
+                html += `
+                    <tr data-file-id="${file.id}">
+                        <td>
+                            <div><strong>${highlightSearchTerm(file.original_filename)}</strong></div>
+                            <div class="file-details">${file.stored_filename}</div>
+                        </td>
+                        <td>
+                            <span class="file-type-badge ${file.file_type}">${file.file_type.toUpperCase()}</span>
+                        </td>
+                        <td>${formatFileSize(file.file_size)}</td>
+                        <td>
+                            <div>${uploadDate}</div>
+                            <div class="file-details">${uploadTime}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${file.processing_status}">${file.processing_status.toUpperCase()}</span>
+                        </td>
+                        <td>
+                            <div>${file.records_extracted || 0} records</div>
+                            ${file.file_type === 'excel' && file.worksheets_processed ? 
+                              `<div class="file-details">${file.worksheets_processed} worksheets</div>` : ''}
+                            ${file.duplicate_handling && file.duplicate_handling.duplicates_skipped > 0 ? 
+                              `<div class="file-details" style="color: #856404;">📊 ${file.duplicate_handling.duplicates_skipped} duplicates (${file.duplicate_handling.duplicate_percentage}%)</div>` : ''}
+                        </td>
+                        <td>
+                            <a href="/files/${file.stored_filename}" class="action-button" download="${file.original_filename}">Download</a>
+                            ${file.file_type === 'excel' ? 
+                              `<button class="action-button secondary" onclick="viewExtractionReport('${file.stored_filename}')">Report</button>` : ''}
+                            <button class="action-button danger" onclick="deleteFile('${file.stored_filename}', '${file.original_filename}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            updatePagination();
+        }
+
+        // Highlight search terms in text
+        function highlightSearchTerm(text) {
+            if (!searchTerm || !text) return text;
+            
+            const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+            return text.replace(regex, '<span style="background-color: #fff3cd; padding: 1px 2px; border-radius: 2px;">$1</span>');
+        }
+
+        // Escape special regex characters
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Update pagination controls
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredFiles.length / filesPerPage);
+            const paginationContainer = document.getElementById('paginationContainer');
+            
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            
+            // Previous button
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+            
+            // Page info
+            html += `<span class="pagination-info">Page ${currentPage} of ${totalPages} (${filteredFiles.length} files)</span>`;
+            
+            // Next button
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            
+            paginationContainer.innerHTML = html;
+        }
+
+        // Change page
+        function changePage(newPage) {
+            const totalPages = Math.ceil(filteredFiles.length / filesPerPage);
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                displayFiles();
+            }
+        }
+
+        // View extraction report for Excel files
+        function viewExtractionReport(filename) {
+            window.open(`/extraction-report/${filename}`, '_blank');
+        }
+
+        // Delete file
+        async function deleteFile(filename, originalName) {
+            if (!confirm(`Are you sure you want to delete "${originalName}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                showStatus('Deleting file...', 'info');
+                
+                const response = await fetch(`/files/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`Successfully deleted "${originalName}"`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showStatus('Failed to delete file: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showStatus('Failed to delete file: ' + error.message, 'error');
+            }
+        }
+
+        // Archive old files
+        async function archiveOldFiles() {
+            const retentionDays = document.getElementById('retentionDays').value;
+            
+            if (!confirm(`Archive all files older than ${retentionDays} days?\n\nArchived files will be moved to a separate storage location.`)) {
+                return;
+            }
+            
+            try {
+                showStatus('Archiving old files...', 'info');
+                
+                const response = await fetch('/files/archive', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ retentionDays: parseInt(retentionDays) })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`Successfully archived ${data.data.archivedCount} files`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showStatus('Failed to archive files: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Archive error:', error);
+                showStatus('Failed to archive files: ' + error.message, 'error');
+            }
+        }
+
+        // Clean up failed files
+        async function cleanupFailedFiles() {
+            if (!confirm('Remove all files with failed processing status?\n\nThis action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                showStatus('Cleaning up failed files...', 'info');
+                
+                const response = await fetch('/files/cleanup-failed', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`Successfully removed ${data.data.removedCount} failed files`, 'success');
+                    loadFiles(); // Refresh the file list
+                } else {
+                    showStatus('Failed to cleanup files: ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Cleanup error:', error);
+                showStatus('Failed to cleanup files: ' + error.message, 'error');
+            }
+        }
+
+        // Refresh file list
+        function refreshFileList() {
+            loadFiles();
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+            
+            // Auto-hide success and info messages after 5 seconds
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

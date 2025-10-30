@@ -1,0 +1,39 @@
+{
+  "name": "singapore-phone-detect",
+  "version": "1.0.0",
+  "description": "A web application that processes PDF and Excel files containing Singapore phone data and provides Excel export functionality",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "start:prod": "./scripts/start.sh",
+    "health-check": "./scripts/health-check.sh",
+    "setup": "npm install && mkdir -p uploads uploads/temp uploads/excel uploads/pdf exports exports/temp logs"
+  },
+  "keywords": [
+    "singapore",
+    "phone",
+    "pdf",
+    "excel",
+    "express",
+    "mysql"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "libphonenumber-js": "^1.12.25",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.6.5",
+    "pdf-parse": "^1.1.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^7.1.4"
+  }
+}
