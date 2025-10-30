@@ -30,6 +30,14 @@ const EXCEL_STYLING_CONFIG = {
         vertical: 'center'
     },
 
+    // Default border configuration for all cells
+    border: {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+    },
+
     // Status-based conditional formatting
     statusFormatting: {
         false: {
@@ -119,7 +127,8 @@ function createBaseStyle(options = {}) {
         alignment: {
             horizontal: options.horizontalAlign || EXCEL_STYLING_CONFIG.alignment.horizontal,
             vertical: options.verticalAlign || EXCEL_STYLING_CONFIG.alignment.vertical
-        }
+        },
+        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
     };
 }
 
@@ -147,7 +156,8 @@ function createStatusStyle(status, options = {}) {
             bold: options.bold || false
         },
         alignment: statusConfig.alignment,
-        fill: statusConfig.fill
+        fill: statusConfig.fill,
+        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
     };
 }
 
@@ -168,7 +178,8 @@ function createHeaderStyle(options = {}) {
             bold: headerConfig.font.bold
         },
         alignment: headerConfig.alignment,
-        fill: options.preserveExistingFill ? headerConfig.fill : (options.fill || headerConfig.fill)
+        fill: options.preserveExistingFill ? headerConfig.fill : (options.fill || headerConfig.fill),
+        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
     };
 }
 

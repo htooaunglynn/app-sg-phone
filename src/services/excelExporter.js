@@ -1,4 +1,4 @@
-const XLSX = require('xlsx');
+const XLSX = require('xlsx-js-style');
 const CheckTable = require('../models/CheckTable');
 const { 
   createBaseStyle, 
@@ -250,24 +250,37 @@ class ExcelExporter {
       return null;
     }
 
-    // Primary: Check for boolean Status field
-    if (record.hasOwnProperty('Status') && typeof record.Status === 'boolean') {
-      return record.Status;
+    // Handle the primary 'Status' field, accepting boolean, number (0/1), or string representations
+    if (record.hasOwnProperty('Status')) {
+      const statusValue = record.Status;
+      if (typeof statusValue === 'boolean') {
+        return statusValue;
+      }
+      if (typeof statusValue === 'number') {
+        return statusValue !== 0;
+      }
+      if (typeof statusValue === 'string') {
+        const lowerValue = statusValue.toLowerCase().trim();
+        if (lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1') {
+          return true;
+        }
+        if (lowerValue === 'false' || lowerValue === 'no' || lowerValue === '0') {
+          return false;
+        }
+      }
     }
 
-    // Fallback: Check for other status-like fields
+    // Fallback: Check for other common status-like fields
     const statusFields = ['status', 'isValid', 'valid', 'success', 'passed'];
-    
     for (const field of statusFields) {
       if (record.hasOwnProperty(field)) {
         const value = record[field];
-        
-        // Handle boolean values
         if (typeof value === 'boolean') {
           return value;
         }
-        
-        // Handle string representations
+        if (typeof value === 'number') {
+          return value !== 0;
+        }
         if (typeof value === 'string') {
           const lowerValue = value.toLowerCase().trim();
           if (lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1') {
@@ -276,11 +289,6 @@ class ExcelExporter {
           if (lowerValue === 'false' || lowerValue === 'no' || lowerValue === '0') {
             return false;
           }
-        }
-        
-        // Handle numeric representations
-        if (typeof value === 'number') {
-          return value !== 0;
         }
       }
     }

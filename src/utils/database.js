@@ -1654,14 +1654,53 @@ class DatabaseManager {
       }
     }
 
-    return existingRecords;
-  }
-
-  /**
-   * Optimized duplicate detection with indexed lookups for large datasets
-   * @param {Array<Object>} records - Array of records to check
-   * @returns {Promise<Object>} Duplicate detection result with performance metrics
-   */
+          return existingRecords;
+        }
+    
+      /**
+       * Archive files older than a specified number of days
+       */
+      async archiveFilesOlderThan(retentionDays) {
+        const sql = `
+          UPDATE uploaded_files 
+          SET processing_status = 'archived' 
+          WHERE upload_timestamp < DATE_SUB(NOW(), INTERVAL ? DAY)
+          AND processing_status NOT IN ('archived', 'deleted')
+        `;
+        try {
+          const result = await this.query(sql, [retentionDays]);
+          console.log(`Archived ${result.changedRows} files older than ${retentionDays} days`);
+          return result;
+        } catch (error) {
+          console.error('Failed to archive old files:', error);
+          throw error;
+        }
+      }
+    
+      /**
+       * Get files by processing status
+       */
+      async getFilesByStatus(status) {
+        const sql = `
+          SELECT id, original_filename, stored_filename, file_size, file_type, checksum, 
+                 upload_timestamp, processing_status, records_extracted, worksheets_processed, 
+                 extraction_report, processed_at
+          FROM uploaded_files 
+          WHERE processing_status = ?
+        `;
+        try {
+          const result = await this.query(sql, [status]);
+          return result;
+        } catch (error) {
+          console.error(`Failed to get files with status ${status}:`, error);
+          throw error;
+        }
+      }
+    
+      /**
+       * Optimized duplicate detection with indexed lookups for large datasets
+       * @param {Array<Object>} records - Array of records to check
+       * @returns {Promise<Object>} Duplicate detection result with performance metrics   */
   async optimizedDuplicateDetection(records) {
     const startTime = Date.now();
     const result = {

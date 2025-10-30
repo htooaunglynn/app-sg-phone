@@ -258,6 +258,14 @@ class Application {
       this.uploadController.deleteFile.bind(this.uploadController)
     );
 
+    this.app.post('/files/archive',
+      this.uploadController.archiveOldFiles.bind(this.uploadController)
+    );
+
+    this.app.post('/files/cleanup-failed',
+      this.uploadController.cleanupFailedFiles.bind(this.uploadController)
+    );
+
     // Statistics and utility routes
     this.app.get('/stats', 
       this.statsController.getStats.bind(this.statsController)
