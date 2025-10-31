@@ -1059,7 +1059,7 @@ class DatabaseManager {
     const sql = `
       SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at
       FROM check_table 
-      ORDER BY Id 
+      ORDER BY CAST(SUBSTR(Id, INSTR(Id, '-') + 1) AS INTEGER) ASC
       LIMIT ${limit} OFFSET ${offset}
     `;
     

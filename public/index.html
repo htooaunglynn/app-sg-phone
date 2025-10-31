@@ -29,6 +29,20 @@
             --focus-ring: 0 0 0 3px rgba(0, 123, 255, 0.25);
             --hover-lift: translateY(-1px);
             --active-press: translateY(0);
+
+            /* Duplicate phone number styling colors - centralized configuration */
+            --duplicate-orange-color: #FFA500;
+            --duplicate-orange-hover: #FF8C00;
+            --duplicate-text-color: #000000;
+
+            /* Status-based colors */
+            --status-valid-bg: #ffffff;
+            --status-invalid-bg: #ff0000;
+            --status-text-color: #000000;
+
+            /* Header colors */
+            --header-bg-color: #E6E6FA;
+            --header-text-color: #000000;
         }
 
         /* Performance optimizations */
@@ -842,6 +856,160 @@
             color: #495057;
         }
 
+        /* Duplicate phone record styling - using centralized color configuration */
+        .records-table tr.duplicate-phone-record {
+            background-color: var(--duplicate-orange-color) !important;
+            color: var(--duplicate-text-color);
+        }
+
+        .records-table tr.duplicate-phone-record:hover {
+            background-color: var(--duplicate-orange-hover) !important;
+            color: var(--duplicate-text-color);
+        }
+
+        .records-table tr.duplicate-phone-record td {
+            color: var(--duplicate-text-color);
+            font-weight: 500;
+        }
+
+        /* Duplicate indicator styling */
+        .duplicate-indicator {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 14px;
+            animation: pulse-duplicate 2s infinite;
+        }
+
+        @keyframes pulse-duplicate {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Ensure duplicate styling takes precedence over status styling */
+        .records-table tr.duplicate-phone-record.status-false {
+            background-color: var(--duplicate-orange-color) !important;
+            color: var(--duplicate-text-color) !important;
+        }
+
+        .records-table tr.duplicate-phone-record.status-false:hover {
+            background-color: var(--duplicate-orange-hover) !important;
+            color: var(--duplicate-text-color) !important;
+        }
+
+        .records-table tr.duplicate-phone-record.status-false td {
+            color: var(--duplicate-text-color) !important;
+        }
+
+        /* Accessibility: Ensure sufficient contrast for duplicate records */
+        @media (prefers-contrast: high) {
+            .records-table tr.duplicate-phone-record {
+                background-color: #FF8C00 !important;
+                color: #000000 !important;
+                border: 2px solid #000000;
+            }
+
+            .records-table tr.duplicate-phone-record td {
+                color: #000000 !important;
+                font-weight: bold;
+            }
+        }
+
+        /* Dark mode support for duplicate styling */
+        @media (prefers-color-scheme: dark) {
+            .records-table tr.duplicate-phone-record {
+                background-color: #CC8400 !important;
+                color: #000000 !important;
+            }
+
+            .records-table tr.duplicate-phone-record:hover {
+                background-color: #B8770A !important;
+                color: #000000 !important;
+            }
+
+            .records-table tr.duplicate-phone-record td {
+                color: #000000 !important;
+            }
+        }
+
+        /* Fallback styling when duplicate detection fails */
+        .records-table tr.duplicate-phone-fallback {
+            background-color: #FFE4B5 !important;
+            /* Light orange background as fallback */
+            color: #8B4513 !important;
+            /* Brown text for contrast */
+            border-left: 3px solid var(--duplicate-orange-color) !important;
+            /* Orange left border indicator */
+        }
+
+        .records-table tr.duplicate-phone-fallback:hover {
+            background-color: #FFDAB9 !important;
+            /* Slightly darker on hover */
+        }
+
+        .records-table tr.duplicate-phone-fallback td {
+            color: #8B4513 !important;
+        }
+
+        /* Table-wide fallback styling when duplicate detection is unavailable */
+        .records-table.duplicate-detection-unavailable {
+            border: 2px dashed var(--duplicate-orange-color) !important;
+            opacity: 0.95;
+        }
+
+        .duplicate-detection-warning {
+            background-color: #FFF3CD;
+            color: #856404;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            border: 1px solid #FFEAA7;
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+            display: none;
+            /* Hidden by default, shown by JavaScript when needed */
+        }
+
+        .duplicate-detection-warning.show {
+            display: block;
+        }
+
+        .duplicate-detection-warning::before {
+            content: "⚠️ ";
+            margin-right: 5px;
+        }
+
+        /* Dark mode support for fallback styling */
+        @media (prefers-color-scheme: dark) {
+            .records-table tr.duplicate-phone-fallback {
+                background-color: #8B4513 !important;
+                color: #FFE4B5 !important;
+                border-left: 3px solid #CC8400 !important;
+            }
+
+            .records-table tr.duplicate-phone-fallback:hover {
+                background-color: #A0522D !important;
+            }
+
+            .records-table tr.duplicate-phone-fallback td {
+                color: #FFE4B5 !important;
+            }
+
+            .duplicate-detection-warning {
+                background-color: #664D03;
+                color: #FFECB5;
+                border-color: #997404;
+            }
+        }
+
         .edit-button {
             background-color: var(--primary-color);
             color: white;
@@ -1565,6 +1733,11 @@
                         </button>
                         <a href="/file-manager" class="nav-button">File Manager</a>
                     </div>
+                </div>
+
+                <div class="duplicate-detection-warning" id="duplicateDetectionWarning">
+                    Duplicate detection is temporarily unavailable. The table will continue to work normally without
+                    duplicate highlighting.
                 </div>
 
                 <div class="table-container">
@@ -2354,15 +2527,36 @@
                 }
             }
 
+            // Get current duplicate information for styling
+            let duplicateRecordIds = new Set();
+            if (duplicateDataManager) {
+                const cachedDuplicateInfo = duplicateDataManager.getCachedDuplicateInfo();
+                if (cachedDuplicateInfo && cachedDuplicateInfo.duplicateRecordIds) {
+                    duplicateRecordIds = new Set(cachedDuplicateInfo.duplicateRecordIds);
+                }
+            }
+
             // Generate table rows with optimized rendering
             pageRecords.forEach(record => {
                 const tr = document.createElement('tr');
+                const recordId = record.Id || '';
 
                 // Handle both boolean and numeric status values from libphonenumber-js validation
                 const isValidSingapore = record.Status === true || record.Status === 1;
-                tr.className = isValidSingapore ? 'status-true' : 'status-false';
-                tr.setAttribute('data-record-id', record.Id);
+
+                // Apply status styling
+                let rowClasses = isValidSingapore ? 'status-true' : 'status-false';
+
+                // Check if this record is a duplicate and apply duplicate styling
+                const isDuplicate = duplicateRecordIds.has(recordId);
+                if (isDuplicate) {
+                    rowClasses += ' duplicate-phone-record';
+                }
+
+                tr.className = rowClasses;
+                tr.setAttribute('data-record-id', recordId);
                 tr.setAttribute('data-status', isValidSingapore);
+                tr.setAttribute('data-duplicate', isDuplicate);
 
                 // Generate search buttons for phone number
                 const phoneNumber = record.Phone || '';
@@ -2374,6 +2568,9 @@
                     </div>
                 ` : '';
 
+                // Add duplicate indicator for duplicate records
+                const duplicateIndicator = isDuplicate ? `<span class="duplicate-indicator" title="Duplicate phone number">🔄</span>` : '';
+
                 // Optimized search highlighting function
                 const highlightText = (text) => {
                     if (!searchRegex || !text) return text || '';
@@ -2381,7 +2578,7 @@
                 };
 
                 tr.innerHTML = `
-                    <td>${highlightText(record.Id || '')}</td>
+                    <td>${highlightText(recordId)}${duplicateIndicator}</td>
                     <td>
                         ${highlightText(record.Phone || '')}
                         ${searchButtons}
@@ -2391,7 +2588,7 @@
                     <td class="email">${highlightText(record.Email || 'Not set')}</td>
                     <td class="website">${highlightText(record.Website || 'Not set')}</td>
                     <td>
-                        <button class="edit-button" onclick="startEdit('${record.Id}')">Edit</button>
+                        <button class="edit-button" onclick="startEdit('${recordId}')">Edit</button>
                     </td>
                 `;
 
@@ -2581,6 +2778,15 @@
                     filterRecords();
                     displayRecords();
                     editingRecordId = null;
+
+                    // Refresh duplicate information since record data may have changed
+                    if (duplicateDataManager) {
+                        try {
+                            await duplicateDataManager.refreshDuplicateInformation({ reason: 'record-updated' });
+                        } catch (error) {
+                            console.warn('Failed to refresh duplicate information after record update:', error);
+                        }
+                    }
 
                     showStatus('checkTableStatus', `Successfully updated record ${recordId}`, 'success');
                 } else {
@@ -3850,6 +4056,207 @@
             monitorNetworkStatus();
         });
 
+    </script>
+
+    <!-- Color Configuration -->
+    <script src="/js/colorConfig.js"></script>
+    <script src="/js/colorValidation.js"></script>
+
+    <!-- Initialize CSS variables from color configuration -->
+    <script>
+        // Ensure CSS variables match JavaScript color configuration
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof COLOR_CONFIG !== 'undefined') {
+                const root = document.documentElement;
+
+                // Update duplicate colors
+                root.style.setProperty('--duplicate-orange-color', COLOR_CONFIG.duplicate.background);
+                root.style.setProperty('--duplicate-text-color', COLOR_CONFIG.duplicate.text);
+
+                // Update status colors
+                root.style.setProperty('--status-valid-bg', COLOR_CONFIG.status.valid.background);
+                root.style.setProperty('--status-invalid-bg', COLOR_CONFIG.status.invalid.background);
+
+                // Update header colors
+                root.style.setProperty('--header-bg-color', COLOR_CONFIG.header.background);
+                root.style.setProperty('--header-text-color', COLOR_CONFIG.header.text);
+
+                console.log('CSS variables updated from centralized color configuration');
+
+                // Run color validation tests in development mode
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    setTimeout(() => {
+                        console.log('Running color validation tests...');
+                        const testResults = runAllFrontendColorTests();
+                        if (testResults.totalFailed > 0) {
+                            console.warn('Color validation tests failed:', testResults);
+                        } else {
+                            console.log('All color validation tests passed:', testResults.summary);
+                        }
+                    }, 1000); // Wait for DOM to be fully rendered
+                }
+            }
+        });
+    </script>
+
+    <!-- Duplicate Detection Services -->
+    <script src="/js/duplicateDetectionService.js"></script>
+    <script src="/js/duplicateDataManager.js"></script>
+    <script src="/js/test-duplicate-detection.js"></script>
+
+    <script>
+        // Global duplicate detection services
+        let duplicateDetectionService = null;
+        let duplicateDataManager = null;
+
+        // Initialize duplicate detection services
+        function initializeDuplicateServices() {
+            try {
+                duplicateDetectionService = new FrontendDuplicateDetectionService();
+                duplicateDataManager = new DuplicateDataManager();
+
+                // Setup event listeners for duplicate data updates
+                duplicateDataManager.addEventListener('duplicateInfoLoaded', (duplicateInfo) => {
+                    console.log('Duplicate information loaded:', duplicateInfo);
+                    // Update table styling if records are currently displayed
+                    if (filteredRecords && filteredRecords.length > 0) {
+                        updateTableWithDuplicateHighlighting(duplicateInfo);
+                    }
+                });
+
+                duplicateDataManager.addEventListener('duplicateInfoError', (error) => {
+                    console.warn('Duplicate detection error:', error);
+                    // Continue with normal table display
+                });
+
+                console.log('Duplicate detection services initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize duplicate detection services:', error);
+                // Continue without duplicate detection
+            }
+        }
+
+        // Update the existing loadRecords function to include duplicate detection
+        const originalLoadRecords = loadRecords;
+        loadRecords = async function () {
+            // Call original loadRecords function
+            await originalLoadRecords();
+
+            // Load duplicate information if services are available
+            if (duplicateDataManager && allRecords && allRecords.length > 0) {
+                try {
+                    const duplicateInfo = await duplicateDataManager.loadDuplicatePhoneInformation();
+                    updateTableWithDuplicateHighlighting(duplicateInfo);
+                } catch (error) {
+                    console.warn('Failed to load duplicate information:', error);
+                    // Continue with normal table display
+                }
+            }
+        };
+
+        // Function to update table with duplicate highlighting
+        function updateTableWithDuplicateHighlighting(duplicateInfo) {
+            if (!duplicateInfo || !duplicateInfo.duplicateRecordIds) {
+                return;
+            }
+
+            // Since duplicate styling is now integrated into displayRecords(),
+            // we just need to trigger a re-render to apply the new duplicate information
+            if (filteredRecords && filteredRecords.length > 0) {
+                displayRecords();
+                console.log(`Applied duplicate highlighting to ${duplicateInfo.duplicateRecordIds.length} records via re-render`);
+            }
+        }
+
+        // Function to get duplicate status for a record
+        function getRecordDuplicateStatus(recordId) {
+            if (duplicateDataManager) {
+                return duplicateDataManager.getRecordDuplicateStatus(recordId);
+            }
+            return null;
+        }
+
+        // Function to refresh duplicate information
+        async function refreshDuplicateInformation() {
+            if (duplicateDataManager) {
+                try {
+                    const duplicateInfo = await duplicateDataManager.refreshDuplicateInformation();
+                    updateTableWithDuplicateHighlighting(duplicateInfo);
+                    return duplicateInfo;
+                } catch (error) {
+                    console.error('Failed to refresh duplicate information:', error);
+                    throw error;
+                }
+            }
+            return null;
+        }
+
+        // Function to ensure duplicate styling is applied to current table view
+        function ensureDuplicateStylingApplied() {
+            if (duplicateDataManager && filteredRecords && filteredRecords.length > 0) {
+                const cachedDuplicateInfo = duplicateDataManager.getCachedDuplicateInfo();
+                if (cachedDuplicateInfo) {
+                    // Re-render the table to apply duplicate styling
+                    displayRecords();
+                    console.log('Duplicate styling applied to current table view');
+                } else {
+                    // Load duplicate information if not cached
+                    duplicateDataManager.loadDuplicatePhoneInformation()
+                        .then(duplicateInfo => {
+                            console.log('Duplicate information loaded and styling applied');
+                        })
+                        .catch(error => {
+                            console.warn('Failed to load duplicate information:', error);
+                        });
+                }
+            }
+        }
+
+        // Function to handle record data changes that might affect duplicate status
+        async function handleRecordDataChange(changeType = 'unknown') {
+            console.log(`Handling record data change: ${changeType}`);
+
+            if (duplicateDataManager) {
+                try {
+                    // Refresh duplicate information since data has changed
+                    await duplicateDataManager.refreshDuplicateInformation({
+                        reason: changeType,
+                        forceRefresh: true
+                    });
+                    console.log(`Duplicate information refreshed after ${changeType}`);
+                } catch (error) {
+                    console.warn(`Failed to refresh duplicate information after ${changeType}:`, error);
+                    // Continue with normal operation even if duplicate refresh fails
+                }
+            }
+        }
+
+        // Initialize duplicate services when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize duplicate services after a short delay to ensure other services are ready
+            setTimeout(() => {
+                initializeDuplicateServices();
+            }, 100);
+        });
+
+        // Update duplicate information when records are updated
+        const originalUpdateCheckRecord = window.updateCheckRecord;
+        if (typeof originalUpdateCheckRecord === 'function') {
+            window.updateCheckRecord = async function (recordId, field, value) {
+                const result = await originalUpdateCheckRecord(recordId, field, value);
+
+                // Refresh duplicate information after record update
+                if (result && duplicateDataManager) {
+                    setTimeout(() => {
+                        refreshDuplicateInformation().catch(error => {
+                            console.warn('Failed to refresh duplicates after record update:', error);
+                        });
+                    }, 500);
+                }
+
+                return result;
+            };
+        }
     </script>
 </body>
 

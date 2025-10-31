@@ -309,7 +309,8 @@ class ExcelExporter {
       safeApplyStyle, 
       batchApplyStyles, 
       logStylingFailure, 
-      validateXLSXStyleObject 
+      validateXLSXStyleObject,
+      identifyDuplicatePhoneNumbers 
     } = require('../utils/excelStylingConfig');
 
     try {
@@ -328,6 +329,83 @@ class ExcelExporter {
       ];
 
       worksheet['!cols'] = columnWidths;
+
+      // Identify duplicate phone numbers before styling with comprehensive error handling
+      let duplicatePhoneInfo = null;
+      let duplicateDetectionFailed = false;
+      
+      try {
+        duplicatePhoneInfo = identifyDuplicatePhoneNumbers(records);
+        
+        if (duplicatePhoneInfo && duplicatePhoneInfo.duplicateCount > 0) {
+          console.log(`Duplicate phone detection successful: ${duplicatePhoneInfo.duplicateCount} duplicate records found from ${duplicatePhoneInfo.duplicatePhoneNumbers.size} duplicate phone numbers`);
+          
+          // Log duplicate detection success for audit trail
+          logStylingFailure('duplicatePhoneDetectionSuccess', 
+            `Successfully identified ${duplicatePhoneInfo.duplicateCount} duplicate phone records`, 
+            { 
+              recordCount: records.length,
+              duplicatePhoneNumbers: duplicatePhoneInfo.duplicatePhoneNumbers.size,
+              duplicateRecords: duplicatePhoneInfo.duplicateCount,
+              severity: 'info'
+            }
+          );
+        } else {
+          console.log('Duplicate phone detection completed: No duplicate phone numbers found');
+        }
+      } catch (duplicateError) {
+        duplicateDetectionFailed = true;
+        
+        logStylingFailure('duplicatePhoneDetectionError', duplicateError, { 
+          recordCount: records.length,
+          errorType: duplicateError.name || 'UnknownError',
+          severity: 'warning'
+        });
+        
+        console.warn('Duplicate phone detection failed, attempting graceful degradation:', duplicateError.message);
+        
+        // Try graceful degradation with fallback duplicate detection
+        try {
+          duplicatePhoneInfo = this.fallbackDuplicateDetection(records);
+          
+          if (duplicatePhoneInfo.duplicateCount > 0) {
+            console.log(`Fallback duplicate detection found ${duplicatePhoneInfo.duplicateCount} duplicates`);
+            logStylingFailure('duplicatePhoneDetectionFallbackSuccess', 
+              `Fallback duplicate detection found ${duplicatePhoneInfo.duplicateCount} duplicates`, 
+              { 
+                recordCount: records.length,
+                fallbackMethod: duplicatePhoneInfo.fallbackMethod,
+                severity: 'info'
+              }
+            );
+          }
+        } catch (fallbackError) {
+          console.error('Fallback duplicate detection also failed:', fallbackError.message);
+          
+          logStylingFailure('duplicatePhoneDetectionFallbackError', fallbackError, { 
+            recordCount: records.length,
+            originalError: duplicateError.message,
+            severity: 'error'
+          });
+          
+          // Final graceful degradation - continue without duplicate detection
+          duplicatePhoneInfo = {
+            duplicatePhoneNumbers: new Set(),
+            duplicateRecordIndices: [],
+            phoneNumberMap: new Map(),
+            totalRecords: records.length,
+            duplicateCount: 0,
+            uniquePhoneCount: 0,
+            detectionFailed: true,
+            gracefulDegradation: true,
+            errorHandling: {
+              originalError: duplicateError.message,
+              fallbackError: fallbackError.message,
+              timestamp: new Date().toISOString()
+            }
+          };
+        }
+      }
 
       // Only apply styling if enabled
       if (enableStyling) {
@@ -426,21 +504,54 @@ class ExcelExporter {
 
           // Apply status-based conditional formatting with validation
           const statusApplications = [];
+          const duplicateApplications = [];
+          
           for (let row = 1; row <= headerRange.e.r; row++) {
             const recordIndex = row - 1; // Adjust for header row
             const record = records[recordIndex];
             
             if (record) {
               try {
+                // Check if this record has a duplicate phone number
+                const isDuplicatePhone = duplicatePhoneInfo && 
+                  duplicatePhoneInfo.duplicateRecordIndices.includes(recordIndex);
+
                 // Detect and apply status-based formatting
                 const statusValue = this.detectStatusValue(record);
                 
-                if (statusValue !== null) {
-                  // Apply status-based formatting to entire row
-                  for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
-                    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                    if (worksheet[cellAddress]) {
-                      try {
+                // Apply styling to entire row
+                for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+                  const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                  if (worksheet[cellAddress]) {
+                    try {
+                      // Duplicate styling takes precedence over status styling
+                      if (isDuplicatePhone) {
+                        const { createDuplicateStyle } = require('../utils/excelStylingConfig');
+                        const duplicateStyle = createDuplicateStyle(stylingOptions);
+                        
+                        const duplicateValidation = validateXLSXStyleObject(duplicateStyle, { 
+                          allowPartialApplication: true,
+                          isDuplicateStyle: true 
+                        });
+                        
+                        if (duplicateValidation.valid || duplicateValidation.correctedStyle) {
+                          duplicateApplications.push({
+                            cellAddress,
+                            style: duplicateValidation.correctedStyle || duplicateStyle
+                          });
+                        } else {
+                          logStylingFailure('duplicateStyleValidation', 
+                            `Duplicate style validation failed for cell ${cellAddress}`, 
+                            { 
+                              errors: duplicateValidation.errors, 
+                              cellAddress, 
+                              recordIndex,
+                              isDuplicatePhone: true
+                            }
+                          );
+                        }
+                      } else if (statusValue !== null) {
+                        // Apply status-based formatting only if not a duplicate phone
                         const statusStyle = createStatusStyle(statusValue, stylingOptions);
                         
                         const statusValidation = validateXLSXStyleObject(statusStyle, { allowPartialApplication: true });
@@ -460,18 +571,19 @@ class ExcelExporter {
                             }
                           );
                         }
-                      } catch (statusStyleError) {
-                        logStylingFailure('statusStyleCreation', statusStyleError, { 
-                          cellAddress, 
-                          statusValue, 
-                          recordIndex 
-                        });
                       }
+                    } catch (styleError) {
+                      logStylingFailure('rowStyleCreation', styleError, { 
+                        cellAddress, 
+                        statusValue, 
+                        recordIndex,
+                        isDuplicatePhone
+                      });
                     }
                   }
                 }
-              } catch (statusDetectionError) {
-                logStylingFailure('statusDetection', statusDetectionError, { 
+              } catch (detectionError) {
+                logStylingFailure('rowDetection', detectionError, { 
                   recordIndex, 
                   record: record ? 'present' : 'missing' 
                 });
@@ -479,7 +591,57 @@ class ExcelExporter {
             }
           }
 
-          // Apply status styles in batch
+          // Apply duplicate styles first (highest priority) with comprehensive error handling
+          let duplicateStylingResult = { successful: 0, failed: 0 };
+          
+          if (duplicateApplications.length > 0) {
+            try {
+              duplicateStylingResult = batchApplyStyles(worksheet, duplicateApplications, {
+                allowPartialApplication: true,
+                useFallbackStyle: true // Use fallback if duplicate styling fails
+              });
+
+              if (duplicateStylingResult.successful > 0) {
+                console.log(`Successfully applied duplicate styling to ${duplicateStylingResult.successful} cells`);
+              }
+
+              if (duplicateStylingResult.failed > 0) {
+                logStylingFailure('batchDuplicateStylesPartialFailure', 
+                  `Failed to apply duplicate styles to ${duplicateStylingResult.failed} cells, but Excel export will continue`, 
+                  { 
+                    successful: duplicateStylingResult.successful,
+                    failed: duplicateStylingResult.failed,
+                    totalAttempted: duplicateApplications.length,
+                    severity: 'warning'
+                  }
+                );
+                
+                console.warn(`Duplicate styling partially failed: ${duplicateStylingResult.failed}/${duplicateApplications.length} cells failed, but export continues`);
+              }
+            } catch (duplicateStylingError) {
+              logStylingFailure('batchDuplicateStylesError', duplicateStylingError, { 
+                attemptedCells: duplicateApplications.length,
+                severity: 'error'
+              });
+              
+              console.error('Duplicate styling completely failed, continuing export without duplicate highlighting:', duplicateStylingError.message);
+              
+              // Reset result to indicate complete failure
+              duplicateStylingResult = { successful: 0, failed: duplicateApplications.length };
+            }
+          } else if (duplicatePhoneInfo && duplicatePhoneInfo.duplicateCount > 0 && !duplicateDetectionFailed) {
+            // Log when duplicate records exist but no styling was applied
+            logStylingFailure('duplicateStylingSkipped', 
+              'Duplicate phone records detected but no styling applications were created', 
+              { 
+                duplicateRecords: duplicatePhoneInfo.duplicateCount,
+                duplicatePhoneNumbers: duplicatePhoneInfo.duplicatePhoneNumbers.size,
+                severity: 'warning'
+              }
+            );
+          }
+
+          // Apply status styles in batch (lower priority than duplicate styles)
           if (statusApplications.length > 0) {
             const statusStyleResult = batchApplyStyles(worksheet, statusApplications, {
               allowPartialApplication: true,
@@ -498,18 +660,34 @@ class ExcelExporter {
             }
           }
 
-          console.log('Enhanced styling applied to worksheet with comprehensive validation:', {
+          console.log('Enhanced styling applied to worksheet with comprehensive validation and error handling:', {
             stylingOptions,
             baseStyles: baseStyleResult.successful,
             headerStyles: headerApplications.length,
+            duplicateStyles: {
+              attempted: duplicateApplications.length,
+              successful: duplicateStylingResult.successful,
+              failed: duplicateStylingResult.failed
+            },
             statusStyles: statusApplications.length,
-            totalFailures: baseStyleResult.failed + (headerApplications.length > 0 ? 0 : 0) + (statusApplications.length > 0 ? 0 : 0)
+            duplicatePhoneInfo: duplicatePhoneInfo ? {
+              duplicatePhoneNumbers: duplicatePhoneInfo.duplicatePhoneNumbers.size,
+              duplicateRecords: duplicatePhoneInfo.duplicateCount,
+              detectionFailed: duplicatePhoneInfo.detectionFailed || false
+            } : null,
+            errorHandling: {
+              duplicateDetectionFailed,
+              duplicateStylingFailed: duplicateStylingResult.failed > 0,
+              exportContinued: true
+            },
+            totalFailures: baseStyleResult.failed + duplicateStylingResult.failed + (headerApplications.length > 0 ? 0 : 0) + (statusApplications.length > 0 ? 0 : 0)
           });
 
         } catch (stylingError) {
-          logStylingFailure('worksheetStyling', stylingError, { 
+          logStylingFailure('worksheetStylingError', stylingError, { 
             enableStyling, 
             stylingOptions,
+            duplicateDetectionFailed,
             severity: 'error'
           });
           console.warn('Styling failed but export will continue without formatting:', stylingError.message);
@@ -519,12 +697,115 @@ class ExcelExporter {
       }
 
     } catch (error) {
-      logStylingFailure('applyWorksheetFormatting', error, { 
+      logStylingFailure('applyWorksheetFormattingError', error, { 
         enableStyling: options.enableStyling,
+        recordCount: records.length,
         severity: 'error'
       });
       console.warn('Failed to apply worksheet formatting, continuing without styling:', error.message);
-      // Continue without formatting if it fails - this ensures export functionality is not broken
+      
+      // Ensure Excel export continues even if all formatting fails
+      // This is critical for maintaining export functionality
+      try {
+        // At minimum, ensure column widths are set
+        const columnWidths = [
+          { wch: 20 }, // ID
+          { wch: 15 }, // Phone Number
+          { wch: 25 }, // Company Name
+          { wch: 35 }, // Physical Address
+          { wch: 25 }, // Email
+          { wch: 25 }  // Website
+        ];
+        worksheet['!cols'] = columnWidths;
+        console.log('Applied basic column widths as fallback');
+      } catch (fallbackError) {
+        logStylingFailure('fallbackFormattingError', fallbackError, { 
+          severity: 'error'
+        });
+        console.error('Even fallback formatting failed, export will continue with no formatting:', fallbackError.message);
+      }
+    }
+  }
+
+  /**
+   * Fallback duplicate detection for Excel export when main detection fails
+   * @param {Array} records - Array of records to check for duplicates
+   * @returns {Object} Fallback duplicate detection result
+   */
+  fallbackDuplicateDetection(records) {
+    console.log('Starting fallback duplicate detection for Excel export');
+    
+    const fallbackResult = {
+      duplicatePhoneNumbers: new Set(),
+      duplicateRecordIndices: [],
+      phoneNumberMap: new Map(),
+      totalRecords: records.length,
+      duplicateCount: 0,
+      uniquePhoneCount: 0,
+      detectionFailed: false,
+      fallbackMethod: 'basic_phone_comparison',
+      errorHandling: {
+        fallbackUsed: true,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    try {
+      const phoneGroups = {};
+      const duplicateIndices = [];
+
+      // Simple phone number grouping without complex normalization
+      for (let i = 0; i < records.length; i++) {
+        try {
+          const record = records[i];
+          const phone = record.Phone || record.phone || record.phoneNumber || '';
+          
+          if (phone) {
+            // Basic phone normalization - remove spaces and common separators
+            const normalizedPhone = phone.toString()
+              .replace(/[\s\-\(\)\+]/g, '')
+              .toLowerCase()
+              .trim();
+            
+            if (normalizedPhone) {
+              if (!phoneGroups[normalizedPhone]) {
+                phoneGroups[normalizedPhone] = [];
+              }
+              phoneGroups[normalizedPhone].push(i);
+            }
+          }
+        } catch (recordError) {
+          console.warn(`Error processing record ${i} in fallback detection:`, recordError);
+          // Continue with other records
+        }
+      }
+
+      // Identify duplicates from phone groups
+      for (const [phone, indices] of Object.entries(phoneGroups)) {
+        if (indices.length > 1) {
+          fallbackResult.duplicatePhoneNumbers.add(phone);
+          duplicateIndices.push(...indices);
+          fallbackResult.phoneNumberMap.set(phone, indices);
+        }
+      }
+
+      fallbackResult.duplicateRecordIndices = duplicateIndices;
+      fallbackResult.duplicateCount = duplicateIndices.length;
+      fallbackResult.uniquePhoneCount = Object.keys(phoneGroups).length;
+
+      console.log(`Fallback duplicate detection completed: ${fallbackResult.duplicateCount} duplicates found`);
+      
+      return fallbackResult;
+
+    } catch (fallbackError) {
+      console.error('Fallback duplicate detection failed:', fallbackError);
+      
+      // Return empty result as final fallback
+      fallbackResult.detectionFailed = true;
+      fallbackResult.errorHandling.fallbackError = fallbackError.message;
+      fallbackResult.errorHandling.gracefulDegradation = true;
+      
+      return fallbackResult;
     }
   }
 

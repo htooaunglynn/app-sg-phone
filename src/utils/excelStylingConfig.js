@@ -3,6 +3,8 @@
  * Provides centralized styling configuration and utility functions for Excel exports
  */
 
+const { DUPLICATE_ORANGE_COLOR, COLOR_CONFIG, validateColorCode, validateDuplicateOrangeConsistency } = require('./colorConfig');
+
 /**
  * Centralized styling configuration object with Aptos Narrow font, 12pt size,
  * center alignment, and status-based color schemes
@@ -87,6 +89,28 @@ const EXCEL_STYLING_CONFIG = {
         fill: {
             patternType: 'solid',
             fgColor: { rgb: 'E6E6FA' } // Light lavender background (existing)
+        }
+    }
+};
+
+/**
+ * Duplicate phone number styling configuration
+ * Uses centralized color configuration for consistent orange background styling
+ */
+const DUPLICATE_STYLING_CONFIG = {
+    duplicate: {
+        fill: {
+            patternType: 'solid',
+            fgColor: { rgb: COLOR_CONFIG.duplicate.backgroundRgb } // Orange background from centralized config
+        },
+        font: {
+            name: 'Aptos Narrow',
+            sz: 12,  // Use 'sz' for XLSX compatibility
+            color: { rgb: COLOR_CONFIG.duplicate.textRgb } // Black font from centralized config
+        },
+        alignment: {
+            horizontal: 'center',
+            vertical: 'center'
         }
     }
 };
@@ -179,6 +203,28 @@ function createHeaderStyle(options = {}) {
         },
         alignment: headerConfig.alignment,
         fill: options.preserveExistingFill ? headerConfig.fill : (options.fill || headerConfig.fill),
+        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
+    };
+}
+
+/**
+ * Create duplicate phone number style object with orange background
+ * @param {Object} options - Additional style options
+ * @returns {Object} XLSX style object for duplicate phone records
+ */
+function createDuplicateStyle(options = {}) {
+    const duplicateConfig = DUPLICATE_STYLING_CONFIG.duplicate;
+    const fontName = getFontWithFallback(duplicateConfig.font.name);
+
+    return {
+        font: {
+            name: fontName,
+            sz: duplicateConfig.font.sz,  // Use 'sz' for XLSX
+            color: duplicateConfig.font.color,
+            bold: options.bold || false
+        },
+        alignment: duplicateConfig.alignment,
+        fill: duplicateConfig.fill,
         border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
     };
 }
@@ -315,7 +361,7 @@ function getStylingConfig() {
 
 /**
  * Create style object for specific cell type
- * @param {string} cellType - Type of cell ('header', 'data', 'status')
+ * @param {string} cellType - Type of cell ('header', 'data', 'status', 'duplicate')
  * @param {*} value - Cell value (for status-based styling)
  * @param {Object} options - Additional options
  * @returns {Object} XLSX style object
@@ -324,6 +370,9 @@ function createCellStyle(cellType, value = null, options = {}) {
     switch (cellType) {
         case 'header':
             return createHeaderStyle(options);
+
+        case 'duplicate':
+            return createDuplicateStyle(options);
 
         case 'status':
             if (typeof value === 'boolean') {
@@ -423,6 +472,18 @@ function validateXLSXStyleObject(styleObj, options = {}) {
             }
             if (fillValidation.corrected) {
                 correctedStyle.fill = fillValidation.correctedFill;
+                result.corrected = true;
+            }
+        }
+
+        // Validate duplicate styling if present
+        if (options.isDuplicateStyle) {
+            const duplicateValidation = validateDuplicateStyleStructure(correctedStyle);
+            if (!duplicateValidation.valid) {
+                result.warnings.push(...duplicateValidation.warnings);
+            }
+            if (duplicateValidation.corrected) {
+                correctedStyle = duplicateValidation.correctedStyle;
                 result.corrected = true;
             }
         }
@@ -626,6 +687,63 @@ function validateFillStructure(fill) {
             result.correctedFill.bgColor = { rgb: formatColorCode(fill.bgColor.rgb) };
             result.corrected = true;
         }
+    }
+
+    return result;
+}
+
+/**
+ * Validate duplicate style structure and ensure orange color compliance
+ * @param {Object} styleObj - Style object to validate for duplicate styling
+ * @returns {Object} Duplicate style validation result
+ */
+function validateDuplicateStyleStructure(styleObj) {
+    const result = {
+        valid: true,
+        warnings: [],
+        corrected: false,
+        correctedStyle: { ...styleObj }
+    };
+
+    try {
+        const expectedOrangeColor = COLOR_CONFIG.duplicate.backgroundRgb;
+        
+        // Validate that duplicate styling has orange background
+        if (styleObj.fill && styleObj.fill.fgColor && styleObj.fill.fgColor.rgb) {
+            const currentColor = styleObj.fill.fgColor.rgb.toUpperCase().replace('#', '');
+            if (currentColor !== expectedOrangeColor) {
+                result.warnings.push(`Duplicate style should use orange color #${expectedOrangeColor}, found #${currentColor}`);
+                result.correctedStyle.fill = {
+                    ...styleObj.fill,
+                    fgColor: { rgb: expectedOrangeColor }
+                };
+                result.corrected = true;
+            }
+        } else {
+            // Missing or invalid fill structure for duplicate style
+            result.warnings.push('Duplicate style missing orange background, applying default');
+            result.correctedStyle.fill = {
+                patternType: 'solid',
+                fgColor: { rgb: COLOR_CONFIG.duplicate.backgroundRgb }
+            };
+            result.corrected = true;
+        }
+
+        // Ensure text readability with black font on orange background
+        if (styleObj.font && styleObj.font.color && styleObj.font.color.rgb) {
+            const fontColor = styleObj.font.color.rgb.toUpperCase().replace('#', '');
+            if (fontColor !== '000000') {
+                result.warnings.push('Duplicate style should use black font for readability on orange background');
+                result.correctedStyle.font = {
+                    ...styleObj.font,
+                    color: { rgb: COLOR_CONFIG.duplicate.textRgb }
+                };
+                result.corrected = true;
+            }
+        }
+
+    } catch (error) {
+        result.warnings.push(`Duplicate style validation error: ${error.message}`);
     }
 
     return result;
@@ -845,12 +963,210 @@ function batchApplyStyles(worksheet, styleApplications, options = {}) {
     return result;
 }
 
+/**
+ * Identify duplicate phone numbers within a record array for Excel export
+ * @param {Array} records - Array of records with phone number properties
+ * @returns {Object} Object containing duplicate phone information
+ */
+function identifyDuplicatePhoneNumbers(records) {
+    const result = {
+        duplicatePhoneNumbers: new Set(),
+        duplicateRecordIndices: [],
+        phoneNumberMap: new Map(),
+        totalRecords: records.length,
+        duplicateCount: 0,
+        uniquePhoneCount: 0
+    };
+
+    if (!Array.isArray(records) || records.length === 0) {
+        return result;
+    }
+
+    // Build phone number map first
+    const phoneMap = buildDuplicatePhoneMap(records);
+    result.phoneNumberMap = phoneMap;
+
+    // Identify duplicates
+    for (const [phoneNumber, recordIndices] of phoneMap.entries()) {
+        if (recordIndices.length > 1) {
+            result.duplicatePhoneNumbers.add(phoneNumber);
+            result.duplicateRecordIndices.push(...recordIndices);
+            result.duplicateCount += recordIndices.length;
+        }
+    }
+
+    result.uniquePhoneCount = phoneMap.size;
+
+    return result;
+}
+
+/**
+ * Build a map of phone numbers to record indices for duplicate detection
+ * @param {Array} records - Array of records with phone number properties
+ * @returns {Map} Map of phone numbers to array of record indices
+ */
+function buildDuplicatePhoneMap(records) {
+    const phoneMap = new Map();
+
+    if (!Array.isArray(records)) {
+        return phoneMap;
+    }
+
+    for (let i = 0; i < records.length; i++) {
+        const record = records[i];
+        const phoneNumber = extractPhoneNumber(record);
+
+        if (phoneNumber) {
+            const sanitizedPhone = sanitizePhoneNumber(phoneNumber);
+            
+            if (sanitizedPhone) {
+                if (!phoneMap.has(sanitizedPhone)) {
+                    phoneMap.set(sanitizedPhone, []);
+                }
+                phoneMap.get(sanitizedPhone).push(i);
+            }
+        }
+    }
+
+    return phoneMap;
+}
+
+/**
+ * Extract phone number from record with multiple field name support
+ * @param {Object} record - Record object
+ * @returns {string|null} Phone number or null if not found
+ */
+function extractPhoneNumber(record) {
+    if (!record || typeof record !== 'object') {
+        return null;
+    }
+
+    // Check various possible phone number field names
+    const phoneFields = ['phoneNumber', 'Phone', 'phone', 'PhoneNumber', 'PHONE'];
+    
+    for (const field of phoneFields) {
+        if (record[field] != null) {
+            return String(record[field]).trim();
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Sanitize phone number for consistent duplicate detection
+ * @param {string} phoneNumber - Raw phone number string
+ * @returns {string|null} Sanitized phone number or null if invalid
+ */
+function sanitizePhoneNumber(phoneNumber) {
+    if (!phoneNumber || typeof phoneNumber !== 'string') {
+        return null;
+    }
+
+    // Remove all non-digit characters except + at the beginning
+    let sanitized = phoneNumber.trim();
+    
+    // Handle international format with +
+    if (sanitized.startsWith('+')) {
+        sanitized = '+' + sanitized.slice(1).replace(/\D/g, '');
+    } else {
+        sanitized = sanitized.replace(/\D/g, '');
+    }
+
+    // Validate minimum length (at least 7 digits for a valid phone number)
+    if (sanitized.replace(/^\+/, '').length < 7) {
+        return null;
+    }
+
+    // Validate maximum length (international numbers typically max 15 digits)
+    if (sanitized.replace(/^\+/, '').length > 15) {
+        return null;
+    }
+
+    return sanitized;
+}
+
+/**
+ * Validate phone number format and structure
+ * @param {string} phoneNumber - Phone number to validate
+ * @returns {Object} Validation result with details
+ */
+function validatePhoneNumber(phoneNumber) {
+    const result = {
+        isValid: false,
+        sanitized: null,
+        errors: [],
+        warnings: []
+    };
+
+    if (!phoneNumber) {
+        result.errors.push('Phone number is empty or null');
+        return result;
+    }
+
+    if (typeof phoneNumber !== 'string') {
+        result.errors.push('Phone number must be a string');
+        return result;
+    }
+
+    const trimmed = phoneNumber.trim();
+    if (trimmed.length === 0) {
+        result.errors.push('Phone number is empty after trimming');
+        return result;
+    }
+
+    // Attempt to sanitize
+    const sanitized = sanitizePhoneNumber(trimmed);
+    if (!sanitized) {
+        result.errors.push('Phone number could not be sanitized to valid format');
+        return result;
+    }
+
+    result.sanitized = sanitized;
+    result.isValid = true;
+
+    // Add warnings for potential issues
+    if (trimmed !== sanitized) {
+        result.warnings.push('Phone number was modified during sanitization');
+    }
+
+    if (sanitized.length < 10 && !sanitized.startsWith('+')) {
+        result.warnings.push('Phone number may be too short for standard format');
+    }
+
+    return result;
+}
+
+/**
+ * Get duplicate phone number statistics for Excel export
+ * @param {Array} records - Array of records
+ * @returns {Object} Statistics about duplicate phone numbers
+ */
+function getDuplicatePhoneStatistics(records) {
+    const duplicateInfo = identifyDuplicatePhoneNumbers(records);
+    
+    return {
+        totalRecords: duplicateInfo.totalRecords,
+        uniquePhoneNumbers: duplicateInfo.uniquePhoneCount,
+        duplicatePhoneNumbers: duplicateInfo.duplicatePhoneNumbers.size,
+        recordsWithDuplicatePhones: duplicateInfo.duplicateCount,
+        duplicateRate: duplicateInfo.totalRecords > 0 ? 
+            (duplicateInfo.duplicateCount / duplicateInfo.totalRecords) * 100 : 0,
+        phoneNumberFrequency: Array.from(duplicateInfo.phoneNumberMap.entries())
+            .filter(([phone, indices]) => indices.length > 1)
+            .map(([phone, indices]) => ({ phone, count: indices.length }))
+            .sort((a, b) => b.count - a.count)
+    };
+}
+
 module.exports = {
     EXCEL_STYLING_CONFIG,
+    DUPLICATE_STYLING_CONFIG,
     getFontWithFallback,
     createBaseStyle,
     createStatusStyle,
     createHeaderStyle,
+    createDuplicateStyle,
     validateStyleObject,
     isValidColorCode,
     formatColorCode,
@@ -862,8 +1178,22 @@ module.exports = {
     validateFontStructure,
     validateAlignmentStructure,
     validateFillStructure,
+    validateDuplicateStyleStructure,
     validateXLSXCompatibility,
     safeApplyStyle,
     logStylingFailure,
-    batchApplyStyles
+    batchApplyStyles,
+    // Duplicate phone number detection utilities for Excel export
+    identifyDuplicatePhoneNumbers,
+    buildDuplicatePhoneMap,
+    extractPhoneNumber,
+    sanitizePhoneNumber,
+    validatePhoneNumber,
+    getDuplicatePhoneStatistics,
+    // Centralized color configuration exports
+    DUPLICATE_ORANGE_COLOR,
+    COLOR_CONFIG,
+    // Color validation functions
+    validateColorCode,
+    validateDuplicateOrangeConsistency
 };
