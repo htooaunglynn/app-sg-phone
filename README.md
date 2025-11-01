@@ -1,4 +1,4 @@
-# Singapore Phone Detect
+****# Singapore Phone Detect
 
 A comprehensive web application that processes PDF and Excel files containing Singapore phone data, stores the extracted information in a MySQL database, and provides dynamic Excel export functionality with intelligent data processing capabilities.
 
@@ -117,11 +117,9 @@ source setup.sql;
 The `setup.sql` file creates the following components:
 
 #### Core Tables
-- **`phone_records`** - Main table for basic phone data extracted from files
+- **`backup_table`** - Immutable storage for raw data from file uploads
 - **`check_table`** - Enhanced table with company information and validation status
-- **`backup_table`** - Backup and recovery table for data safety
-- **`file_processing_log`** - Tracks file uploads and processing status
-- **`system_config`** - Application configuration storage
+- **`uploaded_files`** - Tracks file uploads and processing status
 
 #### Additional Components
 - **Views** for reporting and statistics
@@ -131,16 +129,20 @@ The `setup.sql` file creates the following components:
 
 ### Key Tables Structure
 
-#### phone_records Table
+#### backup_table Table
 ```sql
-CREATE TABLE phone_records (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  identifier VARCHAR(50) NOT NULL UNIQUE,
-  phone_number VARCHAR(20) NOT NULL,
+CREATE TABLE backup_table (
+  Id VARCHAR(100) NOT NULL,
+  Phone VARCHAR(50) NOT NULL,
+  CompanyName VARCHAR(255) NULL,
+  PhysicalAddress TEXT NULL,
+  Email VARCHAR(255) NULL,
+  Website VARCHAR(255) NULL,
+  source_file VARCHAR(255) NULL,
+  extracted_metadata TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_identifier (identifier),
-  INDEX idx_created_at (created_at)
+  PRIMARY KEY (Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -206,7 +208,6 @@ singapore-phone-detect/
 │   ├── controllers/        # Express.js route handlers
 │   ├── services/          # Business logic services
 │   ├── models/            # Data models and database schemas
-│   │   ├── PhoneRecord.js # Main phone records model
 │   │   └── CheckTable.js  # Enhanced records with company data
 │   ├── routes/            # API route definitions
 │   ├── utils/             # Utility functions and helpers

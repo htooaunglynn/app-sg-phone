@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Import configuration utility
@@ -16,7 +17,6 @@ const ExportController = require('./controllers/exportController');
 const StatsController = require('./controllers/statsController');
 
 // Import models for database initialization
-const PhoneRecord = require('./models/PhoneRecord');
 const CheckTable = require('./models/CheckTable');
 
 // Import database manager for connection management
@@ -56,7 +56,8 @@ class Application {
         this.app.use(cors({
             origin: this.config.server.corsOrigin,
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token']
+            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+            credentials: true // Enable cookies
         }));
 
         // Parse JSON bodies
@@ -64,6 +65,9 @@ class Application {
 
         // Parse URL-encoded bodies
         this.app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+        // Parse cookies
+        this.app.use(cookieParser());
 
         // Setup authentication system (session middleware, CSRF protection)
         this.setupAuthentication();
@@ -181,6 +185,11 @@ class Application {
                 enableAuth: process.env.DISABLE_AUTH !== 'true'
             });
 
+            // Setup new authentication routes
+            const AuthRoutes = require('./routes/authRoutes');
+            const authRoutes = new AuthRoutes();
+            authRoutes.setupRoutes(this.app, '/api/auth');
+
             console.log('✅ Authentication system setup completed');
         } catch (error) {
             console.error('❌ Failed to setup authentication system:', error);
@@ -195,9 +204,22 @@ class Application {
      * Setup API routes
      */
     setupRoutes() {
+        // Authentication routes (must come before other routes)
+        this.app.get('/login', (req, res) => {
+            res.sendFile(path.join(__dirname, '../public/login.html'));
+        });
+
+        this.app.get('/register', (req, res) => {
+            res.sendFile(path.join(__dirname, '../public/register.html'));
+        });
+
         // Root route - serve main application
         this.app.get('/', (req, res) => {
             res.sendFile(path.join(__dirname, '../public/index.html'));
+        });
+
+        this.app.get('/profile', (req, res) => {
+            res.sendFile(path.join(__dirname, '../public/profile.html'));
         });
 
         // Check Table Records page route - redirect to main page for backward compatibility

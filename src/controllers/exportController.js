@@ -1,5 +1,4 @@
 const ExcelExporter = require('../services/excelExporter');
-const PhoneRecord = require('../models/PhoneRecord');
 const CheckTable = require('../models/CheckTable');
 const databaseManager = require('../utils/database');
 

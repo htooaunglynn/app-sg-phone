@@ -1,129 +1,113 @@
 const express = require('express');
-const Routes = require('./index');
+const AuthController = require('../controllers/authController');
 
 /**
  * Authentication routes module
- * Handles login, logout, and authentication status endpoints
+ * Handles login, logout, registration, and authentication endpoints
  */
 class AuthRoutes {
-  /**
-   * Create authentication router with all auth endpoints
-   * @returns {express.Router} Express router with authentication routes
-   */
-  static createRouter() {
-    const router = express.Router();
+    constructor() {
+        this.authController = new AuthController();
+    }
 
-    // Login endpoint
-    router.post('/login', Routes.createLoginMiddleware(), (req, res) => {
-      const authStatus = Routes.getAuthStatus(req);
-      
-      res.json({
-        success: true,
-        message: 'Login successful',
-        data: {
-          user: authStatus.user,
-          csrfToken: authStatus.csrfToken,
-          sessionId: authStatus.sessionId
-        },
-        timestamp: new Date().toISOString()
-      });
-    });
+    /**
+     * Create authentication router with all auth endpoints
+     * @returns {express.Router} Express router with authentication routes
+     */
+    createRouter() {
+        const router = express.Router();
 
-    // Logout endpoint
-    router.post('/logout', Routes.createLogoutMiddleware());
+        // Registration endpoint
+        router.post('/register', this.authController.register.bind(this.authController));
 
-    // Authentication status endpoint
-    router.get('/status', (req, res) => {
-      const authStatus = Routes.getAuthStatus(req);
-      
-      res.json({
-        success: true,
-        data: authStatus,
-        timestamp: new Date().toISOString()
-      });
-    });
+        // Login endpoint
+        router.post('/login', this.authController.login.bind(this.authController));
 
-    // CSRF token endpoint
-    router.get('/csrf-token', (req, res) => {
-      const csrfToken = Routes.generateCSRFToken(req);
-      
-      res.json({
-        success: true,
-        data: {
-          csrfToken: csrfToken
-        },
-        timestamp: new Date().toISOString()
-      });
-    });
+        // Logout endpoint
+        router.post('/logout', this.authController.logout.bind(this.authController));
 
-    // Session validation endpoint
-    router.get('/validate', Routes.createAuthMiddleware(), (req, res) => {
-      const authData = req.auth || { user: null, sessionId: null };
-      
-      res.json({
-        success: true,
-        message: 'Session is valid',
-        data: {
-          user: authData.user,
-          sessionId: authData.sessionId
-        },
-        timestamp: new Date().toISOString()
-      });
-    });
+        // Authentication status endpoint
+        router.get('/status', this.authController.getAuthStatus.bind(this.authController));
 
-    // Password change endpoint (protected)
-    router.post('/change-password', Routes.createAuthMiddleware(), (req, res) => {
-      const { currentPassword, newPassword } = req.body;
-      
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          error: 'Current password and new password required',
-          code: 'MISSING_PASSWORDS'
-        });
-      }
+        // CSRF token endpoint
+        router.get('/csrf-token', this.authController.getCsrfToken.bind(this.authController));
 
-      // Validate current password
-      const username = req.auth?.user?.id || 'admin';
-      const isCurrentValid = Routes.validateCredentials(username, currentPassword);
-      
-      if (!isCurrentValid) {
-        return res.status(401).json({
-          success: false,
-          error: 'Current password is incorrect',
-          code: 'INVALID_CURRENT_PASSWORD'
-        });
-      }
+        // Session validation endpoint (protected)
+        router.get('/validate',
+            this.authController.authenticate(),
+            (req, res) => {
+                res.json({
+                    success: true,
+                    message: 'Session is valid',
+                    data: {
+                        user: req.user,
+                        sessionInfo: req.sessionInfo
+                    },
+                    timestamp: new Date().toISOString()
+                });
+            }
+        );
 
-      // In production, this would update the password in the database
-      // For now, just return success
-      res.json({
-        success: true,
-        message: 'Password changed successfully',
-        timestamp: new Date().toISOString()
-      });
-    });
+        // User profile endpoints (protected)
+        router.get('/profile',
+            this.authController.authenticate(),
+            this.authController.getProfile.bind(this.authController)
+        );
 
-    return router;
-  }
+        router.put('/profile',
+            this.authController.authenticate(),
+            this.authController.updateProfile.bind(this.authController)
+        );
 
-  /**
-   * Setup authentication routes on the main app
-   * @param {Express} app - Express application instance
-   * @param {string} basePath - Base path for auth routes (default: '/api/auth')
-   */
-  static setupRoutes(app, basePath = '/api/auth') {
-    const authRouter = this.createRouter();
-    app.use(basePath, authRouter);
-    
-    console.log(`🔐 Authentication routes configured at ${basePath}`);
-    console.log(`   POST ${basePath}/login - User login`);
-    console.log(`   POST ${basePath}/logout - User logout`);
-    console.log(`   GET  ${basePath}/status - Authentication status`);
-    console.log(`   GET  ${basePath}/csrf-token - Get CSRF token`);
-    console.log(`   GET  ${basePath}/validate - Validate session`);
-    console.log(`   POST ${basePath}/change-password - Change password`);
-  }
+        // Password change endpoint (protected)
+        router.post('/change-password',
+            this.authController.authenticate(),
+            this.authController.changePassword.bind(this.authController)
+        );
+
+        // Authentication statistics (for monitoring)
+        router.get('/stats', this.authController.getAuthStats.bind(this.authController));
+
+        return router;
+    }
+
+    /**
+     * Setup authentication routes on the main app
+     * @param {Express} app - Express application instance
+     * @param {string} basePath - Base path for auth routes (default: '/api/auth')
+     */
+    setupRoutes(app, basePath = '/api/auth') {
+        const authRouter = this.createRouter();
+        app.use(basePath, authRouter);
+
+        console.log(`🔐 Authentication routes configured at ${basePath}`);
+        console.log(`   POST ${basePath}/register - User registration`);
+        console.log(`   POST ${basePath}/login - User login`);
+        console.log(`   POST ${basePath}/logout - User logout`);
+        console.log(`   GET  ${basePath}/status - Authentication status`);
+        console.log(`   GET  ${basePath}/csrf-token - Get CSRF token`);
+        console.log(`   GET  ${basePath}/validate - Validate session`);
+        console.log(`   GET  ${basePath}/profile - Get user profile`);
+        console.log(`   PUT  ${basePath}/profile - Update user profile`);
+        console.log(`   POST ${basePath}/change-password - Change password`);
+        console.log(`   GET  ${basePath}/stats - Authentication statistics`);
+    }
+
+    /**
+     * Get authentication middleware for protecting routes
+     * @returns {Function} Authentication middleware
+     */
+    getAuthMiddleware() {
+        return this.authController.authenticate();
+    }
+
+    /**
+     * Get optional authentication middleware
+     * @returns {Function} Optional authentication middleware
+     */
+    getOptionalAuthMiddleware() {
+        return this.authController.optionalAuthenticate();
+    }
 }
 
 module.exports = AuthRoutes;
