@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Singapore Phone Detect</title>
-    <link rel="stylesheet" href="/css/theme-fallback.css">
-    <link rel="stylesheet" href="/css/apple-light-theme.css">
+    <!-- Apple-Style Tailwind CSS -->
+    <link rel="stylesheet" href="/css/tailwind-compiled.css">
     <style>
         /* CSS Variables for consistent theming and performance - Light Theme */
         :root {
@@ -31,6 +31,17 @@
             --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.1);
             --hover-lift: translateY(-2px);
             --active-press: translateY(0);
+
+            /* Z-index layers */
+            --z-modal-backdrop: 9999;
+            --z-modal-content: 10000;
+            --z-dropdown: 1000;
+            --z-header: 100;
+
+            /* Animation and transition variables */
+            --transition-normal: 0.3s ease;
+            --transition-fast: 0.15s ease;
+            --easing-ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
             /* Duplicate phone number styling colors - centralized configuration */
             --duplicate-orange-color: #FFA500;
@@ -168,7 +179,8 @@
         }
 
         .section {
-            margin-bottom: 0; /* Remove margin, use gap instead */
+            margin-bottom: 0;
+            /* Remove margin, use gap instead */
             padding: 32px;
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(18px);
@@ -182,7 +194,7 @@
             gap: 24px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         .section:hover {
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
             transform: translateY(-2px);
@@ -447,7 +459,7 @@
             box-shadow: var(--shadow-soft);
             transition: var(--transition-normal);
         }
-        
+
         .stat-item:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-elevated);
@@ -824,7 +836,8 @@
             display: flex;
             flex-direction: column;
             gap: var(--space-md);
-            min-width: 0; /* Allow shrinking */
+            min-width: 0;
+            /* Allow shrinking */
             position: relative;
         }
 
@@ -1173,7 +1186,8 @@
 
         /* Ensure theme toggle integrates well with navigation */
         .theme-toggle-wrapper {
-            order: -1; /* Place theme toggle first in the navigation */
+            order: -1;
+            /* Place theme toggle first in the navigation */
         }
 
         /* Responsive navigation integration */
@@ -1185,12 +1199,12 @@
                 width: 100%;
                 justify-content: center;
             }
-            
+
             .theme-toggle-wrapper {
                 width: 100%;
                 max-width: 200px;
             }
-            
+
             .theme-toggle-button {
                 width: 100%;
                 justify-content: center;
@@ -1203,7 +1217,7 @@
                 align-items: stretch;
                 gap: var(--space-sm);
             }
-            
+
             .theme-toggle-container {
                 margin-bottom: var(--space-sm);
             }
@@ -1270,11 +1284,11 @@
         .records-table tbody tr {
             transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         .records-table tbody tr:hover {
             background: rgba(248, 248, 248, 0.5);
         }
-        
+
         .records-table tbody tr:last-child td {
             border-bottom: none;
         }
@@ -1664,17 +1678,17 @@
                 padding: var(--space-2xl);
                 gap: var(--space-2xl);
             }
-            
+
             .section {
                 padding: var(--space-2xl);
                 gap: var(--space-xl);
             }
-            
+
             .header-section {
                 grid-template-columns: 1fr;
                 gap: var(--space-lg);
             }
-            
+
             .header-buttons {
                 justify-content: flex-start;
             }
@@ -1684,27 +1698,27 @@
             body {
                 padding: var(--space-lg);
             }
-            
+
             .container {
                 padding: var(--space-xl);
                 gap: var(--space-xl);
             }
-            
+
             .section {
                 padding: var(--space-xl);
                 gap: var(--space-lg);
             }
-            
+
             .export-range {
                 grid-template-columns: 1fr;
                 gap: var(--space-lg);
             }
-            
+
             .stats {
                 grid-template-columns: 1fr;
                 gap: var(--space-lg);
             }
-            
+
             .records-table th,
             .records-table td {
                 padding: var(--space-md) var(--space-lg);
@@ -1723,6 +1737,8 @@
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
+            /* Ensure modal is always on top */
+            pointer-events: auto;
         }
 
         .modal.show {
@@ -1744,8 +1760,8 @@
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
+            z-index: var(--z-modal-content);
             animation: modalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1050;
         }
 
         .modal-header {
@@ -2144,17 +2160,19 @@
 
 <body>
     <!-- Fallback message for when JavaScript is disabled -->
-    <noscript>
-        <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px; text-align: center; color: #92400E;">
+    <!-- <noscript>
+        <div
+            style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px; text-align: center; color: #92400E;">
             <strong>JavaScript Required</strong><br>
-            This application requires JavaScript to function properly. Please enable JavaScript in your browser settings.
+            This application requires JavaScript to function properly. Please enable JavaScript in your browser
+            settings.
             <br><br>
             <small>Basic functionality will work with the fallback styles, but full features require JavaScript.</small>
         </div>
-    </noscript>
-    
+    </noscript> -->
+
     <!-- Skip link for accessibility -->
-    <a href="#main-content" class="skip-link" style="display: none;">Skip to main content</a>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- Modal Container -->
     <div id="modal" class="modal" role="dialog" aria-hidden="true">
@@ -2172,128 +2190,69 @@
         </div>
     </div>
 
-    <div class="container">
-        <h1>Singapore Phone Detect</h1>
+    <h1
+        class="text-4xl md:text-5xl font-bold text-center mb-12 text-gradient bg-gradient-to-r from-neutral-800 to-neutral-600 bg-clip-text text-transparent">
+        Singapore Phone Detect</h1>
 
-        <main id="main-content">
+    <main id="main-content" style="width: 80%;">
+        <!-- Check Table Records Section -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6 flex items-center gap-2">
+                <span>🔍</span> Check Table Records
+            </h2>
 
+            <div class="flex gap-4 mb-6">
+                <input type="text" id="searchInput" placeholder="Search phone numbers, companies, IDs..."
+                    class="search-input-apple flex-1" autocomplete="off">
 
+                <button class="nav-button" onclick="openUploadModal()" aria-label="Upload files">
+                    <span class="icon">📤</span>
+                    Upload
+                </button>
 
-
-
-            <!-- Check Table Records Section -->
-            <div class="section">
-                <h2>Check Table Records</h2>
-
-                <div class="header-section">
-                    <div class="search-container">
-                        <!-- Enhanced Search Input with Auto-complete -->
-                        <div class="enhanced-search-wrapper">
-                            <input type="text" id="searchBox" class="search-box enhanced-search-input"
-                                placeholder="Search records (try 'SG COM-200*' or 'range:2001-2010')..."
-                                autocomplete="off" aria-label="Search records" aria-describedby="search-help">
-
-                            <!-- Search Suggestions Dropdown -->
-                            <div id="searchSuggestions" class="search-suggestions" role="listbox"
-                                aria-label="Search suggestions">
-                                <!-- Suggestions will be populated here -->
-                            </div>
-
-                            <!-- Search History Dropdown -->
-                            <div id="searchHistory" class="search-history-dropdown" role="listbox"
-                                aria-label="Search history">
-                                <div class="search-history-header">
-                                    <span>Recent Searches</span>
-                                    <button id="clearHistoryBtn" class="clear-history-btn"
-                                        aria-label="Clear search history">Clear</button>
-                                </div>
-                                <div id="searchHistoryList" class="search-history-list">
-                                    <!-- History items will be populated here -->
-                                </div>
-                            </div>
-
-                            <!-- Search Pattern Help -->
-                            <!-- <div id="searchHelp" class="search-help">
-                                <div class="search-help-content">
-                                    <h4>Search Patterns:</h4>
-                                    <ul>
-                                        <li><code>SG COM-200*</code> - Find IDs starting with "SG COM-200"</li>
-                                        <li><code>SG COM-2001 to SG COM-2010</code> - Find IDs in range</li>
-                                        <li><code>+65</code> - Find Singapore phone numbers</li>
-                                        <li><code>"exact phrase"</code> - Find exact text matches</li>
-                                    </ul>
-                                </div>
-                            </div> -->
-                        </div>
-
-                        <!-- Quick Search Buttons -->
-                        <!-- <div class="quick-search-buttons">
-                            <button class="quick-search-btn" data-pattern="SG COM-*" title="Search all SG COM records">SG COM</button>
-                            <button class="quick-search-btn" data-pattern="+65*" title="Search Singapore phone numbers">+65</button>
-                            <button class="quick-search-btn" data-pattern="range:2001-2100" title="Search ID range 2001-2100">2001-2100</button>
-                            <button class="clear-search-btn" onclick="clearCurrentSearch()" title="Clear search and show all records">Clear</button>
-                            <button class="advanced-search-btn" onclick="openAdvancedSearchModal()" title="Open advanced search">Advanced</button>
-                            <button class="advanced-search-btn" onclick="saveCurrentSearch()" title="Save current search" style="background: #28a745; border-color: #28a745;">💾 Save</button>
-                            <button class="advanced-search-btn" onclick="openSavedSearchModal()" title="Manage saved searches" style="background: #17a2b8; border-color: #17a2b8;">📂 Saved</button>
-                            <button class="advanced-search-btn" onclick="shareCurrentSearch()" title="Share current search" style="background: #ffc107; border-color: #ffc107; color: #212529;">🔗 Share</button>
-                        </div> -->
-                    </div>
-                    <div class="header-buttons">
-                        <!-- <div id="themeToggleContainer" class="theme-toggle-container"> -->
-                            <!-- Theme toggle will be inserted here by JavaScript -->
-                        <!-- </div> -->
-                        <button class="nav-button" onclick="openUploadModal()" aria-label="Upload files">
-                            <span class="icon">📤</span>
-                            Upload
-                        </button>
-                        <button class="nav-button" onclick="openExportModal()" aria-label="Export records">
-                            <span class="icon">📥</span>
-                            Export
-                        </button>
-                        <a href="/file-manager" class="nav-button" aria-label="Manage files">
-                            <span class="icon">📁</span>
-                            File Manager
-                        </a>
-                    </div>
-                </div>
-
-                <div class="duplicate-detection-warning" id="duplicateDetectionWarning">
-                    Duplicate detection is temporarily unavailable. The table will continue to work normally without
-                    duplicate highlighting.
-                </div>
-
-                <div class="table-container">
-                    <table class="records-table" id="recordsTable">
-                        <thead>
-                            <tr>
-                                <th>Id</th>
-                                <th>Phone</th>
-                                <th>Company Name</th>
-                                <th>Physical Address</th>
-                                <th>Email</th>
-                                <th>Website</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recordsTableBody">
-                            <tr>
-                                <td colspan="7" class="loading">Loading records...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="pagination" id="paginationContainer">
-                    <!-- Pagination controls will be inserted here -->
-                </div>
-
-                <div class="status" id="checkTableStatus"></div>
+                <button class="nav-button" onclick="openExportModal()" aria-label="Export records">
+                    <span class="icon">📥</span>
+                    Export
+                </button>
             </div>
+        </div>
+
+        <div class="duplicate-detection-warning" id="duplicateDetectionWarning">
+            Duplicate detection is temporarily unavailable. The table will continue to work normally without
+            duplicate highlighting.
+        </div>
+
+        <div class="table-container">
+            <table class="records-table" id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Phone</th>
+                        <th>Company Name</th>
+                        <th>Physical Address</th>
+                        <th>Email</th>
+                        <th>Website</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsTableBody">
+                    <tr>
+                        <td colspan="7" class="loading">Loading records...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="paginationContainer">
+            <!-- Pagination controls will be inserted here -->
+        </div>
+
+        <div class="status" id="checkTableStatus"></div>
+        </div>
 
 
 
-        </main>
-    </div>
+    </main>
 
     <script>
         // Global variables with performance optimizations
@@ -3429,42 +3388,42 @@
                 <div class="advanced-search-form">
                     <div class="form-group">
                         <label for="advancedSearchId">Record ID:</label>
-                        <input type="text" id="advancedSearchId" class="form-control" 
+                        <input type="text" id="advancedSearchId" class="form-control"
                                placeholder="e.g., SG COM-2001 or SG COM-200*">
                         <small class="form-text">Use * for wildcards (e.g., SG COM-200*)</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="advancedSearchPhone">Phone Number:</label>
-                        <input type="text" id="advancedSearchPhone" class="form-control" 
+                        <input type="text" id="advancedSearchPhone" class="form-control"
                                placeholder="e.g., +65 or 6512345678">
                         <small class="form-text">Search for specific phone numbers or patterns</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="advancedSearchCompany">Company Name:</label>
-                        <input type="text" id="advancedSearchCompany" class="form-control" 
+                        <input type="text" id="advancedSearchCompany" class="form-control"
                                placeholder="Enter company name">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="advancedSearchAddress">Address:</label>
-                        <input type="text" id="advancedSearchAddress" class="form-control" 
+                        <input type="text" id="advancedSearchAddress" class="form-control"
                                placeholder="Enter address">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="advancedSearchEmail">Email:</label>
-                        <input type="text" id="advancedSearchEmail" class="form-control" 
+                        <input type="text" id="advancedSearchEmail" class="form-control"
                                placeholder="Enter email address">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="advancedSearchWebsite">Website:</label>
-                        <input type="text" id="advancedSearchWebsite" class="form-control" 
+                        <input type="text" id="advancedSearchWebsite" class="form-control"
                                placeholder="Enter website URL">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="advancedSearchStatus">Singapore Phone Status:</label>
                         <select id="advancedSearchStatus" class="form-control">
@@ -3473,40 +3432,40 @@
                             <option value="invalid">Invalid/Non-Singapore Numbers</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>ID Range:</label>
                         <div class="range-inputs">
-                            <input type="number" id="advancedSearchRangeStart" class="form-control" 
+                            <input type="number" id="advancedSearchRangeStart" class="form-control"
                                    placeholder="Start (e.g., 2001)" style="width: 48%; display: inline-block;">
                             <span style="margin: 0 2%;">to</span>
-                            <input type="number" id="advancedSearchRangeEnd" class="form-control" 
+                            <input type="number" id="advancedSearchRangeEnd" class="form-control"
                                    placeholder="End (e.g., 2100)" style="width: 48%; display: inline-block;">
                         </div>
                         <small class="form-text">Search for records within a specific ID number range</small>
                     </div>
-                    
+
                     <div class="advanced-search-options">
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="advancedSearchCaseSensitive"> 
+                                <input type="checkbox" id="advancedSearchCaseSensitive">
                                 Case sensitive search
                             </label>
                         </div>
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="advancedSearchExactMatch"> 
+                                <input type="checkbox" id="advancedSearchExactMatch">
                                 Exact match only
                             </label>
                         </div>
                     </div>
                 </div>
-                
+
                 <style>
                     .advanced-search-form .form-group {
                         margin-bottom: 20px;
                     }
-                    
+
                     .advanced-search-form .form-control {
                         width: 100%;
                         padding: 8px 12px;
@@ -3514,32 +3473,32 @@
                         border-radius: 4px;
                         font-size: 14px;
                     }
-                    
+
                     .advanced-search-form .form-text {
                         font-size: 12px;
                         color: #666;
                         margin-top: 4px;
                         display: block;
                     }
-                    
+
                     .advanced-search-form label {
                         font-weight: bold;
                         margin-bottom: 5px;
                         display: block;
                     }
-                    
+
                     .range-inputs {
                         display: flex;
                         align-items: center;
                         gap: 8px;
                     }
-                    
+
                     .advanced-search-options {
                         border-top: 1px solid #eee;
                         padding-top: 15px;
                         margin-top: 20px;
                     }
-                    
+
                     .advanced-search-options label {
                         font-weight: normal;
                         display: flex;
@@ -4051,7 +4010,7 @@
             if (searchTerm) {
                 searchInfo = `
                     <div class="search-result-info" style="margin-bottom: 10px; padding: 8px 12px; background: #e7f3ff; border-radius: 4px; font-size: 14px;">
-                        <strong>Search Results:</strong> Showing ${startRecord}-${endRecord} of ${totalRecords} results for 
+                        <strong>Search Results:</strong> Showing ${startRecord}-${endRecord} of ${totalRecords} results for
                         <span style="background: #fff3cd; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${searchTerm}"</span>
                         ${totalRecords !== totalAllRecords ? ` (filtered from ${totalAllRecords} total records)` : ''}
                         ${currentSearchResults && currentSearchResults.executionTime ?
@@ -4450,8 +4409,8 @@
             // Set footer buttons if provided
             if (footerButtons && footerButtons.length > 0) {
                 modalFooter.innerHTML = footerButtons.map(button =>
-                    `<button class="modal-button ${button.class || 'primary'}" 
-                             onclick="${button.onclick}" 
+                    `<button class="modal-button ${button.class || 'primary'}"
+                             onclick="${button.onclick}"
                              ${button.disabled ? 'disabled' : ''}>
                         ${button.text}
                     </button>`
@@ -4508,8 +4467,8 @@
 
             if (footerButtons && footerButtons.length > 0) {
                 modalFooter.innerHTML = footerButtons.map(button =>
-                    `<button class="modal-button ${button.class || 'primary'}" 
-                             onclick="${button.onclick}" 
+                    `<button class="modal-button ${button.class || 'primary'}"
+                             onclick="${button.onclick}"
                              ${button.disabled ? 'disabled' : ''}>
                         ${button.text}
                     </button>`
@@ -4599,7 +4558,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <form id="modalUploadForm">
                     <div class="form-group">
                         <label for="modalFileInput">Select Excel File:</label>
@@ -4616,16 +4575,16 @@
                             </ul>
                         </div>
                     </div>
-                    
+
                     <div class="progress" id="modalUploadProgress" style="display: none;">
                         <div class="progress-bar" id="modalUploadProgressBar"></div>
                     </div>
-                    
+
                     <div class="processing-details" id="modalProcessingDetails" style="display: none;">
                         <h4>Processing Status:</h4>
                         <div id="modalProcessingSteps"></div>
                     </div>
-                    
+
                     <div class="status" id="modalUploadStatus"></div>
                 </form>
             `;
@@ -5097,12 +5056,12 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <form id="modalExportForm">
                     ${hasSearchResults ? `
                     <div class="form-group" style="border: 2px solid #28a745; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #f8fff9;">
                         <label style="display: flex; align-items: center; font-weight: bold; color: #28a745;">
-                            <input type="radio" name="exportType" value="searchResults" checked onchange="toggleExportOptions()" style="margin-right: 8px;"> 
+                            <input type="radio" name="exportType" value="searchResults" checked onchange="toggleExportOptions()" style="margin-right: 8px;">
                             Export Current Search Results
                         </label>
                         <div style="margin-left: 28px; margin-top: 8px;">
@@ -5122,10 +5081,10 @@
                         </div>
                     </div>
                     ` : ''}
-                    
+
                     <div class="form-group">
                         <label>
-                            <input type="radio" name="exportType" value="range" ${hasSearchResults ? '' : 'checked'} onchange="toggleExportOptions()"> 
+                            <input type="radio" name="exportType" value="range" ${hasSearchResults ? '' : 'checked'} onchange="toggleExportOptions()">
                             Export Range
                         </label>
                         <div id="rangeOptions" style="margin-left: 20px; margin-top: 10px;">
@@ -5141,17 +5100,17 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label>
-                            <input type="radio" name="exportType" value="all" onchange="toggleExportOptions()"> 
+                            <input type="radio" name="exportType" value="all" onchange="toggleExportOptions()">
                             Export All Records
                         </label>
                         <div style="margin-left: 20px; margin-top: 5px;">
                             <small style="color: #666;">Export all ${totalRecordsCount} available records from the check table</small>
                         </div>
                     </div>
-                    
+
                     <div class="status" id="modalExportStatus"></div>
                 </form>
             `;
@@ -6078,19 +6037,19 @@
             try {
                 const recordCountElement = document.getElementById('footerRecordCount');
                 const lastUpdatedElement = document.getElementById('footerLastUpdated');
-                
+
                 if (recordCountElement) {
                     const totalRecords = filteredRecords ? filteredRecords.length : (records ? records.length : 0);
                     recordCountElement.textContent = totalRecords.toLocaleString();
                     recordCountElement.className = 'footer-stat-value success';
                 }
-                
+
                 if (lastUpdatedElement) {
                     const now = new Date();
-                    const timeString = now.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
+                    const timeString = now.toLocaleTimeString('en-US', {
+                        hour: '2-digit',
                         minute: '2-digit',
-                        hour12: false 
+                        hour12: false
                     });
                     lastUpdatedElement.textContent = timeString;
                     lastUpdatedElement.className = 'footer-stat-value success';
@@ -6099,12 +6058,12 @@
                 console.warn('Failed to update footer stats:', error);
                 const recordCountElement = document.getElementById('footerRecordCount');
                 const lastUpdatedElement = document.getElementById('footerLastUpdated');
-                
+
                 if (recordCountElement) {
                     recordCountElement.textContent = 'Error';
                     recordCountElement.className = 'footer-stat-value error';
                 }
-                
+
                 if (lastUpdatedElement) {
                     lastUpdatedElement.textContent = 'Error';
                     lastUpdatedElement.className = 'footer-stat-value error';
@@ -6137,7 +6096,7 @@
         // Override displayRecords to update footer stats
         const originalDisplayRecords = window.displayRecords;
         if (typeof originalDisplayRecords === 'function') {
-            window.displayRecords = function(...args) {
+            window.displayRecords = function (...args) {
                 const result = originalDisplayRecords.apply(this, args);
                 setTimeout(updateFooterStats, 100);
                 return result;
@@ -6147,7 +6106,7 @@
         // Override filterRecords to update footer stats
         const originalFilterRecords = window.filterRecords;
         if (typeof originalFilterRecords === 'function') {
-            window.filterRecords = function(...args) {
+            window.filterRecords = function (...args) {
                 const result = originalFilterRecords.apply(this, args);
                 setTimeout(updateFooterStats, 100);
                 return result;
@@ -6160,92 +6119,22 @@
     <script src="/js/themeToggle.js"></script>
     <script>
         // Initialize theme system
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Initialize theme controller
             const themeController = new ThemeController();
-            
+
             // Initialize theme toggle
             const themeToggle = new ThemeToggle('themeToggleContainer', themeController);
-            
+
             // Make theme controller globally available for other scripts
             window.themeController = themeController;
             window.themeToggle = themeToggle;
-            
+
             // Add theme initialization styles
             document.documentElement.style.setProperty('--theme-transition-duration', '300ms');
         });
     </script>
 
-    <!-- Footer Section -->
-    <footer class="site-footer">
-        <div class="footer-container">
-            <!-- Main Footer Content -->
-            <div class="footer-content">
-                <!-- About Section -->
-                <div class="footer-section">
-                    <h3 class="footer-heading">Singapore Phone Detect</h3>
-                    <p class="footer-description">
-                        Advanced phone number validation and processing system for Singapore telecommunications data.
-                        Streamline your data management with intelligent detection and export capabilities.
-                    </p>
-                </div>
-
-                <!-- Quick Links Section -->
-                <div class="footer-section">
-                    <h4 class="footer-subheading">Quick Actions</h4>
-                    <ul class="footer-links">
-                        <li><a href="#upload" class="footer-link" onclick="openUploadModal()">Upload Files</a></li>
-                        <li><a href="#export" class="footer-link" onclick="openExportModal()">Export Data</a></li>
-                        <li><a href="/file-manager" class="footer-link">File Manager</a></li>
-                        <li><a href="#search" class="footer-link" onclick="document.getElementById('searchBox')?.focus()">Search Records</a></li>
-                    </ul>
-                </div>
-
-                <!-- Features Section -->
-                <div class="footer-section">
-                    <h4 class="footer-subheading">Features</h4>
-                    <ul class="footer-links">
-                        <li><span class="footer-feature">PDF Processing</span></li>
-                        <li><span class="footer-feature">Excel Export</span></li>
-                        <li><span class="footer-feature">Duplicate Detection</span></li>
-                        <li><span class="footer-feature">Advanced Search</span></li>
-                    </ul>
-                </div>
-
-                <!-- System Info Section -->
-                <div class="footer-section">
-                    <h4 class="footer-subheading">System Status</h4>
-                    <div class="footer-stats">
-                        <div class="footer-stat-item">
-                            <span class="footer-stat-label">Total Records</span>
-                            <span class="footer-stat-value" id="footerRecordCount">-</span>
-                        </div>
-                        <div class="footer-stat-item">
-                            <span class="footer-stat-label">Last Updated</span>
-                            <span class="footer-stat-value" id="footerLastUpdated">-</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer Divider -->
-            <div class="footer-divider"></div>
-
-            <!-- Footer Bottom -->
-            <div class="footer-bottom">
-                <div class="footer-bottom-content">
-                    <p class="footer-copyright">
-                        &copy; 2025 Singapore Phone Detect. Built with modern web technologies.
-                    </p>
-                    <div class="footer-meta">
-                        <span class="footer-version">v2.1.0</span>
-                        <span class="footer-separator">•</span>
-                        <span class="footer-build">Build 2025.11.01</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
 </body>
 
 </html>

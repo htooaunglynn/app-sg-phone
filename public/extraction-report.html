@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extraction Report - Singapore Phone Detect</title>
-    <link rel="stylesheet" href="/css/apple-dark-theme.css">
+    <!-- Apple-Style Tailwind CSS -->
+    <link rel="stylesheet" href="/css/tailwind-compiled.css">
     <style>
         body {
             font-family: var(--font-family-primary);
@@ -18,6 +20,7 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+
         .container {
             background: var(--glass-bg);
             backdrop-filter: blur(var(--glass-blur));
@@ -27,6 +30,7 @@
             border-radius: var(--radius-large);
             box-shadow: var(--shadow-elevated);
         }
+
         h1 {
             color: #333;
             text-align: center;
@@ -34,6 +38,7 @@
             border-bottom: 3px solid #007bff;
             padding-bottom: 15px;
         }
+
         .header-section {
             display: flex;
             justify-content: space-between;
@@ -42,6 +47,7 @@
             flex-wrap: wrap;
             gap: 15px;
         }
+
         .nav-button {
             background-color: #6c757d;
             color: white;
@@ -53,11 +59,13 @@
             text-decoration: none;
             display: inline-block;
         }
+
         .nav-button:hover {
             background-color: #5a6268;
             text-decoration: none;
             color: white;
         }
+
         .report-section {
             margin-bottom: 30px;
             padding: 20px;
@@ -65,6 +73,7 @@
             border-radius: 8px;
             background-color: #f8f9fa;
         }
+
         .report-section h2 {
             color: #495057;
             margin-top: 0;
@@ -75,50 +84,59 @@
             align-items: center;
             gap: 10px;
         }
+
         .report-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
+
         .report-item {
             background: white;
             padding: 15px;
             border-radius: 5px;
             border-left: 4px solid #007bff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .report-item-label {
             font-weight: bold;
             color: #495057;
             font-size: 14px;
             margin-bottom: 5px;
         }
+
         .report-item-value {
             font-size: 18px;
             color: #007bff;
             font-weight: bold;
         }
+
         .duplicate-section {
             background-color: #fff3cd;
             border-left-color: #ffc107;
         }
+
         .duplicate-section h2 {
             color: #856404;
             border-bottom-color: #ffc107;
         }
+
         .duplicate-item {
             background: white;
             padding: 15px;
             border-radius: 5px;
             border-left: 4px solid #ffc107;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .duplicate-percentage {
             font-size: 24px;
             font-weight: bold;
             color: #856404;
         }
+
         .duplicate-explanation {
             background: #e7f3ff;
             padding: 15px;
@@ -126,15 +144,18 @@
             border-left: 4px solid #17a2b8;
             margin-top: 15px;
         }
+
         .duplicate-explanation h4 {
             color: #0c5460;
             margin-top: 0;
             margin-bottom: 10px;
         }
+
         .duplicate-explanation p {
             margin: 0;
             color: #0c5460;
         }
+
         .status-badge {
             display: inline-block;
             padding: 4px 8px;
@@ -143,19 +164,23 @@
             font-weight: bold;
             text-transform: uppercase;
         }
+
         .status-badge.processed {
             background-color: #28a745;
             color: white;
         }
+
         .status-badge.failed {
             background-color: #dc3545;
             color: white;
         }
+
         .loading {
             text-align: center;
             padding: 40px;
             color: #6c757d;
         }
+
         .error {
             background-color: #f8d7da;
             color: #721c24;
@@ -164,44 +189,52 @@
             border-left: 4px solid #dc3545;
             margin: 20px 0;
         }
+
         .worksheet-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
+
         .worksheet-item {
             background: white;
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 5px;
             border-left: 4px solid #28a745;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .worksheet-name {
             font-weight: bold;
             color: #495057;
             margin-bottom: 5px;
         }
+
         .worksheet-stats {
             font-size: 14px;
             color: #666;
         }
+
         .column-mapping {
             background: white;
             padding: 15px;
             border-radius: 5px;
             margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
+
         .column-mapping h4 {
             margin: 0 0 10px 0;
             color: #495057;
         }
+
         .column-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
         }
+
         .column-tag {
             background: #e7f3ff;
             color: #0c5460;
@@ -210,26 +243,32 @@
             font-size: 12px;
             border: 1px solid #bee5eb;
         }
+
         .column-tag.phone {
             background: #d4edda;
             color: #155724;
             border-color: #c3e6cb;
         }
+
         .column-tag.company {
             background: #fff3cd;
             color: #856404;
             border-color: #ffeaa7;
         }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
             }
+
             .container {
                 padding: 20px;
             }
+
             .report-grid {
                 grid-template-columns: 1fr;
             }
+
             .header-section {
                 flex-direction: column;
                 align-items: stretch;
@@ -237,24 +276,27 @@
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>📊 File Processing Report</h1>
-        
-        <div class="header-section">
-            <div>
-                <h3 id="fileName" style="margin: 0; color: #495057;">Loading...</h3>
-                <small id="fileDetails" style="color: #666;"></small>
+    <div class="container-apple">
+        <h1 class="text-4xl font-bold text-center mb-8 text-gradient">📊 File Processing Report</h1>
+
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div class="text-neutral-600">
+                <span id="fileName" class="font-medium text-neutral-800">Loading...</span>
+                <div id="fileDetails" class="text-sm text-neutral-500 mt-1">Retrieving file information...</div>
             </div>
-            <div>
-                <a href="/file-manager" class="nav-button">← Back to File Manager</a>
-                <a href="/" class="nav-button">Main Page</a>
+            <div class="flex gap-3">
+                <a href="/" class="btn-apple-secondary">← Back to Main Page</a>
+                <button onclick="window.print()" class="btn-apple-primary">🖨️ Print Report</button>
             </div>
         </div>
 
         <div id="loadingMessage" class="loading">
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <div style="width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div
+                    style="width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #007bff; border-radius: 50%; animation: spin 1s linear infinite;">
+                </div>
                 Loading extraction report...
             </div>
         </div>
@@ -301,7 +343,8 @@
             </div>
 
             <!-- Troubleshooting Section -->
-            <div class="report-section" id="troubleshootingSection" style="background-color: #e7f3ff; border-left-color: #17a2b8;">
+            <div class="report-section" id="troubleshootingSection"
+                style="background-color: #e7f3ff; border-left-color: #17a2b8;">
                 <h2 style="color: #0c5460; border-bottom-color: #17a2b8;">🔧 Troubleshooting & Analysis</h2>
                 <div id="troubleshootingContent">
                     <!-- Troubleshooting content will be populated here -->
@@ -312,8 +355,13 @@
 
     <style>
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 
@@ -323,7 +371,7 @@
         const fileId = urlParts[urlParts.length - 1];
 
         // Load extraction report on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadExtractionReport();
         });
 
@@ -349,7 +397,7 @@
 
             // Update file information
             document.getElementById('fileName').textContent = reportData.originalFilename;
-            document.getElementById('fileDetails').textContent = 
+            document.getElementById('fileDetails').textContent =
                 `File Type: ${reportData.fileType.toUpperCase()} | Status: ${reportData.processingStatus.toUpperCase()} | Processed: ${new Date(reportData.processedAt).toLocaleString()}`;
 
             // Populate file information
@@ -470,7 +518,7 @@
 
         function populateProcessingStats(reportData) {
             const processingGrid = document.getElementById('processingGrid');
-            
+
             let processingTime = 'N/A';
             if (reportData.extractionReport && reportData.extractionReport.processingTimeMs) {
                 processingTime = `${reportData.extractionReport.processingTimeMs}ms`;
@@ -498,7 +546,7 @@
 
         function populateExcelDetails(excelSpecific) {
             const excelContent = document.getElementById('excelContent');
-            
+
             let html = '';
 
             // Worksheets processed
@@ -520,13 +568,13 @@
                         <h4>📋 Column Mapping Detected</h4>
                         <div class="column-list">
                 `;
-                
+
                 Object.entries(excelSpecific.columnMapping).forEach(([key, value]) => {
-                    const columnClass = key.toLowerCase().includes('phone') ? 'phone' : 
-                                       key.toLowerCase().includes('company') ? 'company' : '';
+                    const columnClass = key.toLowerCase().includes('phone') ? 'phone' :
+                        key.toLowerCase().includes('company') ? 'company' : '';
                     html += `<span class="column-tag ${columnClass}">${key}: ${value}</span>`;
                 });
-                
+
                 html += `
                         </div>
                     </div>
@@ -555,7 +603,7 @@
 
         function populateDuplicateDetails(duplicateHandling) {
             const duplicateDetailsList = document.getElementById('duplicateDetailsList');
-            
+
             if (!duplicateHandling.duplicateIds || duplicateHandling.duplicateIds.length === 0) {
                 return;
             }
@@ -591,14 +639,14 @@
         function populateTroubleshootingInfo(reportData) {
             const troubleshootingContent = document.getElementById('troubleshootingContent');
             const duplicateHandling = reportData.duplicateHandling;
-            
+
             let html = '<div class="report-grid">';
 
             // Data quality assessment
             const duplicatePercentage = duplicateHandling.duplicatePercentage || 0;
             let dataQuality = 'Excellent';
             let dataQualityColor = '#28a745';
-            
+
             if (duplicatePercentage >= 50) {
                 dataQuality = 'Needs Review';
                 dataQualityColor = '#dc3545';
@@ -681,4 +729,5 @@
         }
     </script>
 </body>
+
 </html>

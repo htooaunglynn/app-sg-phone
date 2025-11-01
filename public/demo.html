@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple-Style Tailwind Components Demo</title>
+    <!-- Apple-Style Tailwind CSS -->
+    <link rel="stylesheet" href="/css/tailwind-compiled.css">
+</head>
+
+<body class="min-h-screen p-8 bg-gradient-to-br from-neutral-50 to-neutral-100">
+    <!-- Main Container -->
+    <div class="container-apple max-w-6xl">
+        <h1 class="text-4xl font-bold text-center mb-12 text-gradient">
+            🍎 Apple-Style Components Demo
+        </h1>
+
+        <!-- Buttons Section -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Buttons</h2>
+            <div class="flex flex-wrap gap-4">
+                <button class="btn-apple-primary">Primary Button</button>
+                <button class="btn-apple-secondary">Secondary Button</button>
+                <button class="btn-apple-primary" disabled>Disabled Button</button>
+            </div>
+        </div>
+
+        <!-- Form Elements -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Form Elements</h2>
+            <div class="space-y-4 max-w-md">
+                <input type="text" class="form-input-apple" placeholder="Standard input">
+                <input type="email" class="form-input-apple" placeholder="Email input">
+                <input type="text" class="search-input-apple" placeholder="Search input with icon">
+                <textarea class="form-input-apple" rows="3" placeholder="Textarea"></textarea>
+                <select class="form-input-apple">
+                    <option>Select option</option>
+                    <option>Option 1</option>
+                    <option>Option 2</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Status Messages</h2>
+            <div class="space-y-4">
+                <div class="status-success-apple">
+                    ✅ Success message with green styling
+                </div>
+                <div class="status-warning-apple">
+                    ⚠️ Warning message with yellow styling
+                </div>
+                <div class="status-error-apple">
+                    ❌ Error message with red styling
+                </div>
+                <div class="status-info-apple">
+                    ℹ️ Info message with blue styling
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Badges</h2>
+            <div class="flex flex-wrap gap-3">
+                <span class="badge-primary-apple">Primary</span>
+                <span class="badge-success-apple">Success</span>
+                <span class="badge-warning-apple">Warning</span>
+                <span class="badge-danger-apple">Danger</span>
+            </div>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Feature Cards</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="feature-card-apple">
+                    <div class="feature-icon-apple">📱</div>
+                    <h3 class="font-semibold text-neutral-800 mb-2">Mobile First</h3>
+                    <p class="text-sm text-neutral-600">Responsive design that works on all devices</p>
+                </div>
+                <div class="feature-card-apple">
+                    <div class="feature-icon-apple">⚡</div>
+                    <h3 class="font-semibold text-neutral-800 mb-2">Fast Performance</h3>
+                    <p class="text-sm text-neutral-600">Optimized for speed and efficiency</p>
+                </div>
+                <div class="feature-card-apple">
+                    <div class="feature-icon-apple">🔒</div>
+                    <h3 class="font-semibold text-neutral-800 mb-2">Secure</h3>
+                    <p class="text-sm text-neutral-600">Built with security best practices</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Data Table</h2>
+            <div class="overflow-x-auto">
+                <table class="table-apple">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>John Doe</td>
+                            <td>john@example.com</td>
+                            <td>Admin</td>
+                            <td><span class="badge-success-apple">Active</span></td>
+                        </tr>
+                        <tr>
+                            <td>Jane Smith</td>
+                            <td>jane@example.com</td>
+                            <td>User</td>
+                            <td><span class="badge-warning-apple">Pending</span></td>
+                        </tr>
+                        <tr>
+                            <td>Mike Johnson</td>
+                            <td>mike@example.com</td>
+                            <td>Editor</td>
+                            <td><span class="badge-primary-apple">Active</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Progress and Loading -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Progress & Loading</h2>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-neutral-700 mb-2">Progress Bar</label>
+                    <div class="progress-apple">
+                        <div class="progress-bar-apple" style="width: 65%"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-neutral-600">Loading spinner:</span>
+                    <div class="loading-spinner-apple"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="glass-card mb-8">
+            <h2 class="text-xl font-semibold text-neutral-800 mb-6">Navigation</h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="#" class="nav-link-apple">📁 Home</a>
+                <a href="#" class="nav-link-apple">📊 Dashboard</a>
+                <a href="#" class="nav-link-apple">⚙️ Settings</a>
+                <a href="#" class="nav-link-apple">👤 Profile</a>
+            </div>
+        </div>
+
+        <!-- Grid Layout Example -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="card-apple">
+                <h3 class="font-semibold text-neutral-800 mb-3">Regular Card</h3>
+                <p class="text-neutral-600 text-sm">This is a standard card with subtle shadow and hover effects.</p>
+            </div>
+            <div class="card-apple-elevated">
+                <h3 class="font-semibold text-neutral-800 mb-3">Elevated Card</h3>
+                <p class="text-neutral-600 text-sm">This is an elevated card with stronger shadow and more prominent
+                    hover effects.</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-neutral-500 text-sm">
+            <p>Apple-style Tailwind CSS Implementation</p>
+            <p class="mt-1">Responsive • Minimalist • Beautiful</p>
+        </div>
+    </div>
+
+    <!-- Demo Modal Button -->
+    <div class="fixed bottom-6 right-6">
+        <button onclick="showModal()" class="btn-apple-primary shadow-lg">
+            🎭 Show Modal
+        </button>
+    </div>
+
+    <!-- Modal Example -->
+    <div id="demoModal" class="modal-overlay-apple hidden" onclick="hideModal()">
+        <div class="modal-content-apple" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-neutral-200">
+                <h3 class="text-lg font-semibold text-neutral-800">Modal Example</h3>
+            </div>
+            <div class="p-6">
+                <p class="text-neutral-600 mb-4">
+                    This is a beautiful modal with glass morphism effects and smooth animations.
+                </p>
+                <div class="space-y-3">
+                    <input type="text" class="form-input-apple" placeholder="Enter some text...">
+                    <textarea class="form-input-apple" rows="3" placeholder="Your message..."></textarea>
+                </div>
+            </div>
+            <div class="p-6 border-t border-neutral-200 bg-neutral-50 rounded-b-xl">
+                <div class="flex gap-3 justify-end">
+                    <button onclick="hideModal()" class="btn-apple-secondary">Cancel</button>
+                    <button onclick="hideModal()" class="btn-apple-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showModal() {
+            document.getElementById('demoModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideModal() {
+            document.getElementById('demoModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // Add some interactive demo features
+        document.addEventListener('DOMContentLoaded', function () {
+            // Progress bar animation
+            const progressBar = document.querySelector('.progress-bar-apple');
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 1;
+                progressBar.style.width = progress + '%';
+                if (progress >= 100) {
+                    progress = 0;
+                }
+            }, 100);
+
+            // Add click handlers for better demo
+            document.querySelectorAll('.btn-apple-primary, .btn-apple-secondary').forEach(button => {
+                if (!button.onclick && !button.disabled) {
+                    button.addEventListener('click', function () {
+                        const originalText = this.textContent;
+                        this.textContent = 'Clicked!';
+                        this.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                            this.style.transform = '';
+                        }, 200);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
