@@ -20,12 +20,12 @@ CREATE TABLE phone_records (
     phone_number VARCHAR(20) NOT NULL COMMENT 'Singapore phone number',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
-    
+
     -- Indexes for performance
     INDEX idx_identifier (identifier),
     INDEX idx_phone_number (phone_number),
     INDEX idx_created_at (created_at),
-    
+
     -- Constraints
     CONSTRAINT chk_phone_format CHECK (phone_number REGEXP '^[689][0-9]{7}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -42,9 +42,9 @@ DROP TABLE IF EXISTS check_table;
 CREATE TABLE check_table (
     Id VARCHAR(100) NOT NULL PRIMARY KEY COMMENT 'Primary identifier (e.g., SG COM-2001)',
     numeric_id INT GENERATED ALWAYS AS (
-        CASE 
+        CASE
             WHEN Id REGEXP '[0-9]+$' THEN CAST(REGEXP_SUBSTR(Id, '[0-9]+$') AS UNSIGNED)
-            ELSE NULL 
+            ELSE NULL
         END
     ) STORED COMMENT 'Extracted numeric ID for sorting and range queries',
     Phone VARCHAR(50) NOT NULL COMMENT 'Singapore phone number',
@@ -55,7 +55,7 @@ CREATE TABLE check_table (
     Website VARCHAR(255) NULL COMMENT 'Company website URL',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
-    
+
     -- Indexes for performance
     INDEX idx_numeric_id (numeric_id),
     INDEX idx_phone (Phone),
@@ -63,10 +63,10 @@ CREATE TABLE check_table (
     INDEX idx_email (Email),
     INDEX idx_company_name (CompanyName),
     INDEX idx_created_at (created_at),
-    
+
     -- Unique constraints
     UNIQUE KEY unique_email (Email),
-    
+
     -- Check constraints
     CONSTRAINT chk_email_format CHECK (Email IS NULL OR Email REGEXP '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'),
     CONSTRAINT chk_phone_singapore CHECK (Phone REGEXP '^[689][0-9]{7}$')
@@ -88,17 +88,29 @@ CREATE TABLE backup_table (
     source_file VARCHAR(255) NULL COMMENT 'Source file name',
     processing_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'When this record was processed',
     validation_status ENUM('pending', 'validated', 'invalid', 'duplicate') DEFAULT 'pending' COMMENT 'Validation status',
+    CompanyName VARCHAR(255) NULL COMMENT 'Company or business name',
+    PhysicalAddress TEXT NULL COMMENT 'Physical business address',
+    Email VARCHAR(255) NULL COMMENT 'Contact email address',
+    Website VARCHAR(255) NULL COMMENT 'Company website URL',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
     -- Indexes
     INDEX idx_identifier_backup (identifier),
     INDEX idx_phone_backup (phone_number),
     INDEX idx_source_file (source_file),
     INDEX idx_validation_status (validation_status),
-    INDEX idx_processing_date (processing_date)
+    INDEX idx_processing_date (processing_date),
+    INDEX idx_company_name (CompanyName),
+    INDEX idx_email_backup (Email),
+
+    -- Unique constraints
+    UNIQUE KEY unique_email_backup (Email),
+
+    -- Check constraints
+    CONSTRAINT chk_email_format_backup CHECK (Email IS NULL OR Email REGEXP '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Backup table for data recovery and validation tracking';
+COMMENT='Backup table for data recovery and validation tracking with company information';
 
 -- =============================================================================
 -- FILE PROCESSING LOG TABLE
@@ -123,7 +135,7 @@ CREATE TABLE file_processing_log (
     records_failed INT DEFAULT 0 COMMENT 'Number of records that failed processing',
     error_message TEXT NULL COMMENT 'Error message if processing failed',
     extraction_report JSON NULL COMMENT 'Detailed extraction report for Excel files',
-    
+
     -- Indexes
     INDEX idx_file_id (file_id),
     INDEX idx_file_type (file_type),
@@ -148,7 +160,7 @@ CREATE TABLE system_config (
     is_editable BOOLEAN DEFAULT TRUE COMMENT 'Whether this config can be modified',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
+
     -- Indexes
     INDEX idx_config_type (config_type),
     INDEX idx_is_editable (is_editable)
@@ -163,7 +175,7 @@ COMMENT='System configuration and settings storage';
 
 -- View for phone records statistics
 CREATE OR REPLACE VIEW phone_records_stats AS
-SELECT 
+SELECT
     COUNT(*) as total_records,
     COUNT(DISTINCT phone_number) as unique_phones,
     MIN(created_at) as first_record_date,
@@ -176,7 +188,7 @@ WITH CHECK OPTION;
 
 -- View for check table statistics
 CREATE OR REPLACE VIEW check_table_stats AS
-SELECT 
+SELECT
     COUNT(*) as total_records,
     COUNT(CASE WHEN Status = TRUE THEN 1 END) as valid_singapore_phones,
     COUNT(CASE WHEN Status = FALSE THEN 1 END) as invalid_phones,
@@ -188,9 +200,25 @@ SELECT
     MAX(created_at) as last_record_date
 FROM check_table;
 
+-- View for backup table statistics
+CREATE OR REPLACE VIEW backup_table_stats AS
+SELECT
+    COUNT(*) as total_records,
+    COUNT(CASE WHEN validation_status = 'validated' THEN 1 END) as validated_records,
+    COUNT(CASE WHEN validation_status = 'invalid' THEN 1 END) as invalid_records,
+    COUNT(CASE WHEN validation_status = 'duplicate' THEN 1 END) as duplicate_records,
+    COUNT(CASE WHEN validation_status = 'pending' THEN 1 END) as pending_records,
+    COUNT(CASE WHEN CompanyName IS NOT NULL THEN 1 END) as records_with_company,
+    COUNT(CASE WHEN Email IS NOT NULL THEN 1 END) as records_with_email,
+    COUNT(CASE WHEN Website IS NOT NULL THEN 1 END) as records_with_website,
+    COUNT(CASE WHEN PhysicalAddress IS NOT NULL THEN 1 END) as records_with_address,
+    MIN(created_at) as first_record_date,
+    MAX(created_at) as last_record_date
+FROM backup_table;
+
 -- View for file processing statistics
 CREATE OR REPLACE VIEW file_processing_stats AS
-SELECT 
+SELECT
     file_type,
     processing_status,
     COUNT(*) as file_count,
@@ -212,25 +240,34 @@ DELIMITER //
 -- Procedure to get database statistics
 CREATE PROCEDURE GetDatabaseStats()
 BEGIN
-    SELECT 
+    SELECT
         'phone_records' as table_name,
         COUNT(*) as record_count,
         MIN(created_at) as first_record,
         MAX(created_at) as last_record
     FROM phone_records
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
         'check_table' as table_name,
         COUNT(*) as record_count,
         MIN(created_at) as first_record,
         MAX(created_at) as last_record
     FROM check_table
-    
+
     UNION ALL
-    
-    SELECT 
+
+    SELECT
+        'backup_table' as table_name,
+        COUNT(*) as record_count,
+        MIN(created_at) as first_record,
+        MAX(created_at) as last_record
+    FROM backup_table
+
+    UNION ALL
+
+    SELECT
         'file_processing_log' as table_name,
         COUNT(*) as record_count,
         MIN(upload_timestamp) as first_record,
@@ -241,10 +278,10 @@ END //
 -- Procedure to cleanup old processing logs
 CREATE PROCEDURE CleanupOldLogs(IN days_to_keep INT)
 BEGIN
-    DELETE FROM file_processing_log 
+    DELETE FROM file_processing_log
     WHERE upload_timestamp < DATE_SUB(NOW(), INTERVAL days_to_keep DAY)
     AND processing_status IN ('completed', 'failed', 'cancelled');
-    
+
     SELECT ROW_COUNT() as deleted_records;
 END //
 
@@ -252,10 +289,10 @@ END //
 CREATE PROCEDURE ValidatePhoneNumber(IN phone_input VARCHAR(50), OUT is_valid BOOLEAN, OUT formatted_phone VARCHAR(20))
 BEGIN
     DECLARE clean_phone VARCHAR(20);
-    
+
     -- Remove all non-digit characters
     SET clean_phone = REGEXP_REPLACE(phone_input, '[^0-9]', '');
-    
+
     -- Check if it matches Singapore phone pattern
     IF clean_phone REGEXP '^[689][0-9]{7}$' THEN
         SET is_valid = TRUE;
@@ -291,22 +328,22 @@ DELIMITER ;
 -- =============================================================================
 
 -- Verify tables were created successfully
--- SELECT 
+-- SELECT
 --     TABLE_NAME,
 --     TABLE_ROWS,
 --     CREATE_TIME,
 --     TABLE_COMMENT
--- FROM information_schema.TABLES 
+-- FROM information_schema.TABLES
 -- WHERE TABLE_SCHEMA = DATABASE()
 -- ORDER BY TABLE_NAME;
 
 -- Verify indexes were created
--- SELECT 
+-- SELECT
 --     TABLE_NAME,
 --     INDEX_NAME,
 --     COLUMN_NAME,
 --     INDEX_TYPE
--- FROM information_schema.STATISTICS 
+-- FROM information_schema.STATISTICS
 -- WHERE TABLE_SCHEMA = DATABASE()
 -- ORDER BY TABLE_NAME, INDEX_NAME;
 

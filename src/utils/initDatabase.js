@@ -38,7 +38,7 @@ class DatabaseInitializer {
     }
 
     /**
-     * Create immutable backup_table for storing raw PDF data with enhanced metadata
+     * Create backup_table for storing raw Excel data with company information
      */
     async createBackupTable() {
         console.log('Creating backup_table...');
@@ -47,17 +47,24 @@ class DatabaseInitializer {
       CREATE TABLE IF NOT EXISTS backup_table (
         Id VARCHAR(100) NOT NULL,
         Phone VARCHAR(50) NOT NULL,
-        source_file VARCHAR(255) NULL COMMENT 'Original PDF filename',
-        extracted_metadata TEXT NULL COMMENT 'JSON metadata from PDF extraction',
+        CompanyName VARCHAR(255) NULL COMMENT 'Company name from Excel data',
+        PhysicalAddress TEXT NULL COMMENT 'Company physical address',
+        Email VARCHAR(255) NULL COMMENT 'Company email address',
+        Website VARCHAR(255) NULL COMMENT 'Company website URL',
+        source_file VARCHAR(255) NULL COMMENT 'Original Excel filename',
+        extracted_metadata TEXT NULL COMMENT 'JSON metadata from Excel extraction',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (Id),
         INDEX idx_phone (Phone),
+        INDEX idx_company_name (CompanyName),
+        INDEX idx_email (Email),
         INDEX idx_source_file (source_file),
         INDEX idx_created_at (created_at)
       ) ENGINE=InnoDB
         DEFAULT CHARSET=utf8mb4
         COLLATE=utf8mb4_unicode_ci
-        COMMENT='Immutable table for storing raw PDF data with metadata'
+        COMMENT='Table for storing raw Excel data with company information'
     `;
 
         await this.databaseManager.query(createTableSQL);
@@ -73,25 +80,69 @@ class DatabaseInitializer {
      */
     async addBackupTableColumns() {
         try {
-            // Check if source_file column exists
+            // Check current table structure
             const columns = await this.databaseManager.query('DESCRIBE backup_table');
-            const hasSourceFile = columns.some(col => col.Field === 'source_file');
-            const hasExtractedMetadata = columns.some(col => col.Field === 'extracted_metadata');
+            const columnNames = columns.map(col => col.Field);
 
-            if (!hasSourceFile) {
+            // Add company-related columns if they don't exist
+            if (!columnNames.includes('CompanyName')) {
+                console.log('Adding CompanyName column to backup_table...');
+                await this.databaseManager.query(`
+          ALTER TABLE backup_table
+          ADD COLUMN CompanyName VARCHAR(255) NULL COMMENT 'Company name from Excel data' AFTER Phone
+        `);
+                await this.databaseManager.query('ALTER TABLE backup_table ADD INDEX idx_company_name (CompanyName)');
+            }
+
+            if (!columnNames.includes('PhysicalAddress')) {
+                console.log('Adding PhysicalAddress column to backup_table...');
+                await this.databaseManager.query(`
+          ALTER TABLE backup_table
+          ADD COLUMN PhysicalAddress TEXT NULL COMMENT 'Company physical address' AFTER CompanyName
+        `);
+            }
+
+            if (!columnNames.includes('Email')) {
+                console.log('Adding Email column to backup_table...');
+                await this.databaseManager.query(`
+          ALTER TABLE backup_table
+          ADD COLUMN Email VARCHAR(255) NULL COMMENT 'Company email address' AFTER PhysicalAddress
+        `);
+                await this.databaseManager.query('ALTER TABLE backup_table ADD INDEX idx_email (Email)');
+            }
+
+            if (!columnNames.includes('Website')) {
+                console.log('Adding Website column to backup_table...');
+                await this.databaseManager.query(`
+          ALTER TABLE backup_table
+          ADD COLUMN Website VARCHAR(255) NULL COMMENT 'Company website URL' AFTER Email
+        `);
+            }
+
+            // Add legacy columns if they don't exist
+            if (!columnNames.includes('source_file')) {
                 console.log('Adding source_file column to backup_table...');
                 await this.databaseManager.query(`
           ALTER TABLE backup_table
-          ADD COLUMN source_file VARCHAR(255) NULL COMMENT 'Original PDF filename' AFTER Phone
+          ADD COLUMN source_file VARCHAR(255) NULL COMMENT 'Original Excel filename' AFTER Website
         `);
                 await this.databaseManager.query('ALTER TABLE backup_table ADD INDEX idx_source_file (source_file)');
             }
 
-            if (!hasExtractedMetadata) {
+            if (!columnNames.includes('extracted_metadata')) {
                 console.log('Adding extracted_metadata column to backup_table...');
                 await this.databaseManager.query(`
           ALTER TABLE backup_table
-          ADD COLUMN extracted_metadata TEXT NULL COMMENT 'JSON metadata from PDF extraction' AFTER source_file
+          ADD COLUMN extracted_metadata TEXT NULL COMMENT 'JSON metadata from Excel extraction' AFTER source_file
+        `);
+            }
+
+            // Add updated_at column if it doesn't exist
+            if (!columnNames.includes('updated_at')) {
+                console.log('Adding updated_at column to backup_table...');
+                await this.databaseManager.query(`
+          ALTER TABLE backup_table
+          ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at
         `);
             }
 

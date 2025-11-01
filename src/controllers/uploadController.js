@@ -1769,6 +1769,158 @@ class UploadController {
             });
         }
     }
+
+    /**
+     * Get backup_table records with pagination
+     */
+    async getBackupRecords(req, res) {
+        try {
+            const { limit = 50, offset = 0 } = req.query;
+
+            const records = await databaseManager.getBackupRecordsWithPagination(
+                parseInt(limit),
+                parseInt(offset)
+            );
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    records: records,
+                    pagination: {
+                        limit: parseInt(limit),
+                        offset: parseInt(offset),
+                        hasMore: records.length === parseInt(limit)
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Failed to get backup records:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve backup records',
+                code: 'BACKUP_RECORDS_ERROR',
+                details: error.message
+            });
+        }
+    }
+
+    /**
+     * Get specific backup_table record by ID
+     */
+    async getBackupRecord(req, res) {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Record ID is required',
+                    code: 'MISSING_RECORD_ID'
+                });
+            }
+
+            const record = await databaseManager.getBackupRecordById(id);
+
+            if (!record) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Record not found',
+                    code: 'RECORD_NOT_FOUND'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: record
+            });
+
+        } catch (error) {
+            console.error('Failed to get backup record:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to retrieve backup record',
+                code: 'BACKUP_RECORD_ERROR',
+                details: error.message
+            });
+        }
+    }
+
+    /**
+     * Update company information in backup_table (allows editing company fields only)
+     */
+    async updateBackupRecordCompanyInfo(req, res) {
+        try {
+            const { id } = req.params;
+            const { companyName, physicalAddress, email, website } = req.body;
+
+            if (!id) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Record ID is required',
+                    code: 'MISSING_RECORD_ID'
+                });
+            }
+
+            // Validate that only company fields are being updated
+            const allowedFields = ['companyName', 'physicalAddress', 'email', 'website'];
+            const providedFields = Object.keys(req.body);
+            const invalidFields = providedFields.filter(field => !allowedFields.includes(field));
+
+            if (invalidFields.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Invalid fields provided: ${invalidFields.join(', ')}. Only company information can be updated.`,
+                    code: 'INVALID_FIELDS'
+                });
+            }
+
+            // Check if record exists
+            const existingRecord = await databaseManager.getBackupRecordById(id);
+            if (!existingRecord) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Record not found',
+                    code: 'RECORD_NOT_FOUND'
+                });
+            }
+
+            // Update company information
+            const result = await databaseManager.updateBackupRecordCompanyInfo(
+                id,
+                companyName,
+                physicalAddress,
+                email,
+                website
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Record not found or no changes made',
+                    code: 'NO_CHANGES'
+                });
+            }
+
+            // Get updated record
+            const updatedRecord = await databaseManager.getBackupRecordById(id);
+
+            res.status(200).json({
+                success: true,
+                message: 'Company information updated successfully',
+                data: updatedRecord
+            });
+
+        } catch (error) {
+            console.error('Failed to update backup record company info:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to update company information',
+                code: 'UPDATE_ERROR',
+                details: error.message
+            });
+        }
+    }
 }
 
 module.exports = UploadController;

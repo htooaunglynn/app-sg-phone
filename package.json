@@ -12,7 +12,12 @@
         "test": "jest",
         "start:prod": "./scripts/start.sh",
         "health-check": "./scripts/health-check.sh",
-        "setup": "npm install && mkdir -p uploads uploads/temp uploads/excel uploads/pdf exports exports/temp logs"
+        "setup": "npm install && mkdir -p uploads uploads/temp uploads/excel uploads/pdf exports exports/temp logs",
+        "migrate": "node scripts/migrate-backup-table.js",
+        "migrate:backup-table": "node scripts/migrate-backup-table.js",
+        "test:company-data": "node scripts/test-company-data.js",
+        "test:company-updates": "node scripts/test-company-updates.js",
+        "test:backup-to-check-flow": "node scripts/test-backup-to-check-flow.js"
     },
     "keywords": [
         "singapore",

@@ -8,16 +8,16 @@ class ExcelProcessor {
     constructor() {
         // Singapore phone number pattern: 8 digits starting with 6, 8, or 9
         this.phonePattern = /^[689]\d{7}$/;
-        
+
         // Initialize data validator
         this.dataValidator = new DataValidator();
-        
+
         // Initialize duplicate detection service
         this.duplicateDetectionService = new DuplicateDetectionService();
-        
+
         // Batch processing configuration
         this.batchSize = 1000; // Process records in batches for large datasets
-        
+
         // Performance monitoring
         this.performanceMetrics = {
             totalProcessingTime: 0,
@@ -34,7 +34,7 @@ class ExcelProcessor {
                 samples: []
             }
         };
-        
+
         // Performance optimization settings
         this.optimizationSettings = {
             maxFileSize: 50 * 1024 * 1024, // 50MB limit
@@ -45,10 +45,10 @@ class ExcelProcessor {
             enableCaching: true,
             cacheSize: 1000 // Cache up to 1000 column mappings
         };
-        
+
         // Column mapping cache for performance
         this.columnMappingCache = new Map();
-        
+
         // Error message templates for user-friendly feedback
         this.errorMessages = {
             INVALID_EXCEL: 'The uploaded file is not a valid Excel file or is corrupted. Please check your file and try again.',
@@ -72,7 +72,7 @@ class ExcelProcessor {
     async extractData(excelBuffer) {
         const startTime = Date.now();
         const startMemory = process.memoryUsage();
-        
+
         try {
             // Validate input buffer
             if (!excelBuffer || !Buffer.isBuffer(excelBuffer)) {
@@ -93,7 +93,7 @@ class ExcelProcessor {
 
             // Parse Excel workbook
             const workbook = XLSX.read(excelBuffer, { type: 'buffer' });
-            
+
             if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
                 throw new Error(this.errorMessages.NO_WORKSHEETS);
             }
@@ -111,7 +111,7 @@ class ExcelProcessor {
                 try {
                     const worksheet = workbook.Sheets[sheetName];
                     const sheetRecords = await this.parseWorksheet(worksheet, sheetName);
-                    
+
                     if (sheetRecords.length > 0) {
                         allPhoneRecords.push(...sheetRecords);
                         processingReport.worksheetsProcessed.push({
@@ -120,7 +120,7 @@ class ExcelProcessor {
                         });
                         processingReport.validRecords += sheetRecords.length;
                     }
-                    
+
                     processingReport.totalRecords += sheetRecords.length;
                 } catch (sheetError) {
                     processingReport.errors.push(`Error processing worksheet '${sheetName}': ${sheetError.message}`);
@@ -139,14 +139,14 @@ class ExcelProcessor {
             const endTime = Date.now();
             const endMemory = process.memoryUsage();
             const processingTime = endTime - startTime;
-            
+
             this.updatePerformanceMetrics(processingTime, allPhoneRecords.length, processingReport.worksheetsProcessed.length, startMemory, endMemory);
 
             return allPhoneRecords;
         } catch (error) {
             // Update error metrics
             this.performanceMetrics.errorCount++;
-            
+
             // Handle specific Excel parsing errors
             if (error.message.includes('Unsupported file') || error.message.includes('Invalid file')) {
                 throw new Error(this.errorMessages.INVALID_EXCEL);
@@ -184,7 +184,7 @@ class ExcelProcessor {
             }
 
             // Convert worksheet to JSON array
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {
                 header: 1, // Use array format to handle variable headers
                 defval: '', // Default value for empty cells
                 raw: false // Convert all values to strings
@@ -196,14 +196,14 @@ class ExcelProcessor {
 
             // Find header row and data rows
             const { headerRowIndex, dataRows } = this.identifyDataStructure(jsonData);
-            
+
             if (dataRows.length === 0) {
                 return [];
             }
 
             // Identify phone and ID columns
             const columnMapping = this.identifyColumns(jsonData, headerRowIndex);
-            
+
             if (!columnMapping.phoneColumns || columnMapping.phoneColumns.length === 0) {
                 return [];
             }
@@ -215,12 +215,12 @@ class ExcelProcessor {
             for (const row of dataRows) {
                 try {
                     const rowPhoneRecords = this.extractMultiplePhoneNumbersFromRow(
-                        row, 
-                        columnMapping, 
-                        sheetName, 
+                        row,
+                        columnMapping,
+                        sheetName,
                         recordId
                     );
-                    
+
                     phoneRecords.push(...rowPhoneRecords);
                     recordId++;
                 } catch (rowError) {
@@ -368,7 +368,7 @@ class ExcelProcessor {
      */
     identifyCompanyColumnsByHeader(headers) {
         const companyColumns = {};
-        
+
         const patterns = {
             name: [/name/i, /company/i, /企业/i, /公司/i, /姓名/i],
             email: [/email/i, /mail/i, /邮箱/i],
@@ -378,7 +378,7 @@ class ExcelProcessor {
 
         for (let i = 0; i < headers.length; i++) {
             const header = String(headers[i] || '').trim();
-            
+
             for (const [fieldType, fieldPatterns] of Object.entries(patterns)) {
                 if (fieldPatterns.some(pattern => pattern.test(header))) {
                     companyColumns[fieldType] = i;
@@ -399,7 +399,7 @@ class ExcelProcessor {
     identifyPhoneColumnsByPattern(jsonData, startRow = 0) {
         const phoneColumns = [];
         const sampleSize = Math.min(10, jsonData.length - startRow);
-        
+
         if (sampleSize <= 0 || !jsonData[startRow]) {
             return phoneColumns;
         }
@@ -441,7 +441,7 @@ class ExcelProcessor {
      */
     identifyIdColumnByPattern(jsonData, startRow = 0) {
         const sampleSize = Math.min(10, jsonData.length - startRow);
-        
+
         if (sampleSize <= 0 || !jsonData[startRow]) {
             return null;
         }
@@ -483,12 +483,12 @@ class ExcelProcessor {
     extractMultiplePhoneNumbersFromRow(row, columnMapping, sheetName, recordId) {
         const phoneRecords = [];
         const validPhoneNumbers = [];
-        
+
         // First pass: collect all phone numbers from this row (including invalid ones)
         for (const phoneColIndex of columnMapping.phoneColumns) {
             const rawPhoneNumber = row[phoneColIndex];
             const phoneNumber = this.cleanPhoneNumber(rawPhoneNumber);
-            
+
             // Include all phone numbers, even if they don't validate as Singapore numbers
             if (phoneNumber && phoneNumber.trim() !== '') {
                 validPhoneNumbers.push({
@@ -511,21 +511,21 @@ class ExcelProcessor {
                 // Only append sequence number if this row actually has multiple phone numbers
                 id = hasMultiplePhones ? `${baseId}_${phoneSequence}` : baseId;
             } else {
-                // Generate ID with phone sequence only for multiple phones
-                id = hasMultiplePhones ? 
-                    `${sheetName}_${recordId}_${phoneSequence}` : 
-                    `${sheetName}_${recordId}`;
+                // Use phone number as the primary identifier for consistent duplicate detection
+                // This ensures that records with the same phone get the same ID for company data updates
+                id = phoneData.phoneNumber; // Use phone number directly as ID
             }
 
-            // Extract metadata preserving row context
+            // Extract metadata preserving row context and company information
             const metadata = this.extractRowMetadata(row, columnMapping, phoneData.columnIndex);
-            
+            const companyData = this.extractCompanyData(row, columnMapping);
+
             // Add multi-phone tracking metadata only when there are actually multiple phones
             if (hasMultiplePhones) {
                 metadata.multiPhoneRow = true;
                 metadata.phoneSequence = phoneSequence;
                 metadata.totalPhonesInRow = validPhoneNumbers.length;
-                metadata.baseRowId = columnMapping.idColumn !== null && row[columnMapping.idColumn] ? 
+                metadata.baseRowId = columnMapping.idColumn !== null && row[columnMapping.idColumn] ?
                     String(row[columnMapping.idColumn]).trim() : `${sheetName}_${recordId}`;
             }
 
@@ -533,6 +533,10 @@ class ExcelProcessor {
                 id: id,
                 phoneNumber: phoneData.phoneNumber,
                 sourceWorksheet: sheetName,
+                companyName: companyData.companyName,
+                physicalAddress: companyData.physicalAddress,
+                email: companyData.email,
+                website: companyData.website,
                 metadata: {
                     ...metadata,
                     isValidSingaporeNumber: phoneData.isValidSingapore
@@ -557,17 +561,10 @@ class ExcelProcessor {
             phoneColumnIndex: phoneColumnIndex
         };
 
-        // Extract company information
-        for (const [fieldType, columnIndex] of Object.entries(columnMapping.companyColumns)) {
-            if (columnIndex !== null && row[columnIndex]) {
-                metadata[fieldType] = String(row[columnIndex]).trim();
-            }
-        }
-
-        // Add any other non-phone, non-ID columns as additional metadata
+        // Add any other non-phone, non-ID, non-company columns as additional metadata
         for (let i = 0; i < row.length; i++) {
-            if (i !== columnMapping.idColumn && 
-                !columnMapping.phoneColumns.includes(i) && 
+            if (i !== columnMapping.idColumn &&
+                !columnMapping.phoneColumns.includes(i) &&
                 !Object.values(columnMapping.companyColumns).includes(i) &&
                 row[i]) {
                 metadata[`column_${i}`] = String(row[i]).trim();
@@ -575,6 +572,40 @@ class ExcelProcessor {
         }
 
         return metadata;
+    }
+
+    /**
+     * Extract company data from row
+     * @param {Array} row - Row data array
+     * @param {Object} columnMapping - Column mapping information
+     * @returns {Object} Company data object
+     */
+    extractCompanyData(row, columnMapping) {
+        const companyData = {
+            companyName: null,
+            physicalAddress: null,
+            email: null,
+            website: null
+        };
+
+        // Extract company information from identified columns
+        if (columnMapping.companyColumns.name !== undefined && row[columnMapping.companyColumns.name]) {
+            companyData.companyName = String(row[columnMapping.companyColumns.name]).trim();
+        }
+
+        if (columnMapping.companyColumns.address !== undefined && row[columnMapping.companyColumns.address]) {
+            companyData.physicalAddress = String(row[columnMapping.companyColumns.address]).trim();
+        }
+
+        if (columnMapping.companyColumns.email !== undefined && row[columnMapping.companyColumns.email]) {
+            companyData.email = String(row[columnMapping.companyColumns.email]).trim();
+        }
+
+        if (columnMapping.companyColumns.website !== undefined && row[columnMapping.companyColumns.website]) {
+            companyData.website = String(row[columnMapping.companyColumns.website]).trim();
+        }
+
+        return companyData;
     }
 
     /**
@@ -589,7 +620,7 @@ class ExcelProcessor {
 
         // Convert to string and remove all non-digit characters
         const cleaned = String(phoneNumber).replace(/\D/g, '');
-        
+
         // Remove leading country codes (65 for Singapore)
         if (cleaned.startsWith('65') && cleaned.length === 10) {
             return cleaned.substring(2);
@@ -628,8 +659,10 @@ class ExcelProcessor {
             storedRecords: 0,
             skippedRecords: 0,
             duplicatesSkipped: 0,
+            updatedRecords: 0,
             storedRecordIds: [],
             duplicateIds: [],
+            updatedRecordIds: [],
             errors: [],
             batchResults: [],
             duplicateReport: null
@@ -644,50 +677,69 @@ class ExcelProcessor {
 
             // Step 1: Check for duplicates before processing batches
             const duplicateCheckResult = await this.duplicateDetectionService.checkForDuplicates(phoneRecords);
-            
+
             console.log(`Duplicate detection completed: ${duplicateCheckResult.duplicateCount} duplicates found, ${duplicateCheckResult.newRecordCount} new records`);
 
             // Step 2: Generate duplicate report if duplicates found
             if (duplicateCheckResult.duplicates.length > 0) {
                 storageResult.duplicateReport = await this.duplicateDetectionService.generateDuplicateReport(
-                    duplicateCheckResult.duplicates, 
+                    duplicateCheckResult.duplicates,
                     sourceFile
                 );
-                
+
                 // Log each duplicate entry
                 for (const duplicate of duplicateCheckResult.duplicates) {
                     this.duplicateDetectionService.logDuplicateEntry(duplicate, sourceFile);
                 }
             }
 
-            // Step 3: Process only new records in batches
+            // Step 3: Update company data for duplicate records
+            const duplicates = duplicateCheckResult.duplicates;
+            let updateResult = null;
+
+            if (duplicates.length > 0) {
+                console.log(`Updating company data for ${duplicates.length} existing records`);
+                updateResult = await this.updateCompanyDataForDuplicates(duplicates, sourceFile);
+
+                // Add update results to storage result
+                storageResult.updatedRecords = updateResult.updatedRecords;
+                storageResult.updatedRecordIds = updateResult.updatedRecordIds;
+
+                if (updateResult.errors.length > 0) {
+                    storageResult.errors.push(...updateResult.errors);
+                }
+            }
+
+            // Step 4: Process only new records in batches
             const newRecords = duplicateCheckResult.newRecords;
             storageResult.duplicatesSkipped = duplicateCheckResult.duplicateCount;
             storageResult.duplicateIds = duplicateCheckResult.duplicateIds;
 
             if (newRecords.length > 0) {
                 console.log(`Storing ${newRecords.length} new records to backup table`);
-                
+
                 // Use enhanced transaction handling for better reliability
                 const transactionResult = await databaseManager.insertWithRollbackProtection(
-                    newRecords, 
-                    sourceFile, 
+                    newRecords,
+                    sourceFile,
                     Math.min(this.batchSize, 100) // Use smaller batches for better rollback protection
                 );
-                
+
                 storageResult.batchResults = transactionResult.batchResults;
                 storageResult.storedRecords = transactionResult.storedRecords;
                 storageResult.skippedRecords += transactionResult.duplicatesSkipped; // Additional duplicates caught at DB level
+                storageResult.updatedRecords += transactionResult.updatedRecords || 0; // Company data updates
                 storageResult.storedRecordIds = transactionResult.storedRecordIds;
-                
+                storageResult.updatedRecordIds.push(...(transactionResult.updatedRecordIds || []));
+
                 // Handle any additional duplicates found during insertion
                 if (transactionResult.duplicateIds.length > 0) {
                     storageResult.duplicatesSkipped += transactionResult.duplicatesSkipped;
                     storageResult.duplicateIds.push(...transactionResult.duplicateIds);
-                    
+
                     console.warn(`Additional ${transactionResult.duplicatesSkipped} duplicates found during database insertion`);
                 }
-                
+
                 if (transactionResult.errors.length > 0) {
                     storageResult.errors.push(...transactionResult.errors);
                 }
@@ -700,8 +752,12 @@ class ExcelProcessor {
 
             // Success if we processed records (even if all were duplicates)
             storageResult.success = (storageResult.storedRecords + storageResult.skippedRecords) > 0;
-            
-            console.log(`Backup table storage completed: ${storageResult.storedRecords} stored, ${storageResult.duplicatesSkipped} duplicates skipped, ${storageResult.skippedRecords - storageResult.duplicatesSkipped} other skipped`);
+
+            // Update total updated records count
+            storageResult.updatedRecords = (updateResult ? updateResult.updatedRecords : 0) + (storageResult.updatedRecords || 0);
+
+            const updatedCount = storageResult.updatedRecords;
+            console.log(`Backup table storage completed: ${storageResult.storedRecords} stored, ${storageResult.duplicatesSkipped} duplicates skipped (${updatedCount} company data updated), ${storageResult.skippedRecords - storageResult.duplicatesSkipped} other skipped`);
 
         } catch (error) {
             console.error('Error storing to backup table with duplicate handling:', error.message);
@@ -709,6 +765,80 @@ class ExcelProcessor {
         }
 
         return storageResult;
+    }
+
+    /**
+     * Update company data for existing records (duplicates)
+     * @param {Array} duplicateRecords - Array of duplicate records with company data
+     * @param {string} sourceFile - Source Excel filename
+     * @returns {Promise<Object>} Update results
+     */
+    async updateCompanyDataForDuplicates(duplicateRecords, sourceFile = null) {
+        const updateResult = {
+            success: false,
+            totalRecords: duplicateRecords.length,
+            updatedRecords: 0,
+            skippedRecords: 0,
+            updatedRecordIds: [],
+            errors: []
+        };
+
+        try {
+            if (!Array.isArray(duplicateRecords) || duplicateRecords.length === 0) {
+                updateResult.success = true;
+                return updateResult;
+            }
+
+            console.log(`Updating company data for ${duplicateRecords.length} existing records`);
+
+            for (const record of duplicateRecords) {
+                try {
+                    // Check if the record has any company data to update
+                    const hasCompanyData = record.companyName || record.physicalAddress || record.email || record.website;
+
+                    if (!hasCompanyData) {
+                        updateResult.skippedRecords++;
+                        continue;
+                    }
+
+                    // Update only the company data fields, not Id or Phone
+                    await databaseManager.query(
+                        `UPDATE backup_table
+                         SET CompanyName = COALESCE(?, CompanyName),
+                             PhysicalAddress = COALESCE(?, PhysicalAddress),
+                             Email = COALESCE(?, Email),
+                             Website = COALESCE(?, Website),
+                             updated_at = CURRENT_TIMESTAMP
+                         WHERE Id = ?`,
+                        [
+                            record.companyName || null,
+                            record.physicalAddress || null,
+                            record.email || null,
+                            record.website || null,
+                            record.id
+                        ]
+                    );
+
+                    updateResult.updatedRecords++;
+                    updateResult.updatedRecordIds.push(record.id);
+
+                    console.log(`Updated company data for record ${record.id}: Company=${record.companyName || 'unchanged'}, Email=${record.email || 'unchanged'}`);
+
+                } catch (error) {
+                    console.error(`Error updating company data for record ${record.id}:`, error.message);
+                    updateResult.errors.push(`Update error for ${record.id}: ${error.message}`);
+                }
+            }
+
+            updateResult.success = true;
+            console.log(`Company data update completed: ${updateResult.updatedRecords} updated, ${updateResult.skippedRecords} skipped (no company data)`);
+
+        } catch (error) {
+            console.error('Error updating company data for duplicates:', error.message);
+            updateResult.errors.push(`Update error: ${error.message}`);
+        }
+
+        return updateResult;
     }
 
     /**
@@ -735,11 +865,15 @@ class ExcelProcessor {
                 try {
                     // Prepare Excel-specific metadata
                     const excelMetadata = this.prepareExcelMetadata(record, sourceFile);
-                    
-                    // Store to backup table with metadata
-                    const result = await databaseManager.insertBackupRecordWithMetadata(
+
+                    // Store to backup table with company data and metadata
+                    const result = await databaseManager.insertBackupRecordWithCompany(
                         record.id,
                         record.phoneNumber,
+                        record.companyName,
+                        record.physicalAddress,
+                        record.email,
+                        record.website,
                         sourceFile,
                         JSON.stringify(excelMetadata)
                     );
@@ -752,7 +886,7 @@ class ExcelProcessor {
                         batchResult.skippedCount++;
                         batchResult.duplicatesEncountered++;
                         batchResult.skippedRecordIds.push(record.id);
-                        
+
                         // Log unexpected duplicate (should have been caught earlier)
                         console.warn(`Unexpected duplicate encountered during batch insertion: ${record.id}`);
                     }
@@ -763,7 +897,7 @@ class ExcelProcessor {
                         batchResult.skippedCount++;
                         batchResult.duplicatesEncountered++;
                         batchResult.skippedRecordIds.push(record.id);
-                        
+
                         // Log duplicate entry with context
                         this.duplicateDetectionService.logDuplicateEntry(record, sourceFile);
                         console.warn(`Database constraint duplicate for record ${record.id}: ${recordError.message}`);
@@ -816,18 +950,18 @@ class ExcelProcessor {
         try {
             // Step 1: Check for duplicates in the mixed batch
             const duplicateCheck = await this.duplicateDetectionService.checkForDuplicates(mixedBatch);
-            
+
             // Step 2: Process only new records with transaction protection
             if (duplicateCheck.newRecords.length > 0) {
                 const transactionResult = await databaseManager.transactionSafeDuplicateSkipping(
                     duplicateCheck.newRecords,
                     sourceFile
                 );
-                
+
                 result.newRecordsProcessed = transactionResult.processedRecords;
                 result.newRecordIds = transactionResult.processedRecordIds;
                 result.errors.push(...transactionResult.errors);
-                
+
                 // Handle any additional duplicates found during transaction
                 result.duplicatesSkipped += transactionResult.duplicatesSkipped;
                 result.duplicateIds.push(...transactionResult.duplicateIds);
@@ -879,16 +1013,16 @@ class ExcelProcessor {
 
             // Classify the original error
             const errorClassification = databaseManager.classifyDatabaseError(originalError);
-            
+
             if (errorClassification.shouldRetry) {
                 // For retryable errors, wait and try with smaller batches
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
                 // Process records individually for maximum recovery
                 for (const record of failedBatch) {
                     try {
                         const singleRecordResult = await this.processMixedBatch([record], sourceFile);
-                        
+
                         if (singleRecordResult.success) {
                             recoveryResult.recoveredRecords += singleRecordResult.newRecordsProcessed;
                             recoveryResult.duplicatesFound += singleRecordResult.duplicatesSkipped;
@@ -899,7 +1033,7 @@ class ExcelProcessor {
                             recoveryResult.failedRecordIds.push(record.id || record.Id);
                             recoveryResult.errors.push(...singleRecordResult.errors);
                         }
-                        
+
                     } catch (recordError) {
                         recoveryResult.permanentFailures++;
                         recoveryResult.failedRecordIds.push(record.id || record.Id);
@@ -1009,9 +1143,9 @@ class ExcelProcessor {
             if (error.message.includes('connection') || error.message.includes('timeout')) {
                 // Wait and retry with smaller batches
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                
+
                 const smallBatches = this.createBatches(failedRecords, Math.floor(this.batchSize / 4));
-                
+
                 for (const batch of smallBatches) {
                     try {
                         const recoveryResult = await this.storeBatchToBackupTable(batch, sourceFile, 'recovery');
@@ -1055,7 +1189,7 @@ class ExcelProcessor {
         for (const record of phoneRecords) {
             if (record.metadata?.multiPhoneRow) {
                 analysis.multiPhoneRecords++;
-                
+
                 const baseRowId = record.metadata.baseRowId;
                 if (!analysis.baseRowGroups[baseRowId]) {
                     analysis.baseRowGroups[baseRowId] = {
@@ -1065,13 +1199,13 @@ class ExcelProcessor {
                     };
                     analysis.multiPhoneRows++;
                 }
-                
+
                 analysis.baseRowGroups[baseRowId].phones.push({
                     id: record.id,
                     phone: record.phoneNumber,
                     sequence: record.metadata.phoneSequence
                 });
-                
+
                 // Track phone distribution based on actual phones found, not columns
                 const phoneCount = record.metadata.totalPhonesInRow;
                 analysis.phoneDistribution[phoneCount] = (analysis.phoneDistribution[phoneCount] || 0) + 1;
@@ -1081,7 +1215,7 @@ class ExcelProcessor {
         }
 
         // Calculate statistics
-        analysis.averagePhonesPerMultiRow = analysis.multiPhoneRows > 0 ? 
+        analysis.averagePhonesPerMultiRow = analysis.multiPhoneRows > 0 ?
             Math.round((analysis.multiPhoneRecords / analysis.multiPhoneRows) * 100) / 100 : 0;
 
         return analysis;
@@ -1094,7 +1228,7 @@ class ExcelProcessor {
      */
     generateMultiPhoneReport(phoneRecords) {
         const analysis = this.analyzeMultiPhoneRows(phoneRecords);
-        
+
         const report = {
             timestamp: new Date().toISOString(),
             summary: {
@@ -1146,9 +1280,9 @@ class ExcelProcessor {
     async triggerPhoneValidation(recordIds = null) {
         try {
             console.log('Triggering Singapore phone validation for Excel records...');
-            
+
             let validationResults;
-            
+
             if (recordIds && Array.isArray(recordIds) && recordIds.length > 0) {
                 // Process specific Excel records
                 validationResults = await phoneValidationProcessor.processSpecificRecords(recordIds);
@@ -1158,13 +1292,13 @@ class ExcelProcessor {
                 validationResults = await phoneValidationProcessor.processBackupRecords();
                 console.log('Batch validation completed for all Excel records:', validationResults);
             }
-            
+
             return {
                 success: true,
                 validationResults: validationResults,
                 timestamp: new Date().toISOString()
             };
-            
+
         } catch (error) {
             console.error('Error triggering phone validation for Excel records:', error.message);
             return {
@@ -1185,19 +1319,19 @@ class ExcelProcessor {
     async processExcelWithValidation(excelBuffer, sourceFile = null, autoValidate = true) {
         try {
             console.log('Starting Excel processing with integrated validation...');
-            
+
             // Step 1: Extract data from Excel
             const phoneRecords = await this.extractData(excelBuffer);
             console.log(`Extracted ${phoneRecords.length} phone records from Excel`);
-            
+
             // Step 2: Store to backup table
             const storageResult = await this.storeToBackupTable(phoneRecords, sourceFile);
             console.log(`Storage completed: ${storageResult.storedRecords} records stored`);
-            
+
             if (!storageResult.success || storageResult.storedRecords === 0) {
                 throw new Error('Failed to store Excel records to backup table');
             }
-            
+
             // Step 3: Trigger phone validation if enabled
             let validationResult = null;
             if (autoValidate) {
@@ -1205,13 +1339,13 @@ class ExcelProcessor {
                 const storedRecordIds = phoneRecords
                     .slice(0, storageResult.storedRecords)
                     .map(record => record.id);
-                
+
                 validationResult = await this.triggerPhoneValidation(storedRecordIds);
             }
-            
+
             // Step 4: Generate comprehensive report with duplicate information
             const extractionReport = this.generateExtractionReport(phoneRecords, storageResult);
-            
+
             return {
                 success: true,
                 extraction: {
@@ -1222,7 +1356,7 @@ class ExcelProcessor {
                 validation: validationResult,
                 timestamp: new Date().toISOString()
             };
-            
+
         } catch (error) {
             console.error('Error in Excel processing with validation:', error.message);
             return {
@@ -1242,7 +1376,7 @@ class ExcelProcessor {
         try {
             // Get overall processing status
             const processingStatus = await phoneValidationProcessor.getProcessingStatus();
-            
+
             // Get Excel-specific statistics if record IDs provided
             let excelSpecificStats = null;
             if (recordIds && Array.isArray(recordIds) && recordIds.length > 0) {
@@ -1250,12 +1384,12 @@ class ExcelProcessor {
                     'SELECT Id, Phone, source_file, extracted_metadata FROM backup_table WHERE Id IN (?)',
                     [recordIds]
                 );
-                
+
                 const checkRecords = await databaseManager.query(
                     'SELECT Id, Phone, Status FROM check_table WHERE Id IN (?)',
                     [recordIds]
                 );
-                
+
                 excelSpecificStats = {
                     totalExcelRecords: backupRecords.length,
                     validatedExcelRecords: checkRecords.length,
@@ -1264,14 +1398,14 @@ class ExcelProcessor {
                     invalidNumbers: checkRecords.filter(r => r.Status === 0).length
                 };
             }
-            
+
             return {
                 success: true,
                 overallStatus: processingStatus,
                 excelSpecificStats: excelSpecificStats,
                 timestamp: new Date().toISOString()
             };
-            
+
         } catch (error) {
             console.error('Error getting Excel processing status:', error.message);
             return {
@@ -1319,7 +1453,7 @@ class ExcelProcessor {
         if (this.lastProcessingReport) {
             report.summary.worksheetsProcessed = this.lastProcessingReport.worksheetsProcessed.length;
             report.processingErrors = this.lastProcessingReport.errors || [];
-            
+
             // Build worksheet details
             for (const worksheet of this.lastProcessingReport.worksheetsProcessed) {
                 report.worksheetDetails[worksheet.name] = {
@@ -1334,15 +1468,15 @@ class ExcelProcessor {
         // Analyze data quality
         const phoneNumbers = phoneRecords.map(r => r.phoneNumber);
         const uniquePhones = new Set(phoneNumbers);
-        
-        report.dataQuality.validPhoneNumbers = phoneRecords.filter(r => 
+
+        report.dataQuality.validPhoneNumbers = phoneRecords.filter(r =>
             this.validatePhoneNumber(r.phoneNumber)
         ).length;
-        
-        report.dataQuality.recordsWithMetadata = phoneRecords.filter(r => 
+
+        report.dataQuality.recordsWithMetadata = phoneRecords.filter(r =>
             r.metadata && Object.keys(r.metadata).length > 1
         ).length;
-        
+
         report.dataQuality.duplicatePhoneNumbers = phoneNumbers.length - uniquePhones.size;
 
         // Add multi-phone analysis
@@ -1351,11 +1485,11 @@ class ExcelProcessor {
         // Add duplicate handling information if storage result is provided
         if (storageResult) {
             report.duplicateHandling.duplicatesFound = storageResult.duplicatesSkipped || 0;
-            report.duplicateHandling.duplicatePercentage = phoneRecords.length > 0 ? 
+            report.duplicateHandling.duplicatePercentage = phoneRecords.length > 0 ?
                 Math.round((report.duplicateHandling.duplicatesFound / phoneRecords.length) * 10000) / 100 : 0;
             report.duplicateHandling.newRecordsStored = storageResult.storedRecords || 0;
             report.duplicateHandling.duplicateReport = storageResult.duplicateReport;
-            
+
             // Add duplicate statistics to summary
             report.summary.duplicatesSkipped = report.duplicateHandling.duplicatesFound;
             report.summary.newRecordsStored = report.duplicateHandling.newRecordsStored;
@@ -1384,12 +1518,12 @@ class ExcelProcessor {
         const memoryDelta = endMemory.heapUsed - startMemory.heapUsed;
         this.performanceMetrics.memoryUsage.peak = Math.max(this.performanceMetrics.memoryUsage.peak, endMemory.heapUsed);
         this.performanceMetrics.memoryUsage.samples.push(memoryDelta);
-        
+
         // Keep only last 100 samples for average calculation
         if (this.performanceMetrics.memoryUsage.samples.length > 100) {
             this.performanceMetrics.memoryUsage.samples.shift();
         }
-        
+
         this.performanceMetrics.memoryUsage.average = this.performanceMetrics.memoryUsage.samples.reduce((a, b) => a + b, 0) / this.performanceMetrics.memoryUsage.samples.length;
     }
 
@@ -1405,7 +1539,7 @@ class ExcelProcessor {
                 peakMB: Math.round(this.performanceMetrics.memoryUsage.peak / 1024 / 1024 * 100) / 100,
                 averageMB: Math.round(this.performanceMetrics.memoryUsage.average / 1024 / 1024 * 100) / 100
             },
-            averageRecordsPerSecond: this.performanceMetrics.averageProcessingTime > 0 ? 
+            averageRecordsPerSecond: this.performanceMetrics.averageProcessingTime > 0 ?
                 Math.round((this.performanceMetrics.recordsProcessed / (this.performanceMetrics.totalProcessingTime / 1000)) * 100) / 100 : 0,
             averageProcessingTimeSeconds: Math.round(this.performanceMetrics.averageProcessingTime / 1000 * 100) / 100
         };
@@ -1439,12 +1573,12 @@ class ExcelProcessor {
      */
     async optimizedExtractData(excelBuffer) {
         const fileSize = excelBuffer.length;
-        
+
         // Use streaming for large files
         if (fileSize > this.optimizationSettings.streamingThreshold) {
             return this.streamingExtractData(excelBuffer);
         }
-        
+
         // Use regular processing for smaller files
         return this.extractData(excelBuffer);
     }
@@ -1457,38 +1591,38 @@ class ExcelProcessor {
     async streamingExtractData(excelBuffer) {
         const startTime = Date.now();
         console.log('Using streaming mode for large Excel file processing');
-        
+
         try {
             // Parse workbook with streaming options
-            const workbook = XLSX.read(excelBuffer, { 
+            const workbook = XLSX.read(excelBuffer, {
                 type: 'buffer',
                 cellDates: false,
                 cellNF: false,
                 cellStyles: false,
                 sheetStubs: false
             });
-            
+
             const allPhoneRecords = [];
             const maxWorksheets = Math.min(workbook.SheetNames.length, this.optimizationSettings.maxWorksheetsPerFile);
-            
+
             // Process worksheets in batches
             for (let i = 0; i < maxWorksheets; i++) {
                 const sheetName = workbook.SheetNames[i];
                 const worksheet = workbook.Sheets[sheetName];
-                
+
                 // Process worksheet in chunks
                 const sheetRecords = await this.processWorksheetInChunks(worksheet, sheetName);
                 allPhoneRecords.push(...sheetRecords);
-                
+
                 // Memory management - force garbage collection if available
                 if (global.gc && allPhoneRecords.length % 10000 === 0) {
                     global.gc();
                 }
             }
-            
+
             const endTime = Date.now();
             console.log(`Streaming processing completed in ${endTime - startTime}ms for ${allPhoneRecords.length} records`);
-            
+
             return allPhoneRecords;
         } catch (error) {
             console.error('Streaming extraction error:', error);
@@ -1503,61 +1637,61 @@ class ExcelProcessor {
      * @returns {Promise<Array>} Processed records
      */
     async processWorksheetInChunks(worksheet, sheetName) {
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             header: 1,
             defval: '',
             raw: false
         });
-        
+
         if (!jsonData || jsonData.length === 0) {
             return [];
         }
-        
+
         // Limit records per worksheet for performance
         const maxRecords = Math.min(jsonData.length, this.optimizationSettings.maxRecordsPerWorksheet);
         const limitedData = jsonData.slice(0, maxRecords);
-        
+
         const { headerRowIndex, dataRows } = this.identifyDataStructure(limitedData);
-        
+
         if (dataRows.length === 0) {
             return [];
         }
-        
+
         const columnMapping = this.identifyColumns(limitedData, headerRowIndex);
-        
+
         if (!columnMapping.phoneColumns || columnMapping.phoneColumns.length === 0) {
             return [];
         }
-        
+
         // Process in chunks
         const chunkSize = 1000;
         const phoneRecords = [];
-        
+
         for (let i = 0; i < dataRows.length; i += chunkSize) {
             const chunk = dataRows.slice(i, i + chunkSize);
-            
+
             for (let j = 0; j < chunk.length; j++) {
                 try {
                     const rowPhoneRecords = this.extractMultiplePhoneNumbersFromRow(
-                        chunk[j], 
-                        columnMapping, 
-                        sheetName, 
+                        chunk[j],
+                        columnMapping,
+                        sheetName,
                         i + j + 1
                     );
-                    
+
                     phoneRecords.push(...rowPhoneRecords);
                 } catch (rowError) {
                     console.warn(`Error processing row ${i + j + 1} in worksheet '${sheetName}':`, rowError.message);
                     continue;
                 }
             }
-            
+
             // Yield control periodically for large datasets
             if (i % 5000 === 0) {
                 await new Promise(resolve => setImmediate(resolve));
             }
         }
-        
+
         return phoneRecords;
     }
 
@@ -1569,10 +1703,10 @@ class ExcelProcessor {
         try {
             // Get Excel processing stats
             const excelStats = this.getPerformanceMetrics();
-            
+
             // Get validation stats by source type
             const validationStats = await phoneValidationProcessor.getValidationStatsBySourceType();
-            
+
             return {
                 success: true,
                 comparison: {
