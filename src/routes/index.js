@@ -130,8 +130,29 @@ class Routes {
                 }
             };
 
-            // Apply CSRF protection middleware
-            app.use(csrf(csrfConfig));
+            // Create CSRF middleware
+            const csrfMiddleware = csrf(csrfConfig);
+
+            // Apply CSRF protection selectively - exclude static file requests and certain paths
+            app.use((req, res, next) => {
+                // Skip CSRF for static file requests (common static file extensions)
+                if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$/)) {
+                    return next();
+                }
+
+                // Skip CSRF for API status/health check endpoints that don't modify state
+                if (req.path.match(/^\/api\/(status|health|csrf-token)$/)) {
+                    return next();
+                }
+
+                // Skip CSRF for GET requests to HTML pages
+                if (req.method === 'GET' && req.path.match(/\.(html?)$/)) {
+                    return next();
+                }
+
+                // Apply CSRF protection for all other requests
+                csrfMiddleware(req, res, next);
+            });
 
             console.log('🛡️  CSRF protection middleware configured and applied');
         } catch (error) {

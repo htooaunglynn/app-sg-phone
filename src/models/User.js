@@ -28,6 +28,11 @@ class User {
         try {
             const { name, email, password, device, ip_address, location } = userData;
 
+            // Additional password validation as a safety check
+            if (!password || password.length < 8) {
+                throw new Error('Password must be at least 8 characters long');
+            }
+
             // Check if user already exists
             const existingUser = await this.findByEmail(email);
             if (existingUser) {

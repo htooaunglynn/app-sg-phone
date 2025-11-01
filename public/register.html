@@ -205,16 +205,17 @@
                 strengthText.textContent = `Weak - Add ${feedback.slice(0, 2).join(', ')}`;
             } else if (score === 3) {
                 strengthBar.classList.add('strength-fair');
-                strengthText.textContent = `Fair - Add ${feedback[0]}`;
+                strengthText.textContent = `Fair - Add ${feedback.join(', ')}`;
             } else if (score === 4) {
                 strengthBar.classList.add('strength-good');
-                strengthText.textContent = 'Good - Almost there!';
+                strengthText.textContent = `Good - Add ${feedback[0]}`;
             } else {
                 strengthBar.classList.add('strength-strong');
                 strengthText.textContent = 'Strong password!';
             }
 
-            return score >= 4;
+            // FIXED: Require ALL 5 criteria to be met (score 5/5), not just 4/5
+            return score === 5;
         }
 
         // Check password match
@@ -264,7 +265,7 @@
 
             // Check password strength
             if (!checkPasswordStrength(password)) {
-                document.getElementById('errorText').textContent = 'Password does not meet strength requirements';
+                document.getElementById('errorText').textContent = 'Password must meet all strength requirements: at least 8 characters, uppercase letters, lowercase letters, numbers, and special characters (@$!%*?&)';
                 errorMessage.classList.remove('hidden');
                 return;
             }
