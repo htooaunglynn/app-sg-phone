@@ -3,12 +3,29 @@ const databaseManager = require('../utils/database');
 class CheckTable {
   constructor(id, phone, status, companyName = null, physicalAddress = null, email = null, website = null) {
     this.id = id;
+    this.numeric_id = CheckTable.extractNumericId(id); // Auto-extract numeric ID
     this.phone = phone;
     this.status = status;
     this.companyName = companyName;
     this.physicalAddress = physicalAddress;
     this.email = email;
     this.website = website;
+  }
+
+  /**
+   * Extract numeric ID from ID string
+   * @param {string} idString - The ID string to extract from (e.g., "SG COM-2001")
+   * @returns {number|null} - The extracted numeric ID or null if not found/invalid
+   */
+  static extractNumericId(idString) {
+    // Validate input parameters
+    if (!idString || typeof idString !== 'string') {
+      return null;
+    }
+    
+    // Extract trailing numeric sequence using regex
+    const match = idString.match(/(\d+)$/);
+    return match ? parseInt(match[1], 10) : null;
   }
 
   /**
@@ -47,12 +64,13 @@ class CheckTable {
   async insert() {
     try {
       const insertSQL = `
-        INSERT INTO check_table (Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO check_table (Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       const result = await databaseManager.query(insertSQL, [
-        this.id, 
+        this.id,
+        this.numeric_id,
         this.phone, 
         this.status, 
         this.companyName, 
@@ -78,6 +96,7 @@ class CheckTable {
 
   /**
    * Update company information only (prevents updates to Id, Phone, Status)
+   * Note: This method doesn't update Id, so numeric_id remains consistent
    */
   async updateCompanyInfo() {
     try {
@@ -111,12 +130,43 @@ class CheckTable {
   }
 
   /**
+   * Update numeric_id for existing record (for data consistency maintenance)
+   */
+  async updateNumericId() {
+    try {
+      // Recalculate numeric_id from current Id
+      this.numeric_id = CheckTable.extractNumericId(this.id);
+      
+      const updateSQL = `
+        UPDATE check_table 
+        SET numeric_id = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE Id = ?
+      `;
+      
+      const result = await databaseManager.query(updateSQL, [
+        this.numeric_id,
+        this.id
+      ]);
+      
+      if (result.affectedRows === 0) {
+        return { success: false, message: 'Record not found' };
+      }
+      
+      console.log(`Updated numeric_id for record: ${this.id} -> ${this.numeric_id}`);
+      return { success: true, affectedRows: result.affectedRows };
+    } catch (error) {
+      console.error('Failed to update numeric_id:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Find a record by Id
    */
   static async findById(id) {
     try {
       const selectSQL = `
-        SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
+        SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
         FROM check_table 
         WHERE Id = ?
       `;
@@ -136,6 +186,7 @@ class CheckTable {
 
   /**
    * Find records by range for Excel export
+   * Updated to use numeric_id column for improved performance
    */
   static async findByRange(startRecord, endRecord) {
     try {
@@ -147,9 +198,9 @@ class CheckTable {
       const offset = parseInt(startRecord - 1);
 
       const selectSQL = `
-        SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
+        SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
         FROM check_table 
-        ORDER BY CAST(SUBSTR(Id, INSTR(Id, '-') + 1) AS INTEGER) ASC
+        ORDER BY numeric_id ASC, Id ASC
         LIMIT ${limit} OFFSET ${offset}
       `;
       
@@ -162,14 +213,59 @@ class CheckTable {
   }
 
   /**
+   * Find records by numeric ID range for direct numeric queries
+   * @param {number} startNumericId - Starting numeric ID (inclusive)
+   * @param {number} endNumericId - Ending numeric ID (inclusive)
+   * @returns {Promise<Array>} Array of records within the numeric ID range
+   */
+  static async findByNumericRange(startNumericId, endNumericId) {
+    try {
+      // Validate input parameters
+      if (startNumericId === undefined || endNumericId === undefined) {
+        throw new Error('Start and end numeric ID parameters are required');
+      }
+
+      const startNum = parseInt(startNumericId);
+      const endNum = parseInt(endNumericId);
+
+      if (isNaN(startNum) || isNaN(endNum)) {
+        throw new Error('Start and end numeric IDs must be valid numbers');
+      }
+
+      if (startNum < 0 || endNum < 0) {
+        throw new Error('Numeric IDs must be non-negative');
+      }
+
+      if (startNum > endNum) {
+        throw new Error('Start numeric ID must be less than or equal to end numeric ID');
+      }
+
+      const selectSQL = `
+        SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
+        FROM check_table 
+        WHERE numeric_id >= ? AND numeric_id <= ?
+        ORDER BY numeric_id ASC, Id ASC
+      `;
+      
+      const result = await databaseManager.query(selectSQL, [startNum, endNum]);
+      
+      console.log(`Retrieved ${result.length} records with numeric_id between ${startNum} and ${endNum}`);
+      return result;
+    } catch (error) {
+      console.error('Failed to find check_table records by numeric range:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Get all records with optional pagination
    */
   static async findAll(limit = null, offset = 0) {
     try {
       let selectSQL = `
-        SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
+        SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
         FROM check_table 
-        ORDER BY created_at DESC
+        ORDER BY numeric_id ASC, Id ASC
       `;
       
       if (limit !== null) {
@@ -377,9 +473,9 @@ class CheckTable {
       const offset = startRecord - 1;
 
       const selectSQL = `
-        SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
+        SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at 
         FROM check_table 
-        ORDER BY CAST(SUBSTR(Id, INSTR(Id, '-') + 1) AS INTEGER) ASC
+        ORDER BY numeric_id ASC, Id ASC
         LIMIT ${parseInt(recordsToFetch)} OFFSET ${parseInt(offset)}
       `;
 
@@ -432,15 +528,17 @@ class CheckTable {
       for (const record of checkRecords) {
         try {
           const insertSQL = `
-            INSERT INTO check_table (Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO check_table (Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
               Status = VALUES(Status),
               updated_at = CURRENT_TIMESTAMP
           `;
           
+          const numericId = CheckTable.extractNumericId(record.id);
           const result = await databaseManager.query(insertSQL, [
-            record.id, 
+            record.id,
+            numericId,
             record.phone, 
             record.status, 
             record.companyName || null, 

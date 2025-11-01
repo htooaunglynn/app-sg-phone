@@ -991,15 +991,33 @@ class DatabaseManager {
   }
 
   /**
+   * Extract numeric ID from ID string
+   * @param {string} idString - The ID string (e.g., "SG COM-2001")
+   * @returns {number|null} - The extracted numeric ID or null if not found
+   */
+  extractNumericId(idString) {
+    if (!idString || typeof idString !== 'string') {
+      return null;
+    }
+    
+    // Extract trailing numeric sequence
+    const match = idString.match(/(\d+)$/);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  /**
    * Insert record into check_table with validation status
    */
   async insertCheckRecord(id, phone, status, companyName = null, physicalAddress = null, email = null, website = null) {
+    // Extract numeric ID from the ID string
+    const numericId = this.extractNumericId(id);
+    
     const sql = `
-      INSERT INTO check_table (Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO check_table (Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     try {
-      const result = await this.query(sql, [id, phone, status, companyName, physicalAddress, email, website]);
+      const result = await this.query(sql, [id, numericId, phone, status, companyName, physicalAddress, email, website]);
       return result;
     } catch (error) {
       if (error.code === 'ER_DUP_ENTRY') {
@@ -1057,9 +1075,9 @@ class DatabaseManager {
     const offset = parseInt(Math.max(0, start - 1));
     
     const sql = `
-      SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at
+      SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at
       FROM check_table 
-      ORDER BY CAST(SUBSTR(Id, INSTR(Id, '-') + 1) AS INTEGER) ASC
+      ORDER BY numeric_id ASC, Id ASC
       LIMIT ${limit} OFFSET ${offset}
     `;
     

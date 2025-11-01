@@ -5,29 +5,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Singapore Phone Detect</title>
+    <link rel="stylesheet" href="/css/theme-fallback.css">
+    <link rel="stylesheet" href="/css/apple-light-theme.css">
     <style>
-        /* CSS Variables for consistent theming and performance */
+        /* CSS Variables for consistent theming and performance - Light Theme */
         :root {
-            --primary-color: #007bff;
-            --primary-hover: #0056b3;
-            --secondary-color: #6c757d;
-            --secondary-hover: #5a6268;
-            --success-color: #28a745;
-            --success-hover: #218838;
-            --danger-color: #dc3545;
-            --danger-hover: #c82333;
-            --warning-color: #ffc107;
-            --info-color: #17a2b8;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --border-color: #ddd;
-            --border-radius: 4px;
-            --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            --transition: all 0.2s ease;
+            --primary-color: #3B82F6;
+            --primary-hover: #2563EB;
+            --secondary-color: #6B7280;
+            --secondary-hover: #4B5563;
+            --success-color: #10B981;
+            --success-hover: #059669;
+            --danger-color: #EF4444;
+            --danger-hover: #DC2626;
+            --warning-color: #F59E0B;
+            --info-color: #3B82F6;
+            --light-color: #F9FAFB;
+            --dark-color: #1F2937;
+            --border-color: #E5E7EB;
+            --border-radius: 8px;
+            --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             --max-width: 800px;
-            --focus-ring: 0 0 0 3px rgba(0, 123, 255, 0.25);
-            --hover-lift: translateY(-1px);
+            --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            --hover-lift: translateY(-2px);
             --active-press: translateY(0);
 
             /* Duplicate phone number styling colors - centralized configuration */
@@ -36,13 +38,13 @@
             --duplicate-text-color: #000000;
 
             /* Status-based colors */
-            --status-valid-bg: #ffffff;
-            --status-invalid-bg: #ff0000;
-            --status-text-color: #000000;
+            --status-valid-bg: #FFFFFF;
+            --status-invalid-bg: #FEE2E2;
+            --status-text-color: #1F2937;
 
             /* Header colors */
-            --header-bg-color: #E6E6FA;
-            --header-text-color: #000000;
+            --header-bg-color: #F8F8F8;
+            --header-text-color: #1F2937;
         }
 
         /* Performance optimizations */
@@ -61,7 +63,6 @@
         .modal.show,
         .modal-content,
         button:hover,
-        .nav-button:hover,
         .modal-button:hover {
             will-change: transform;
         }
@@ -71,16 +72,22 @@
             contain: layout;
         }
 
-        /* Improved base styles with accessibility */
+        /* Apple-inspired light theme base styles - Ultra-minimal approach */
         body {
             font-family: var(--font-family);
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            line-height: 1.6;
+            padding: 32px 24px;
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8F8F8 100%);
+            min-height: 100vh;
+            line-height: 1.625;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            color: #333;
+            color: #6B7280;
+            letter-spacing: -0.01em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
         }
 
         /* Skip link for accessibility */
@@ -131,44 +138,85 @@
         }
 
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid #F3F4F6;
+            padding: 48px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
             width: 100%;
-            max-width: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
         }
 
         h1 {
-            color: #333;
+            color: #1F2937;
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 48px;
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            background: linear-gradient(135deg, #1F2937 0%, #6B7280 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .section {
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            margin-bottom: 0; /* Remove margin, use gap instead */
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid #F3F4F6;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .section:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
         }
 
         .section h2 {
-            margin-top: 0;
-            color: #555;
+            margin: 0 0 24px 0;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F3F4F6;
+            color: #1F2937;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: var(--space-xl);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1F2937;
+            font-size: 14px;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
         }
 
-        /* Improved form input styles */
+        /* Apple-inspired form input styles */
         input[type="file"],
         input[type="number"],
         input[type="text"],
@@ -177,140 +225,122 @@
         textarea,
         select {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
+            padding: 16px;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
             box-sizing: border-box;
-            font-family: inherit;
-            font-size: 14px;
-            transition: var(--transition);
-            background-color: white;
+            font-family: var(--font-family);
+            font-size: 16px;
+            color: #1F2937;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         input:focus,
         textarea:focus,
         select:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: #FFFFFF;
         }
 
         input:hover:not(:disabled),
         textarea:hover:not(:disabled),
         select:hover:not(:disabled) {
-            border-color: #aaa;
+            border-color: #D1D5DB;
+            background: #FFFFFF;
         }
 
         input:disabled,
         textarea:disabled,
         select:disabled {
-            background-color: #f5f5f5;
+            background: #F3F4F6;
+            border-color: #E5E7EB;
+            color: #9CA3AF;
             cursor: not-allowed;
             opacity: 0.6;
         }
 
-        /* Improved button styles with CSS variables */
+        /* Apple-inspired button styles with premium effects */
         button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 20px;
+            background: #3B82F6;
+            color: #FFFFFF;
+            padding: 16px 24px;
             border: none;
-            border-radius: var(--border-radius);
+            border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            font-family: inherit;
-            transition: var(--transition);
+            font-family: var(--font-family);
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         button:hover:not(:disabled) {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+            background: #2563EB;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2);
         }
 
         button:active:not(:disabled) {
             transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
 
         button:disabled {
-            background-color: #ccc;
+            background: #D1D5DB;
+            color: #9CA3AF;
             cursor: not-allowed;
             opacity: 0.6;
             transform: none;
             box-shadow: none;
         }
 
-        button:focus {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
+        button:focus-visible {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .nav-button {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 16px;
-            text-decoration: none;
-            display: inline-block;
-            font-family: inherit;
-            transition: var(--transition);
-            outline: none;
-        }
-
-        .nav-button:hover {
-            background-color: var(--secondary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
-            text-decoration: none;
-            color: white;
-        }
-
-        .nav-button:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
-        }
-
-        .nav-button:focus {
-            outline: 2px solid var(--secondary-color);
-            outline-offset: 2px;
-        }
+        /* Navigation button styles moved to apple-dark-theme.css for better organization */
 
         .status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 4px;
+            margin-top: 24px;
+            padding: 16px 24px;
+            border-radius: 8px;
             display: none;
+            font-size: 14px;
+            font-weight: 500;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid transparent;
+            line-height: 1.625;
         }
 
         .status.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #10B981;
         }
 
         .status.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #EF4444;
         }
 
         .status.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: #DBEAFE;
+            color: #1E40AF;
+            border: 1px solid #3B82F6;
         }
 
         .status.warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #F59E0B;
         }
 
         /* Enhanced error handling styles */
@@ -401,16 +431,26 @@
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-xl);
+            margin-top: var(--space-xl);
         }
 
         .stat-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-primary);
+            padding: var(--space-xl);
+            border-radius: var(--radius-medium);
             text-align: center;
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition-normal);
+        }
+        
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-elevated);
         }
 
         .stat-value {
@@ -428,7 +468,8 @@
         .export-range {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: var(--space-xl);
+            margin-top: var(--space-lg);
         }
 
         .progress {
@@ -509,8 +550,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
-            margin-top: 20px;
+            gap: var(--space-lg);
+            margin-top: var(--component-spacing);
+            padding: var(--space-xl) 0;
         }
 
         .pagination button {
@@ -770,70 +812,476 @@
         }
 
         .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: var(--space-xl);
+            align-items: start;
+            margin-bottom: var(--component-spacing);
+            padding: var(--space-lg) 0;
         }
 
         .search-container {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            min-width: 0; /* Allow shrinking */
+            position: relative;
+        }
+
+        /* Enhanced Search Input Styles */
+        .enhanced-search-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .enhanced-search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .enhanced-search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .enhanced-search-input.has-suggestions {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        /* Search Suggestions Dropdown */
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--primary-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-suggestions.show {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item.highlighted {
+            background-color: #f8f9fa;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-text {
             flex: 1;
-            min-width: 300px;
+            font-size: 14px;
+        }
+
+        .suggestion-source {
+            font-size: 12px;
+            color: #666;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 12px;
+        }
+
+        .suggestion-source.history {
+            background: #e7f3ff;
+            color: #0c5460;
+        }
+
+        .suggestion-source.pattern {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Search History Dropdown */
+        .search-history-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--secondary-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-history-dropdown.show {
+            display: block;
+        }
+
+        .search-history-header {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .clear-history-btn {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .clear-history-btn:hover {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .search-history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-query {
+            flex: 1;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .history-timestamp {
+            font-size: 11px;
+            color: #6c757d;
+        }
+
+        /* Search Help */
+        .search-help {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid var(--info-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 998;
+            display: none;
+        }
+
+        .search-help.show {
+            display: block;
+        }
+
+        .search-help-content {
+            padding: 16px;
+        }
+
+        .search-help-content h4 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: var(--dark-color);
+        }
+
+        .search-help-content ul {
+            margin: 0;
+            padding-left: 20px;
+            list-style: none;
+        }
+
+        .search-help-content li {
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .search-help-content code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* Quick Search Buttons */
+        .quick-search-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .quick-search-btn,
+        .clear-search-btn,
+        .advanced-search-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background: white;
+            color: var(--dark-color);
+            font-size: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .quick-search-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .clear-search-btn {
+            background: var(--warning-color);
+            color: var(--dark-color);
+            border-color: var(--warning-color);
+        }
+
+        .clear-search-btn:hover {
+            background: #e0a800;
+            border-color: #e0a800;
+            transform: translateY(-1px);
+        }
+
+        .advanced-search-btn {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        .advanced-search-btn:hover {
+            background: var(--secondary-hover);
+            border-color: var(--secondary-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Search State Indicators */
+        .search-loading {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        .search-loading.show {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: translateY(-50%) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(-50%) rotate(360deg);
+            }
+        }
+
+        /* Responsive Design for Enhanced Search */
+        @media (max-width: 768px) {
+            .enhanced-search-wrapper {
+                margin-bottom: 10px;
+            }
+
+            .quick-search-buttons {
+                justify-content: center;
+            }
+
+            .quick-search-btn,
+            .advanced-search-btn {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+
+            .search-suggestions,
+            .search-history-dropdown,
+            .search-help {
+                max-height: 200px;
+            }
         }
 
         .header-buttons {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: var(--space-md);
+            align-items: flex-start;
             flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
-        .header-buttons .nav-button {
-            white-space: nowrap;
-            font-size: 14px;
-            padding: 8px 16px;
+        .theme-toggle-container {
+            display: flex;
+            align-items: center;
+            margin-right: 8px;
         }
 
-        .header-buttons .nav-button:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
+        /* Ensure theme toggle integrates well with navigation */
+        .theme-toggle-wrapper {
+            order: -1; /* Place theme toggle first in the navigation */
         }
+
+        /* Responsive navigation integration */
+        @media (max-width: 768px) {
+            .theme-toggle-container {
+                margin-right: 0;
+                margin-bottom: 8px;
+                order: -1;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .theme-toggle-wrapper {
+                width: 100%;
+                max-width: 200px;
+            }
+            
+            .theme-toggle-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-buttons {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-sm);
+            }
+            
+            .theme-toggle-container {
+                margin-bottom: var(--space-sm);
+            }
+        }
+
+        /* Header button styles moved to apple-dark-theme.css for better organization */
 
         .search-box {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 16px;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
             font-size: 16px;
+            font-family: var(--font-family);
+            color: #1F2937;
             box-sizing: border-box;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: #FFFFFF;
+        }
+
+        .search-box:hover {
+            border-color: #D1D5DB;
+            background: #FFFFFF;
+        }
+
+        .search-box::placeholder {
+            color: #9CA3AF;
         }
 
         .records-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            background: transparent;
         }
 
         .records-table th,
         .records-table td {
-            padding: 12px;
+            padding: 16px 24px;
             text-align: left;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #F3F4F6;
+            vertical-align: middle;
         }
 
         .records-table th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            color: #495057;
+            background: #F8F8F8;
+            font-weight: 500;
+            color: #1F2937;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             position: sticky;
             top: 0;
             z-index: 10;
+            border-bottom: 2px solid #E5E7EB;
         }
 
-        .records-table tr:hover {
-            background-color: #f8f9fa;
+        .records-table tbody tr {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .records-table tbody tr:hover {
+            background: rgba(248, 248, 248, 0.5);
+        }
+        
+        .records-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .records-table td {
+            color: #6B7280;
+            font-size: 14px;
         }
 
         /* Status styling for false records */
@@ -1178,13 +1626,16 @@
         }
 
         .table-container {
-            overflow-x: auto;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-top: 24px;
             max-height: 70vh;
             overflow-y: auto;
-            border-radius: var(--border-radius);
-            border: 1px solid var(--border-color);
-            box-shadow: var(--box-shadow);
-            background: white;
             width: 100%;
         }
 
@@ -1208,186 +1659,213 @@
             background: #a8a8a8;
         }
 
-        @media (max-width: 768px) {
-            .report-grid {
-                grid-template-columns: 1fr;
+        @media (max-width: 1024px) {
+            .container {
+                padding: var(--space-2xl);
+                gap: var(--space-2xl);
             }
-
+            
+            .section {
+                padding: var(--space-2xl);
+                gap: var(--space-xl);
+            }
+            
             .header-section {
-                flex-direction: column;
-                align-items: stretch;
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
             }
-
-            .search-container {
-                min-width: auto;
-            }
-
+            
             .header-buttons {
-                justify-content: center;
-                margin-top: 10px;
-            }
-
-            .header-buttons .nav-button {
-                flex: 1;
-                text-align: center;
-                min-width: 80px;
-            }
-
-            .records-table {
-                font-size: 12px;
-            }
-
-            .records-table th,
-            .records-table td {
-                padding: 8px 4px;
+                justify-content: flex-start;
             }
         }
 
-        /* Enhanced Modal Styles with CSS variables */
+        @media (max-width: 768px) {
+            body {
+                padding: var(--space-lg);
+            }
+            
+            .container {
+                padding: var(--space-xl);
+                gap: var(--space-xl);
+            }
+            
+            .section {
+                padding: var(--space-xl);
+                gap: var(--space-lg);
+            }
+            
+            .export-range {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
+            
+            .records-table th,
+            .records-table td {
+                padding: var(--space-md) var(--space-lg);
+            }
+        }
+
+        /* Apple-inspired Modal Styles with glass morphism */
         .modal {
             display: none;
             position: fixed;
-            z-index: 1000;
+            z-index: var(--z-modal-backdrop);
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
         .modal.show {
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: modalFadeIn 0.3s ease-out;
+            animation: modalFadeIn var(--transition-normal) var(--easing-ease-out);
         }
 
         .modal-content {
-            background-color: white;
-            border-radius: calc(var(--border-radius) * 2);
-            box-shadow: var(--box-shadow), 0 8px 32px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
             max-width: 600px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
-            animation: modalSlideIn 0.3s ease-out;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: modalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1050;
         }
 
         .modal-header {
-            padding: 20px 30px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 24px 32px;
+            border-bottom: 1px solid #E5E7EB;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: calc(var(--border-radius) * 2) calc(var(--border-radius) * 2) 0 0;
+            background: #F8F8F8;
+            border-radius: 16px 16px 0 0;
         }
 
         .modal-title {
             margin: 0;
             font-size: 20px;
-            color: var(--dark-color);
+            color: #1F2937;
             font-weight: 600;
+            letter-spacing: -0.01em;
         }
 
         .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid #E5E7EB;
+            font-size: 20px;
             cursor: pointer;
-            color: #666;
+            color: #6B7280;
             padding: 0;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            transition: var(--transition);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .modal-close:hover {
-            background-color: rgba(0, 0, 0, 0.1);
-            color: var(--dark-color);
-            transform: scale(1.1);
+            background: rgba(248, 248, 248, 0.8);
+            color: #1F2937;
+            transform: scale(1.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
-        .modal-close:focus {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
+        .modal-close:focus-visible {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .modal-body {
-            padding: 30px;
+            padding: 32px;
             max-height: calc(90vh - 140px);
             overflow-y: auto;
+            color: #6B7280;
         }
 
         .modal-footer {
-            padding: 20px 30px;
-            border-top: 1px solid var(--border-color);
+            padding: 24px 32px;
+            border-top: 1px solid #E5E7EB;
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 0 0 calc(var(--border-radius) * 2) calc(var(--border-radius) * 2);
+            gap: 16px;
+            background: #F8F8F8;
+            border-radius: 0 0 16px 16px;
         }
 
         .modal-button {
-            padding: 12px 24px;
+            padding: var(--space-md) var(--space-xl);
             border: none;
-            border-radius: var(--border-radius);
+            border-radius: var(--radius-medium);
             cursor: pointer;
-            font-size: 14px;
-            font-family: inherit;
-            font-weight: 500;
-            transition: var(--transition);
+            font-size: var(--font-size-base);
+            font-family: var(--font-family-primary);
+            font-weight: var(--font-weight-medium);
+            transition: var(--transition-normal);
             outline: none;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--shadow-soft);
         }
 
         .modal-button.primary {
-            background-color: var(--primary-color);
-            color: white;
+            background: var(--accent-blue);
+            color: var(--text-primary);
         }
 
         .modal-button.primary:hover:not(:disabled) {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            background: var(--accent-blue-hover);
+            transform: var(--hover-lift);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4), 0 0 20px rgba(74, 144, 226, 0.2);
         }
 
         .modal-button.secondary {
-            background-color: var(--secondary-color);
-            color: white;
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-primary);
+            color: var(--text-primary);
         }
 
         .modal-button.secondary:hover:not(:disabled) {
-            background-color: var(--secondary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+            background: var(--interactive-hover);
+            border-color: var(--accent-silver);
+            transform: var(--hover-lift);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
         }
 
         .modal-button:disabled {
-            background-color: #ccc;
+            background: var(--bg-surface);
+            color: var(--text-disabled);
             cursor: not-allowed;
             opacity: 0.6;
             transform: none;
             box-shadow: none;
         }
 
-        .modal-button:focus {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
+        .modal-button:focus-visible {
+            box-shadow: var(--shadow-focus), var(--shadow-soft);
         }
 
         .modal-button:active:not(:disabled) {
-            transform: translateY(0);
+            transform: var(--active-press);
         }
 
         @keyframes modalFadeIn {
@@ -1455,10 +1933,7 @@
                 gap: 10px;
             }
 
-            .header-buttons .nav-button {
-                padding: 8px 12px;
-                font-size: 14px;
-            }
+            /* Responsive header button styles moved to apple-dark-theme.css */
         }
 
         /* Large screen optimizations */
@@ -1480,53 +1955,34 @@
         /* Small mobile devices */
         @media (max-width: 480px) {
             body {
-                padding: 10px;
+                padding: var(--space-md);
             }
 
             .container {
-                padding: 15px;
+                padding: var(--space-lg);
+                gap: var(--space-lg);
             }
 
             h1 {
-                font-size: 24px;
-                margin-bottom: 20px;
+                font-size: var(--font-size-2xl);
+                margin-bottom: var(--space-xl);
             }
 
             .section {
-                padding: 15px;
-                margin-bottom: 20px;
-            }
-
-            .header-section {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-            }
-
-            .search-container {
-                min-width: auto;
+                padding: var(--space-lg);
+                gap: var(--space-md);
             }
 
             .header-buttons {
-                justify-content: space-between;
-                margin-top: 10px;
-            }
-
-            .header-buttons .nav-button {
-                flex: 1;
-                text-align: center;
-                min-width: 0;
-                padding: 10px 8px;
-                font-size: 12px;
-            }
-
-            .records-table {
-                font-size: 11px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-sm);
             }
 
             .records-table th,
             .records-table td {
-                padding: 6px 3px;
+                padding: var(--space-sm) var(--space-md);
+                font-size: var(--font-size-xs);
             }
 
             .modal-content {
@@ -1538,20 +1994,20 @@
             .modal-header,
             .modal-body,
             .modal-footer {
-                padding: 15px;
+                padding: var(--space-lg);
             }
 
             .modal-title {
-                font-size: 18px;
+                font-size: var(--font-size-lg);
             }
 
             .form-group {
-                margin-bottom: 12px;
+                margin-bottom: var(--space-lg);
             }
 
             .export-range {
                 grid-template-columns: 1fr;
-                gap: 10px;
+                gap: var(--space-lg);
             }
         }
 
@@ -1687,6 +2143,16 @@
 </head>
 
 <body>
+    <!-- Fallback message for when JavaScript is disabled -->
+    <noscript>
+        <div style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px; text-align: center; color: #92400E;">
+            <strong>JavaScript Required</strong><br>
+            This application requires JavaScript to function properly. Please enable JavaScript in your browser settings.
+            <br><br>
+            <small>Basic functionality will work with the fallback styles, but full features require JavaScript.</small>
+        </div>
+    </noscript>
+    
     <!-- Skip link for accessibility -->
     <a href="#main-content" class="skip-link" style="display: none;">Skip to main content</a>
 
@@ -1721,17 +2187,73 @@
 
                 <div class="header-section">
                     <div class="search-container">
-                        <input type="text" id="searchBox" class="search-box"
-                            placeholder="Search across all fields (Id, Phone, Company Name, Address, Email, Website)...">
+                        <!-- Enhanced Search Input with Auto-complete -->
+                        <div class="enhanced-search-wrapper">
+                            <input type="text" id="searchBox" class="search-box enhanced-search-input"
+                                placeholder="Search records (try 'SG COM-200*' or 'range:2001-2010')..."
+                                autocomplete="off" aria-label="Search records" aria-describedby="search-help">
+
+                            <!-- Search Suggestions Dropdown -->
+                            <div id="searchSuggestions" class="search-suggestions" role="listbox"
+                                aria-label="Search suggestions">
+                                <!-- Suggestions will be populated here -->
+                            </div>
+
+                            <!-- Search History Dropdown -->
+                            <div id="searchHistory" class="search-history-dropdown" role="listbox"
+                                aria-label="Search history">
+                                <div class="search-history-header">
+                                    <span>Recent Searches</span>
+                                    <button id="clearHistoryBtn" class="clear-history-btn"
+                                        aria-label="Clear search history">Clear</button>
+                                </div>
+                                <div id="searchHistoryList" class="search-history-list">
+                                    <!-- History items will be populated here -->
+                                </div>
+                            </div>
+
+                            <!-- Search Pattern Help -->
+                            <!-- <div id="searchHelp" class="search-help">
+                                <div class="search-help-content">
+                                    <h4>Search Patterns:</h4>
+                                    <ul>
+                                        <li><code>SG COM-200*</code> - Find IDs starting with "SG COM-200"</li>
+                                        <li><code>SG COM-2001 to SG COM-2010</code> - Find IDs in range</li>
+                                        <li><code>+65</code> - Find Singapore phone numbers</li>
+                                        <li><code>"exact phrase"</code> - Find exact text matches</li>
+                                    </ul>
+                                </div>
+                            </div> -->
+                        </div>
+
+                        <!-- Quick Search Buttons -->
+                        <!-- <div class="quick-search-buttons">
+                            <button class="quick-search-btn" data-pattern="SG COM-*" title="Search all SG COM records">SG COM</button>
+                            <button class="quick-search-btn" data-pattern="+65*" title="Search Singapore phone numbers">+65</button>
+                            <button class="quick-search-btn" data-pattern="range:2001-2100" title="Search ID range 2001-2100">2001-2100</button>
+                            <button class="clear-search-btn" onclick="clearCurrentSearch()" title="Clear search and show all records">Clear</button>
+                            <button class="advanced-search-btn" onclick="openAdvancedSearchModal()" title="Open advanced search">Advanced</button>
+                            <button class="advanced-search-btn" onclick="saveCurrentSearch()" title="Save current search" style="background: #28a745; border-color: #28a745;">💾 Save</button>
+                            <button class="advanced-search-btn" onclick="openSavedSearchModal()" title="Manage saved searches" style="background: #17a2b8; border-color: #17a2b8;">📂 Saved</button>
+                            <button class="advanced-search-btn" onclick="shareCurrentSearch()" title="Share current search" style="background: #ffc107; border-color: #ffc107; color: #212529;">🔗 Share</button>
+                        </div> -->
                     </div>
                     <div class="header-buttons">
-                        <button class="nav-button" onclick="openUploadModal()" style="background-color: #28a745;">
-                            📤 Upload
+                        <!-- <div id="themeToggleContainer" class="theme-toggle-container"> -->
+                            <!-- Theme toggle will be inserted here by JavaScript -->
+                        <!-- </div> -->
+                        <button class="nav-button" onclick="openUploadModal()" aria-label="Upload files">
+                            <span class="icon">📤</span>
+                            Upload
                         </button>
-                        <button class="nav-button" onclick="openExportModal()" style="background-color: #17a2b8;">
-                            📥 Export
+                        <button class="nav-button" onclick="openExportModal()" aria-label="Export records">
+                            <span class="icon">📥</span>
+                            Export
                         </button>
-                        <a href="/file-manager" class="nav-button">File Manager</a>
+                        <a href="/file-manager" class="nav-button" aria-label="Manage files">
+                            <span class="icon">📁</span>
+                            File Manager
+                        </a>
                     </div>
                 </div>
 
@@ -2400,56 +2922,328 @@
             `;
         }
 
-        // Unified search functionality with debouncing for better performance
+        // Enhanced search functionality with auto-complete and suggestions
+        let enhancedSearchInput = null;
+        let searchSuggestionCache = new Map();
+
         function setupSearch() {
+            try {
+                // Initialize enhanced search input
+                enhancedSearchInput = new EnhancedSearchInput('searchBox', {
+                    placeholder: "Search records (try 'SG COM-200*' or 'range:2001-2010')...",
+                    showSuggestions: true,
+                    showHistory: true,
+                    showHelp: true,
+                    debounceMs: 300,
+                    maxSuggestions: 5,
+                    maxHistoryItems: 10
+                });
+
+                // Set up callbacks for enhanced search
+                enhancedSearchInput.setCallbacks({
+                    onSearch: handleEnhancedSearch,
+                    onSuggestionSelect: handleSuggestionSelect,
+                    onPatternDetected: handlePatternDetected
+                });
+
+                // Override the getSuggestions method to use our record data
+                enhancedSearchInput.getSuggestions = getRecordBasedSuggestions;
+
+                // Restore search state from URL if present
+                restoreSearchStateFromURL();
+
+                console.log('Enhanced search input initialized successfully');
+
+            } catch (error) {
+                console.error('Error initializing enhanced search:', error);
+                // Fallback to basic search functionality
+                setupBasicSearch();
+
+                // Still try to restore search state for basic search
+                restoreSearchStateFromURL();
+            }
+        }
+
+        // Generate suggestions based on existing record data
+        async function getRecordBasedSuggestions(query) {
+            if (!query || query.length < 2) return [];
+
+            const cacheKey = query.toLowerCase();
+            if (searchSuggestionCache.has(cacheKey)) {
+                return searchSuggestionCache.get(cacheKey);
+            }
+
+            const suggestions = [];
+            const queryLower = query.toLowerCase();
+
+            try {
+                // Get unique values from records for suggestions
+                const uniqueIds = new Set();
+                const uniqueCompanies = new Set();
+                const uniquePhones = new Set();
+
+                // Sample a subset of records for performance (max 1000)
+                const sampleSize = Math.min(allRecords.length, 1000);
+                const sampleRecords = allRecords.slice(0, sampleSize);
+
+                sampleRecords.forEach(record => {
+                    // ID suggestions
+                    if (record.Id && record.Id.toLowerCase().includes(queryLower)) {
+                        uniqueIds.add(record.Id);
+                    }
+
+                    // Company name suggestions
+                    if (record.CompanyName && record.CompanyName.toLowerCase().includes(queryLower)) {
+                        uniqueCompanies.add(record.CompanyName);
+                    }
+
+                    // Phone number suggestions (for patterns like +65)
+                    if (record.Phone && record.Phone.toLowerCase().includes(queryLower)) {
+                        uniquePhones.add(record.Phone);
+                    }
+                });
+
+                // Add ID suggestions (limit to 2)
+                Array.from(uniqueIds).slice(0, 2).forEach(id => {
+                    suggestions.push({
+                        query: id,
+                        source: 'data',
+                        description: 'Record ID'
+                    });
+                });
+
+                // Add company suggestions (limit to 2)
+                Array.from(uniqueCompanies).slice(0, 2).forEach(company => {
+                    suggestions.push({
+                        query: company,
+                        source: 'data',
+                        description: 'Company name'
+                    });
+                });
+
+                // Add phone pattern suggestions if query looks like a phone number
+                if (queryLower.includes('+65') || queryLower.includes('65')) {
+                    suggestions.push({
+                        query: '+65*',
+                        source: 'pattern',
+                        description: 'Singapore phone numbers'
+                    });
+                }
+
+                // Add ID pattern suggestions
+                if (queryLower.includes('sg com') || queryLower.includes('sg-com')) {
+                    suggestions.push({
+                        query: 'SG COM-*',
+                        source: 'pattern',
+                        description: 'All SG COM records'
+                    });
+
+                    // Extract numbers for more specific suggestions
+                    const numbers = queryLower.match(/\d+/g);
+                    if (numbers) {
+                        const num = numbers[0];
+                        suggestions.push({
+                            query: `SG COM-${num}*`,
+                            source: 'pattern',
+                            description: `SG COM records starting with ${num}`
+                        });
+                    }
+                }
+
+                // Add range suggestions if query contains numbers
+                const numbers = query.match(/\d+/g);
+                if (numbers && numbers.length >= 1) {
+                    const baseNum = parseInt(numbers[0]);
+                    if (!isNaN(baseNum) && baseNum > 1000) {
+                        suggestions.push({
+                            query: `range:${baseNum}-${baseNum + 99}`,
+                            source: 'pattern',
+                            description: `ID range ${baseNum} to ${baseNum + 99}`
+                        });
+                    }
+                }
+
+                // Get suggestions from enhanced search system if available
+                const enhancedSearch = window.getEnhancedSearchSystem && window.getEnhancedSearchSystem();
+                if (enhancedSearch) {
+                    const systemSuggestions = enhancedSearch.getSuggestions(query);
+                    suggestions.push(...systemSuggestions);
+                }
+
+                // Deduplicate and limit suggestions
+                const uniqueSuggestions = deduplicateSuggestions(suggestions);
+                const finalSuggestions = uniqueSuggestions.slice(0, 5);
+
+                // Cache the results
+                if (searchSuggestionCache.size > 100) {
+                    searchSuggestionCache.clear();
+                }
+                searchSuggestionCache.set(cacheKey, finalSuggestions);
+
+                return finalSuggestions;
+
+            } catch (error) {
+                console.error('Error generating suggestions:', error);
+                return [];
+            }
+        }
+
+        // Utility function to deduplicate suggestions
+        function deduplicateSuggestions(suggestions) {
+            const seen = new Set();
+            return suggestions.filter(suggestion => {
+                const key = suggestion.query.toLowerCase();
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
+        }
+
+        // Clear suggestion cache when records are updated
+        function clearSuggestionCache() {
+            searchSuggestionCache.clear();
+        }
+
+        // Clear current search and show all records
+        function clearCurrentSearch() {
+            // Clear the search input
+            if (enhancedSearchInput) {
+                enhancedSearchInput.clearSearch();
+            } else {
+                const searchBox = document.getElementById('searchBox');
+                if (searchBox) {
+                    searchBox.value = '';
+                }
+            }
+
+            // Reset search state
+            searchTerm = '';
+            filteredRecords = allRecords;
+            currentPage = 1;
+
+            // Display all records
+            displayRecords();
+
+            console.log('Search cleared, showing all records');
+        }
+
+        // Enhanced search handler
+        function handleEnhancedSearch(query, patternInfo) {
+            const searchStart = Date.now();
+
+            // Update global search term
+            searchTerm = query.toLowerCase().trim();
+
+            // Apply enhanced filtering based on pattern
+            if (patternInfo && patternInfo.isPattern) {
+                filterRecordsWithPattern(query, patternInfo);
+            } else {
+                filterRecords();
+            }
+
+            // Reset to first page and display results
+            currentPage = 1;
+            displayRecords();
+
+            // Track performance
+            trackPerformance('search', searchStart);
+
+            // Update search result info
+            updateSearchResultInfo(query, patternInfo);
+        }
+
+        // Handle suggestion selection
+        function handleSuggestionSelect(query) {
+            console.log('Suggestion selected:', query);
+            // The search will be triggered automatically by the input component
+        }
+
+        // Handle pattern detection
+        function handlePatternDetected(patternInfo) {
+            console.log('Search pattern detected:', patternInfo);
+            // Could show pattern-specific help or validation here
+        }
+
+        // Enhanced search setup with async support
+        function setupBasicSearch() {
             const searchBox = document.getElementById('searchBox');
             let searchTimeout;
 
-            // Debounced search to improve performance (Requirement 3.1)
             searchBox.addEventListener('input', function () {
                 clearTimeout(searchTimeout);
                 const newSearchTerm = this.value.toLowerCase().trim();
 
-                // Immediate update for empty search (clear results fast)
                 if (newSearchTerm === '' && searchTerm !== '') {
                     searchTerm = newSearchTerm;
-                    filterRecords();
-                    currentPage = 1;
-                    displayRecords();
+                    filterRecords().then(() => {
+                        currentPage = 1;
+                        displayRecords();
+                    });
                     return;
                 }
 
-                // Debounce other searches by 300ms to avoid excessive filtering
-                searchTimeout = setTimeout(() => {
+                searchTimeout = setTimeout(async () => {
                     const searchStart = Date.now();
                     searchTerm = newSearchTerm;
-                    filterRecords();
-                    currentPage = 1; // Reset to first page
+                    await filterRecords();
+                    currentPage = 1;
                     displayRecords();
                     trackPerformance('search', searchStart);
                 }, 300);
             });
 
-            // Also handle Enter key for immediate search
             searchBox.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     clearTimeout(searchTimeout);
                     searchTerm = this.value.toLowerCase().trim();
-                    filterRecords();
-                    currentPage = 1;
-                    displayRecords();
+                    filterRecords().then(() => {
+                        currentPage = 1;
+                        displayRecords();
+                    });
                 }
             });
         }
 
-        // Optimized filtering with indexed search for better performance on large datasets
+        // Enhanced filtering with pattern matching support
         let searchIndex = new Map(); // Cache for search optimization
+        let currentSearchResults = null; // Store current enhanced search results
 
-        function filterRecords() {
+        // Enhanced search integration - uses SearchEngine when available
+        async function filterRecords() {
             if (!searchTerm) {
                 filteredRecords = allRecords;
+                currentSearchResults = null;
                 return;
             }
+
+            // Try to use enhanced search system first
+            const enhancedSearch = window.getEnhancedSearchSystem && window.getEnhancedSearchSystem();
+
+            if (enhancedSearch && enhancedSearch.isInitialized) {
+                try {
+                    // Use enhanced search system
+                    const searchResults = await enhancedSearch.performSearch(searchTerm, {}, {
+                        highlight: true,
+                        page: currentPage,
+                        pageSize: recordsPerPage
+                    });
+
+                    // Store results for pagination and export
+                    currentSearchResults = searchResults;
+                    filteredRecords = searchResults.originalRecords || searchResults.records;
+
+                    console.log(`Enhanced search: ${filteredRecords.length} results in ${searchResults.executionTime}ms`);
+                    return;
+
+                } catch (error) {
+                    console.warn('Enhanced search failed, falling back to basic search:', error);
+                }
+            }
+
+            // Fallback to basic search
+            currentSearchResults = null;
 
             // Use cached search index for better performance on repeated searches
             const cacheKey = searchTerm;
@@ -2482,43 +3276,643 @@
             searchIndex.set(cacheKey, filteredRecords);
         }
 
+        // Enhanced filtering with pattern matching
+        function filterRecordsWithPattern(query, patternInfo) {
+            if (!query || !patternInfo) {
+                filterRecords();
+                return;
+            }
+
+            const cacheKey = `pattern:${query}`;
+            if (searchIndex.has(cacheKey)) {
+                filteredRecords = searchIndex.get(cacheKey);
+                return;
+            }
+
+            try {
+                switch (patternInfo.type) {
+                    case 'wildcard':
+                        filteredRecords = filterByWildcard(patternInfo.matches[0]);
+                        break;
+                    case 'range':
+                        filteredRecords = filterByRange(patternInfo.matches[0], patternInfo.matches[1]);
+                        break;
+                    case 'rangeShort':
+                        const startNum = parseInt(patternInfo.matches[0]);
+                        const endNum = parseInt(patternInfo.matches[1]);
+                        filteredRecords = filterByIdRange(startNum, endNum);
+                        break;
+                    case 'phoneNumber':
+                        filteredRecords = filterByPhonePattern(query);
+                        break;
+                    case 'exactPhrase':
+                        filteredRecords = filterByExactPhrase(patternInfo.matches[0]);
+                        break;
+                    case 'idPattern':
+                        filteredRecords = filterByIdPattern(query);
+                        break;
+                    default:
+                        // Fall back to regular text search
+                        searchTerm = query.toLowerCase().trim();
+                        filterRecords();
+                        return;
+                }
+
+                // Cache pattern results
+                if (searchIndex.size > 50) {
+                    searchIndex.clear();
+                }
+                searchIndex.set(cacheKey, filteredRecords);
+
+            } catch (error) {
+                console.error('Error in pattern filtering:', error);
+                // Fall back to regular search
+                searchTerm = query.toLowerCase().trim();
+                filterRecords();
+            }
+        }
+
+        // Pattern filtering functions
+        function filterByWildcard(pattern) {
+            const prefix = pattern.toLowerCase();
+            return allRecords.filter(record => {
+                const id = (record.Id || '').toLowerCase();
+                return id.startsWith(prefix);
+            });
+        }
+
+        function filterByRange(startId, endId) {
+            const startLower = startId.toLowerCase().trim();
+            const endLower = endId.toLowerCase().trim();
+
+            return allRecords.filter(record => {
+                const id = (record.Id || '').toLowerCase();
+                return id >= startLower && id <= endLower;
+            });
+        }
+
+        function filterByIdRange(startNum, endNum) {
+            return allRecords.filter(record => {
+                const id = record.Id || '';
+                const match = id.match(/(\d+)$/);
+                if (match) {
+                    const num = parseInt(match[1]);
+                    return num >= startNum && num <= endNum;
+                }
+                return false;
+            });
+        }
+
+        function filterByPhonePattern(pattern) {
+            const phonePattern = pattern.toLowerCase();
+            return allRecords.filter(record => {
+                const phone = (record.Phone || '').toLowerCase();
+                return phone.includes(phonePattern);
+            });
+        }
+
+        function filterByExactPhrase(phrase) {
+            const exactPhrase = phrase.toLowerCase();
+            return allRecords.filter(record => {
+                if (!record._searchableText) {
+                    record._searchableText = [
+                        record.Id || '',
+                        record.Phone || '',
+                        record.CompanyName || '',
+                        record.PhysicalAddress || '',
+                        record.Email || '',
+                        record.Website || ''
+                    ].join(' ').toLowerCase();
+                }
+                return record._searchableText.includes(exactPhrase);
+            });
+        }
+
+        function filterByIdPattern(pattern) {
+            const idPattern = pattern.toLowerCase();
+            return allRecords.filter(record => {
+                const id = (record.Id || '').toLowerCase();
+                return id.includes(idPattern);
+            });
+        }
+
+        // Update search result information
+        function updateSearchResultInfo(query, patternInfo) {
+            // This could be used to show search result statistics
+            // For now, just log the information
+            console.log(`Search completed: "${query}" (${filteredRecords.length} results)`);
+            if (patternInfo && patternInfo.isPattern) {
+                console.log(`Pattern type: ${patternInfo.type}`);
+            }
+        }
+
         // Clear search cache when records are updated
         function clearSearchCache() {
             searchIndex.clear();
+            clearSuggestionCache();
+
             // Clear cached searchable text
             allRecords.forEach(record => {
                 delete record._searchableText;
             });
+
+            // Update enhanced search system if available
+            if (enhancedSearchInput && typeof initializeEnhancedSearch === 'function') {
+                initializeEnhancedSearch(allRecords);
+            }
         }
 
-        // Optimized record display with efficient DOM updates and virtual scrolling concepts
+        // Advanced Search Modal Functions
+        function openAdvancedSearchModal() {
+            const modalTitle = 'Advanced Search';
+            const modalBody = `
+                <div class="advanced-search-form">
+                    <div class="form-group">
+                        <label for="advancedSearchId">Record ID:</label>
+                        <input type="text" id="advancedSearchId" class="form-control" 
+                               placeholder="e.g., SG COM-2001 or SG COM-200*">
+                        <small class="form-text">Use * for wildcards (e.g., SG COM-200*)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="advancedSearchPhone">Phone Number:</label>
+                        <input type="text" id="advancedSearchPhone" class="form-control" 
+                               placeholder="e.g., +65 or 6512345678">
+                        <small class="form-text">Search for specific phone numbers or patterns</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="advancedSearchCompany">Company Name:</label>
+                        <input type="text" id="advancedSearchCompany" class="form-control" 
+                               placeholder="Enter company name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="advancedSearchAddress">Address:</label>
+                        <input type="text" id="advancedSearchAddress" class="form-control" 
+                               placeholder="Enter address">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="advancedSearchEmail">Email:</label>
+                        <input type="text" id="advancedSearchEmail" class="form-control" 
+                               placeholder="Enter email address">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="advancedSearchWebsite">Website:</label>
+                        <input type="text" id="advancedSearchWebsite" class="form-control" 
+                               placeholder="Enter website URL">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="advancedSearchStatus">Singapore Phone Status:</label>
+                        <select id="advancedSearchStatus" class="form-control">
+                            <option value="all">All Records</option>
+                            <option value="valid">Valid Singapore Numbers</option>
+                            <option value="invalid">Invalid/Non-Singapore Numbers</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>ID Range:</label>
+                        <div class="range-inputs">
+                            <input type="number" id="advancedSearchRangeStart" class="form-control" 
+                                   placeholder="Start (e.g., 2001)" style="width: 48%; display: inline-block;">
+                            <span style="margin: 0 2%;">to</span>
+                            <input type="number" id="advancedSearchRangeEnd" class="form-control" 
+                                   placeholder="End (e.g., 2100)" style="width: 48%; display: inline-block;">
+                        </div>
+                        <small class="form-text">Search for records within a specific ID number range</small>
+                    </div>
+                    
+                    <div class="advanced-search-options">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="advancedSearchCaseSensitive"> 
+                                Case sensitive search
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="advancedSearchExactMatch"> 
+                                Exact match only
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    .advanced-search-form .form-group {
+                        margin-bottom: 20px;
+                    }
+                    
+                    .advanced-search-form .form-control {
+                        width: 100%;
+                        padding: 8px 12px;
+                        border: 1px solid #ddd;
+                        border-radius: 4px;
+                        font-size: 14px;
+                    }
+                    
+                    .advanced-search-form .form-text {
+                        font-size: 12px;
+                        color: #666;
+                        margin-top: 4px;
+                        display: block;
+                    }
+                    
+                    .advanced-search-form label {
+                        font-weight: bold;
+                        margin-bottom: 5px;
+                        display: block;
+                    }
+                    
+                    .range-inputs {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                    
+                    .advanced-search-options {
+                        border-top: 1px solid #eee;
+                        padding-top: 15px;
+                        margin-top: 20px;
+                    }
+                    
+                    .advanced-search-options label {
+                        font-weight: normal;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                </style>
+            `;
+
+            openModal(modalTitle, modalBody);
+
+            // Update modal footer with search and clear buttons
+            updateModalFooter([
+                { text: 'Clear All', class: 'secondary', onclick: 'clearAdvancedSearch()' },
+                { text: 'Search', class: 'primary', onclick: 'executeAdvancedSearch()' },
+                { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
+            ]);
+        }
+
+        function clearAdvancedSearch() {
+            // Clear all advanced search form fields
+            const fields = [
+                'advancedSearchId', 'advancedSearchPhone', 'advancedSearchCompany',
+                'advancedSearchAddress', 'advancedSearchEmail', 'advancedSearchWebsite',
+                'advancedSearchRangeStart', 'advancedSearchRangeEnd'
+            ];
+
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) field.value = '';
+            });
+
+            // Reset select and checkboxes
+            const statusSelect = document.getElementById('advancedSearchStatus');
+            if (statusSelect) statusSelect.value = 'all';
+
+            const checkboxes = ['advancedSearchCaseSensitive', 'advancedSearchExactMatch'];
+            checkboxes.forEach(checkboxId => {
+                const checkbox = document.getElementById(checkboxId);
+                if (checkbox) checkbox.checked = false;
+            });
+        }
+
+        function executeAdvancedSearch() {
+            // Collect all search criteria
+            const criteria = {
+                id: document.getElementById('advancedSearchId')?.value.trim() || '',
+                phone: document.getElementById('advancedSearchPhone')?.value.trim() || '',
+                company: document.getElementById('advancedSearchCompany')?.value.trim() || '',
+                address: document.getElementById('advancedSearchAddress')?.value.trim() || '',
+                email: document.getElementById('advancedSearchEmail')?.value.trim() || '',
+                website: document.getElementById('advancedSearchWebsite')?.value.trim() || '',
+                status: document.getElementById('advancedSearchStatus')?.value || 'all',
+                rangeStart: document.getElementById('advancedSearchRangeStart')?.value || '',
+                rangeEnd: document.getElementById('advancedSearchRangeEnd')?.value || '',
+                caseSensitive: document.getElementById('advancedSearchCaseSensitive')?.checked || false,
+                exactMatch: document.getElementById('advancedSearchExactMatch')?.checked || false
+            };
+
+            // Validate criteria
+            if (!hasAdvancedSearchCriteria(criteria)) {
+                showModalStatus('Please enter at least one search criterion.', 'warning');
+                return;
+            }
+
+            // Validate range if provided
+            if (criteria.rangeStart || criteria.rangeEnd) {
+                if (!criteria.rangeStart || !criteria.rangeEnd) {
+                    showModalStatus('Please provide both start and end values for range search.', 'error');
+                    return;
+                }
+
+                const start = parseInt(criteria.rangeStart);
+                const end = parseInt(criteria.rangeEnd);
+
+                if (isNaN(start) || isNaN(end) || start > end) {
+                    showModalStatus('Invalid range values. Start must be less than or equal to end.', 'error');
+                    return;
+                }
+            }
+
+            // Execute advanced search
+            try {
+                const searchStart = Date.now();
+                filteredRecords = executeAdvancedFilter(criteria);
+                currentPage = 1;
+
+                // Update search term for display purposes
+                searchTerm = buildAdvancedSearchDisplayTerm(criteria);
+
+                // Update main search input to show the search
+                if (enhancedSearchInput) {
+                    enhancedSearchInput.setSearchValue(searchTerm);
+                }
+
+                // Display results
+                displayRecords();
+                trackPerformance('search', searchStart);
+
+                // Close modal and show results
+                closeModal();
+
+                // Show search result summary
+                const resultCount = filteredRecords.length;
+                const totalCount = allRecords.length;
+                console.log(`Advanced search completed: ${resultCount} of ${totalCount} records found`);
+
+            } catch (error) {
+                console.error('Advanced search error:', error);
+                showModalStatus('An error occurred during search. Please try again.', 'error');
+            }
+        }
+
+        function hasAdvancedSearchCriteria(criteria) {
+            return criteria.id || criteria.phone || criteria.company ||
+                criteria.address || criteria.email || criteria.website ||
+                criteria.status !== 'all' || criteria.rangeStart || criteria.rangeEnd;
+        }
+
+        function buildAdvancedSearchDisplayTerm(criteria) {
+            const terms = [];
+
+            if (criteria.id) terms.push(`ID:${criteria.id}`);
+            if (criteria.phone) terms.push(`Phone:${criteria.phone}`);
+            if (criteria.company) terms.push(`Company:${criteria.company}`);
+            if (criteria.address) terms.push(`Address:${criteria.address}`);
+            if (criteria.email) terms.push(`Email:${criteria.email}`);
+            if (criteria.website) terms.push(`Website:${criteria.website}`);
+            if (criteria.status !== 'all') terms.push(`Status:${criteria.status}`);
+            if (criteria.rangeStart && criteria.rangeEnd) {
+                terms.push(`Range:${criteria.rangeStart}-${criteria.rangeEnd}`);
+            }
+
+            return terms.join(' ');
+        }
+
+        function executeAdvancedFilter(criteria) {
+            return allRecords.filter(record => {
+                // Apply each filter criterion
+                if (criteria.id && !matchesField(record.Id, criteria.id, criteria)) {
+                    return false;
+                }
+
+                if (criteria.phone && !matchesField(record.Phone, criteria.phone, criteria)) {
+                    return false;
+                }
+
+                if (criteria.company && !matchesField(record.CompanyName, criteria.company, criteria)) {
+                    return false;
+                }
+
+                if (criteria.address && !matchesField(record.PhysicalAddress, criteria.address, criteria)) {
+                    return false;
+                }
+
+                if (criteria.email && !matchesField(record.Email, criteria.email, criteria)) {
+                    return false;
+                }
+
+                if (criteria.website && !matchesField(record.Website, criteria.website, criteria)) {
+                    return false;
+                }
+
+                // Status filter
+                if (criteria.status !== 'all') {
+                    const isValid = record.Status === true || record.Status === 1;
+                    if (criteria.status === 'valid' && !isValid) return false;
+                    if (criteria.status === 'invalid' && isValid) return false;
+                }
+
+                // Range filter
+                if (criteria.rangeStart && criteria.rangeEnd) {
+                    const id = record.Id || '';
+                    const match = id.match(/(\d+)$/);
+                    if (match) {
+                        const num = parseInt(match[1]);
+                        const start = parseInt(criteria.rangeStart);
+                        const end = parseInt(criteria.rangeEnd);
+                        if (num < start || num > end) return false;
+                    } else {
+                        return false; // No number found in ID
+                    }
+                }
+
+                return true;
+            });
+        }
+
+        function matchesField(fieldValue, searchValue, criteria) {
+            if (!fieldValue) return false;
+
+            const field = criteria.caseSensitive ? fieldValue : fieldValue.toLowerCase();
+            const search = criteria.caseSensitive ? searchValue : searchValue.toLowerCase();
+
+            if (criteria.exactMatch) {
+                return field === search;
+            }
+
+            // Handle wildcards in search value
+            if (search.includes('*')) {
+                const pattern = search.replace(/\*/g, '.*');
+                const regex = new RegExp(`^${pattern}$`, criteria.caseSensitive ? '' : 'i');
+                return regex.test(fieldValue);
+            }
+
+            return field.includes(search);
+        }
+
+        function showModalStatus(message, type) {
+            // Create or update modal status element
+            let statusElement = document.getElementById('modalAdvancedSearchStatus');
+            if (!statusElement) {
+                statusElement = document.createElement('div');
+                statusElement.id = 'modalAdvancedSearchStatus';
+                statusElement.className = 'status';
+
+                const modalBody = document.getElementById('modalBody');
+                if (modalBody) {
+                    modalBody.insertBefore(statusElement, modalBody.firstChild);
+                }
+            }
+
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+            statusElement.style.display = 'block';
+
+            // Auto-hide success messages
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Saved Search Modal Functions
+        function openSavedSearchModal() {
+            if (savedSearchModal) {
+                // Set up the search execution callback
+                savedSearchModal.open(async (query, filters) => {
+                    try {
+                        // Set the search box value
+                        const searchBox = document.getElementById('searchBox');
+                        if (searchBox && query) {
+                            searchBox.value = query;
+                        }
+
+                        // Update global search term
+                        searchTerm = query ? query.toLowerCase().trim() : '';
+
+                        // Execute the search
+                        await filterRecords();
+                        currentPage = 1;
+                        displayRecords();
+
+                        // Update URL with search parameters
+                        if (urlSearchSharing) {
+                            urlSearchSharing.updateURLWithSearch(query, filters);
+                        }
+
+                        console.log('Executed saved search:', { query, filters });
+
+                    } catch (error) {
+                        console.error('Error executing saved search:', error);
+                        alert('Error executing search: ' + error.message);
+                    }
+                });
+            } else {
+                alert('Saved search functionality is not available');
+            }
+        }
+
+        function shareCurrentSearch() {
+            if (!urlSearchSharing) {
+                alert('URL sharing functionality is not available');
+                return;
+            }
+
+            const currentQuery = document.getElementById('searchBox')?.value || '';
+            const currentFilters = {}; // TODO: Get current filters from advanced search state
+
+            if (!currentQuery.trim() && Object.keys(currentFilters).length === 0) {
+                alert('No search to share. Please perform a search first.');
+                return;
+            }
+
+            try {
+                urlSearchSharing.showShareDialog(currentQuery, currentFilters);
+            } catch (error) {
+                console.error('Error sharing search:', error);
+                alert('Error creating share link: ' + error.message);
+            }
+        }
+
+        function saveCurrentSearch() {
+            if (!savedSearchModal) {
+                alert('Saved search functionality is not available');
+                return;
+            }
+
+            const currentQuery = document.getElementById('searchBox')?.value || '';
+
+            if (!currentQuery.trim()) {
+                alert('No search to save. Please perform a search first.');
+                return;
+            }
+
+            // Connect the search engine to the modal if available
+            if (window.getEnhancedSearchSystem) {
+                const enhancedSearch = window.getEnhancedSearchSystem();
+                if (enhancedSearch && enhancedSearch.searchEngine) {
+                    savedSearchModal.searchEngine = enhancedSearch.searchEngine;
+                }
+            }
+
+            savedSearchModal.switchToCreate();
+            savedSearchModal.open();
+        }
+
+        // Enhanced record display with search result highlighting integration
         function displayRecords() {
             const renderStart = Date.now();
             const tbody = document.getElementById('recordsTableBody');
 
             if (filteredRecords.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="no-results">
-                            ${searchTerm ? 'No records found matching your search.' : 'No records available.'}
-                        </td>
-                    </tr>
-                `;
+                // Enhanced no results display with suggestions
+                const enhancedSearch = window.getEnhancedSearchSystem && window.getEnhancedSearchSystem();
+
+                if (enhancedSearch && searchTerm) {
+                    // Use enhanced search system to display no results with suggestions
+                    enhancedSearch.displayNoResultsState(tbody, searchTerm, (suggestion) => {
+                        // Handle suggestion click
+                        document.getElementById('searchBox').value = suggestion;
+                        searchTerm = suggestion.toLowerCase().trim();
+                        filterRecords().then(() => {
+                            currentPage = 1;
+                            displayRecords();
+                        });
+                    });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-results">
+                                ${searchTerm ? 'No records found matching your search.' : 'No records available.'}
+                            </td>
+                        </tr>
+                    `;
+                }
                 updatePagination();
                 return;
             }
 
-            // Calculate pagination with optimized page size for large datasets (Requirement 2.1, 2.2, 2.3)
+            // Calculate pagination with optimized page size for large datasets
             const startIndex = (currentPage - 1) * recordsPerPage;
             const endIndex = startIndex + recordsPerPage;
-            const pageRecords = filteredRecords.slice(startIndex, endIndex);
+            let pageRecords = filteredRecords.slice(startIndex, endIndex);
+
+            // Use enhanced search highlighting if available
+            if (currentSearchResults && currentSearchResults.records && searchTerm) {
+                // Get the highlighted records for this page
+                const highlightedPageRecords = currentSearchResults.records.slice(startIndex, endIndex);
+                if (highlightedPageRecords.length > 0) {
+                    pageRecords = highlightedPageRecords;
+                }
+            }
 
             // Use DocumentFragment for efficient DOM manipulation
             const fragment = document.createDocumentFragment();
 
-            // Pre-compile regex for search highlighting to avoid repeated compilation
+            // Pre-compile regex for search highlighting (fallback when enhanced search not available)
             let searchRegex = null;
-            if (searchTerm) {
+            const useBasicHighlighting = !currentSearchResults || !currentSearchResults.highlighting?.enabled;
+
+            if (searchTerm && useBasicHighlighting) {
                 try {
                     searchRegex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
                 } catch (e) {
@@ -2571,22 +3965,33 @@
                 // Add duplicate indicator for duplicate records
                 const duplicateIndicator = isDuplicate ? `<span class="duplicate-indicator" title="Duplicate phone number">🔄</span>` : '';
 
-                // Optimized search highlighting function
-                const highlightText = (text) => {
-                    if (!searchRegex || !text) return text || '';
-                    return text.replace(searchRegex, '<span class="search-highlight">$1</span>');
+                // Enhanced highlighting function - uses pre-highlighted content when available
+                const highlightText = (text, fieldName) => {
+                    if (!text) return 'Not set';
+
+                    // If we have enhanced search results with highlighting, use them
+                    if (currentSearchResults && currentSearchResults.highlighting?.enabled && record._highlighted) {
+                        return record._highlighted[fieldName] || text;
+                    }
+
+                    // Fallback to basic highlighting
+                    if (searchRegex && text !== 'Not set') {
+                        return text.replace(searchRegex, '<span class="search-highlight">$1</span>');
+                    }
+
+                    return text;
                 };
 
                 tr.innerHTML = `
-                    <td>${highlightText(recordId)}${duplicateIndicator}</td>
+                    <td>${highlightText(recordId, 'Id')}${duplicateIndicator}</td>
                     <td>
-                        ${highlightText(record.Phone || '')}
+                        ${highlightText(record.Phone || '', 'Phone')}
                         ${searchButtons}
                     </td>
-                    <td class="company-name">${highlightText(record.CompanyName || 'Not set')}</td>
-                    <td class="physical-address">${highlightText(record.PhysicalAddress || 'Not set')}</td>
-                    <td class="email">${highlightText(record.Email || 'Not set')}</td>
-                    <td class="website">${highlightText(record.Website || 'Not set')}</td>
+                    <td class="company-name">${highlightText(record.CompanyName || 'Not set', 'CompanyName')}</td>
+                    <td class="physical-address">${highlightText(record.PhysicalAddress || 'Not set', 'PhysicalAddress')}</td>
+                    <td class="email">${highlightText(record.Email || 'Not set', 'Email')}</td>
+                    <td class="website">${highlightText(record.Website || 'Not set', 'Website')}</td>
                     <td>
                         <button class="edit-button" onclick="startEdit('${recordId}')">Edit</button>
                     </td>
@@ -2607,6 +4012,11 @@
             if (performanceMode === 'high-performance') {
                 console.log(`High-performance mode: displayed ${pageRecords.length} records on page ${currentPage}`);
             }
+
+            // Display search performance metrics if enhanced search was used
+            if (currentSearchResults && currentSearchResults.executionTime) {
+                console.log(`Search completed in ${currentSearchResults.executionTime}ms`);
+            }
         }
 
         // Highlight search terms in text
@@ -2622,62 +4032,218 @@
             return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
 
-        // Unified pagination controls with enhanced navigation
+        // Enhanced pagination controls with search result information
         function updatePagination() {
             const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
             const paginationContainer = document.getElementById('paginationContainer');
 
-            if (totalPages <= 1) {
-                paginationContainer.innerHTML = '';
-                return;
-            }
-
+            // Always show pagination info, even for single page results
             let html = '';
 
-            // Previous button
-            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+            // Search result summary with enhanced information
+            const totalRecords = filteredRecords.length;
+            const totalAllRecords = allRecords.length;
+            const startRecord = totalRecords > 0 ? (currentPage - 1) * recordsPerPage + 1 : 0;
+            const endRecord = Math.min(currentPage * recordsPerPage, totalRecords);
 
-            // Add page number buttons for better navigation (max 5 pages shown)
-            const startPage = Math.max(1, currentPage - 2);
-            const endPage = Math.min(totalPages, startPage + 4);
+            // Build search result breadcrumb
+            let searchInfo = '';
+            if (searchTerm) {
+                searchInfo = `
+                    <div class="search-result-info" style="margin-bottom: 10px; padding: 8px 12px; background: #e7f3ff; border-radius: 4px; font-size: 14px;">
+                        <strong>Search Results:</strong> Showing ${startRecord}-${endRecord} of ${totalRecords} results for 
+                        <span style="background: #fff3cd; padding: 2px 6px; border-radius: 3px; font-family: monospace;">"${searchTerm}"</span>
+                        ${totalRecords !== totalAllRecords ? ` (filtered from ${totalAllRecords} total records)` : ''}
+                        ${currentSearchResults && currentSearchResults.executionTime ?
+                        ` • Search completed in ${currentSearchResults.executionTime}ms` : ''}
+                    </div>
+                `;
+            } else {
+                searchInfo = `
+                    <div class="search-result-info" style="margin-bottom: 10px; padding: 8px 12px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">
+                        <strong>All Records:</strong> Showing ${startRecord}-${endRecord} of ${totalRecords} records
+                    </div>
+                `;
+            }
 
-            if (startPage > 1) {
-                html += `<button onclick="changePage(1)">1</button>`;
-                if (startPage > 2) {
-                    html += `<span class="pagination-info">...</span>`;
+            html += searchInfo;
+
+            // Only show pagination controls if there are multiple pages
+            if (totalPages > 1) {
+                html += '<div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 10px;">';
+
+                // Previous button
+                html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+
+                // Add page number buttons for better navigation (max 5 pages shown)
+                const startPage = Math.max(1, currentPage - 2);
+                const endPage = Math.min(totalPages, startPage + 4);
+
+                if (startPage > 1) {
+                    html += `<button onclick="changePage(1)">1</button>`;
+                    if (startPage > 2) {
+                        html += `<span class="pagination-info">...</span>`;
+                    }
                 }
-            }
 
-            for (let i = startPage; i <= endPage; i++) {
-                const isActive = i === currentPage ? 'style="background-color: #0056b3; font-weight: bold;"' : '';
-                html += `<button onclick="changePage(${i})" ${isActive}>${i}</button>`;
-            }
-
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                    html += `<span class="pagination-info">...</span>`;
+                for (let i = startPage; i <= endPage; i++) {
+                    const isActive = i === currentPage ? 'style="background-color: #0056b3; font-weight: bold;"' : '';
+                    html += `<button onclick="changePage(${i})" ${isActive}>${i}</button>`;
                 }
-                html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `<span class="pagination-info">...</span>`;
+                    }
+                    html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
+                }
+
+                // Page info
+                html += `<span class="pagination-info">Page ${currentPage} of ${totalPages}</span>`;
+
+                // Next button
+                html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+
+                html += '</div>';
             }
 
-            // Page info
-            html += `<span class="pagination-info">Page ${currentPage} of ${totalPages} (${filteredRecords.length} records)</span>`;
-
-            // Next button
-            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            // Add search navigation breadcrumbs if search is active
+            if (searchTerm && currentSearchResults) {
+                html += `
+                    <div class="search-navigation" style="margin-top: 10px; text-align: center; font-size: 12px; color: #666;">
+                        <span>Search Navigation:</span>
+                        <button onclick="clearCurrentSearch()" style="margin-left: 8px; padding: 4px 8px; font-size: 11px; background: #ffc107; border: none; border-radius: 3px; cursor: pointer;">
+                            Clear Search
+                        </button>
+                        ${currentSearchResults.suggestions && currentSearchResults.suggestions.length > 0 ? `
+                            <span style="margin-left: 12px;">Try:</span>
+                            ${currentSearchResults.suggestions.slice(0, 3).map(suggestion =>
+                    `<button onclick="applySuggestion('${suggestion}')" style="margin-left: 4px; padding: 2px 6px; font-size: 10px; background: #e9ecef; border: 1px solid #ced4da; border-radius: 3px; cursor: pointer;">
+                                    ${suggestion}
+                                </button>`
+                ).join('')}
+                        ` : ''}
+                    </div>
+                `;
+            }
 
             paginationContainer.innerHTML = html;
         }
 
-        // Change page
+        // Apply search suggestion
+        function applySuggestion(suggestion) {
+            const searchBox = document.getElementById('searchBox');
+            searchBox.value = suggestion;
+            searchTerm = suggestion.toLowerCase().trim();
+            filterRecords().then(() => {
+                currentPage = 1;
+                displayRecords();
+            });
+        }
+
+        // Enhanced page change with search state persistence
         function changePage(newPage) {
             const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
 
             if (newPage >= 1 && newPage <= totalPages) {
                 currentPage = newPage;
+
+                // If we have enhanced search results, we need to get the new page data
+                if (currentSearchResults && searchTerm) {
+                    // For enhanced search, we might need to re-fetch results for the new page
+                    const enhancedSearch = window.getEnhancedSearchSystem && window.getEnhancedSearchSystem();
+
+                    if (enhancedSearch && enhancedSearch.isInitialized) {
+                        // Re-perform search with new page number to get proper highlighting for this page
+                        enhancedSearch.performSearch(searchTerm, {}, {
+                            highlight: true,
+                            page: newPage,
+                            pageSize: recordsPerPage
+                        }).then(searchResults => {
+                            currentSearchResults = searchResults;
+                            filteredRecords = searchResults.originalRecords || searchResults.records;
+                            displayRecords();
+                        }).catch(error => {
+                            console.warn('Error updating search results for new page:', error);
+                            displayRecords(); // Fallback to basic display
+                        });
+                        return;
+                    }
+                }
+
+                // Standard pagination without enhanced search
                 displayRecords();
+
+                // Update URL to maintain search state (for sharing and bookmarking)
+                updateURLWithSearchState();
             }
         }
+
+        // Update URL with current search state for sharing and bookmarking
+        function updateURLWithSearchState() {
+            if (!window.history || !window.history.pushState) return;
+
+            const url = new URL(window.location);
+
+            if (searchTerm) {
+                url.searchParams.set('search', searchTerm);
+                url.searchParams.set('page', currentPage.toString());
+            } else {
+                url.searchParams.delete('search');
+                if (currentPage > 1) {
+                    url.searchParams.set('page', currentPage.toString());
+                } else {
+                    url.searchParams.delete('page');
+                }
+            }
+
+            // Only update URL if it's different from current
+            if (url.toString() !== window.location.toString()) {
+                window.history.pushState({ searchTerm, currentPage }, '', url);
+            }
+        }
+
+        // Restore search state from URL on page load
+        function restoreSearchStateFromURL() {
+            const url = new URL(window.location);
+            const urlSearchTerm = url.searchParams.get('search');
+            const urlPage = parseInt(url.searchParams.get('page')) || 1;
+
+            if (urlSearchTerm) {
+                const searchBox = document.getElementById('searchBox');
+                if (searchBox) {
+                    searchBox.value = urlSearchTerm;
+                    searchTerm = urlSearchTerm.toLowerCase().trim();
+                    currentPage = urlPage;
+
+                    // Perform search after records are loaded
+                    if (allRecords.length > 0) {
+                        filterRecords().then(() => {
+                            displayRecords();
+                        });
+                    }
+                }
+            } else if (urlPage > 1) {
+                currentPage = urlPage;
+            }
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function (event) {
+            if (event.state) {
+                searchTerm = event.state.searchTerm || '';
+                currentPage = event.state.currentPage || 1;
+
+                const searchBox = document.getElementById('searchBox');
+                if (searchBox) {
+                    searchBox.value = searchTerm;
+                }
+
+                filterRecords().then(() => {
+                    displayRecords();
+                });
+            }
+        });
 
         // Start editing a record
         function startEdit(recordId) {
@@ -3512,6 +5078,11 @@
 
         // Export Modal Functions
         function openExportModal() {
+            // Check if there are search results to export
+            const hasSearchResults = searchTerm && filteredRecords.length > 0;
+            const searchResultsCount = hasSearchResults ? filteredRecords.length : 0;
+            const totalRecordsCount = allRecords.length;
+
             const exportContent = `
                 <div style="margin-bottom: 20px;">
                     <div style="padding: 15px; border: 2px solid #17a2b8; border-radius: 8px; background-color: #e7f8ff;">
@@ -3520,7 +5091,7 @@
                             <div>
                                 <strong style="font-size: 16px; color: #17a2b8; margin-bottom: 5px; display: block;">Export Check Table Records</strong>
                                 <small style="color: #666; font-size: 14px; line-height: 1.3;">
-                                    Export phone validation records to Excel format. Choose a specific range or export all records.
+                                    Export phone validation records to Excel format. Choose from search results, specific range, or all records.
                                 </small>
                             </div>
                         </div>
@@ -3528,9 +5099,33 @@
                 </div>
                 
                 <form id="modalExportForm">
+                    ${hasSearchResults ? `
+                    <div class="form-group" style="border: 2px solid #28a745; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #f8fff9;">
+                        <label style="display: flex; align-items: center; font-weight: bold; color: #28a745;">
+                            <input type="radio" name="exportType" value="searchResults" checked onchange="toggleExportOptions()" style="margin-right: 8px;"> 
+                            Export Current Search Results
+                        </label>
+                        <div style="margin-left: 28px; margin-top: 8px;">
+                            <div style="background: #e7f3ff; padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 8px;">
+                                <strong>Search Query:</strong> <code style="background: #fff3cd; padding: 2px 6px; border-radius: 3px;">"${searchTerm}"</code>
+                            </div>
+                            <small style="color: #666;">
+                                Export ${searchResultsCount} records matching your current search
+                                ${currentSearchResults && currentSearchResults.executionTime ?
+                        ` (found in ${currentSearchResults.executionTime}ms)` : ''}
+                            </small>
+                            ${currentSearchResults && currentSearchResults.query && currentSearchResults.query.type !== 'basic' ? `
+                                <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                                    <em>Enhanced search pattern: ${currentSearchResults.query.type}</em>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     <div class="form-group">
                         <label>
-                            <input type="radio" name="exportType" value="range" checked onchange="toggleExportOptions()"> 
+                            <input type="radio" name="exportType" value="range" ${hasSearchResults ? '' : 'checked'} onchange="toggleExportOptions()"> 
                             Export Range
                         </label>
                         <div id="rangeOptions" style="margin-left: 20px; margin-top: 10px;">
@@ -3553,7 +5148,7 @@
                             Export All Records
                         </label>
                         <div style="margin-left: 20px; margin-top: 5px;">
-                            <small style="color: #666;">Export all available records from the check table</small>
+                            <small style="color: #666;">Export all ${totalRecordsCount} available records from the check table</small>
                         </div>
                     </div>
                     
@@ -3590,6 +5185,22 @@
                 clearModalExportStatus();
 
                 // Validate based on export type
+                if (exportType === 'searchResults') {
+                    if (!searchTerm || filteredRecords.length === 0) {
+                        showModalExportStatus('No search results available for export. Please perform a search first.', 'error');
+                        disableModalExportButton('No Search Results');
+                        return;
+                    }
+
+                    // Show info about what will be exported
+                    const searchInfo = currentSearchResults && currentSearchResults.executionTime
+                        ? ` (found in ${currentSearchResults.executionTime}ms)`
+                        : '';
+                    showModalExportStatus(`Ready to export ${filteredRecords.length} search results for "${searchTerm}"${searchInfo}`, 'info');
+                    enableModalExportButton('Export Search Results');
+                    return;
+                }
+
                 if (exportType === 'all') {
                     if (totalRecords === 0) {
                         showModalExportStatus('No records available for export. Please upload and process some files first.', 'error');
@@ -3773,7 +5384,9 @@
                 { text: 'Cancel', class: 'secondary', onclick: 'closeModal()' }
             ]);
 
-            if (exportType === 'range') {
+            if (exportType === 'searchResults') {
+                await processModalSearchResultsExport();
+            } else if (exportType === 'range') {
                 await processModalRangeExport();
             } else {
                 await processModalAllExport();
@@ -3876,6 +5489,163 @@
                 showModalExportStatus(errorMessage, 'error');
                 resetModalExportFooter();
             }
+        }
+
+        async function processModalSearchResultsExport() {
+            if (!searchTerm || filteredRecords.length === 0) {
+                showModalExportStatus('No search results to export', 'error');
+                resetModalExportFooter();
+                return;
+            }
+
+            showModalExportStatus(`Preparing export of ${filteredRecords.length} search results...`, 'info');
+
+            try {
+                // Create search result summary for the export
+                const searchSummary = {
+                    searchTerm: searchTerm,
+                    totalResults: filteredRecords.length,
+                    searchDate: new Date().toISOString(),
+                    searchType: currentSearchResults ? currentSearchResults.query.type : 'basic',
+                    executionTime: currentSearchResults ? currentSearchResults.executionTime : null
+                };
+
+                // Prepare the data to send to the server
+                const exportData = {
+                    records: filteredRecords.map(record => ({
+                        Id: record.Id || '',
+                        Phone: record.Phone || '',
+                        CompanyName: record.CompanyName || '',
+                        PhysicalAddress: record.PhysicalAddress || '',
+                        Email: record.Email || '',
+                        Website: record.Website || '',
+                        Status: record.Status
+                    })),
+                    searchSummary: searchSummary,
+                    exportType: 'searchResults'
+                };
+
+                const response = await fetch('/export/search-results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(exportData)
+                });
+
+                if (response.ok) {
+                    // Get filename from response headers
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = `search_results_${searchTerm.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (filenameMatch) {
+                            filename = filenameMatch[1];
+                        }
+                    }
+
+                    // Download the file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    const recordCount = response.headers.get('X-Export-Records') || filteredRecords.length;
+                    showModalExportStatus(
+                        `Search results export completed! Downloaded ${recordCount} records matching "${searchTerm}".`,
+                        'success'
+                    );
+
+                    // Update modal footer to show completion
+                    updateModalFooter([
+                        { text: 'Close', class: 'primary', onclick: 'closeModal()' }
+                    ]);
+                } else {
+                    const errorData = await response.json();
+                    let errorMessage = errorData.error || 'Search results export failed';
+
+                    if (errorMessage.includes('No records')) {
+                        errorMessage = 'No search results to export. Please perform a search first.';
+                    } else if (errorMessage.includes('EXPORT_TOO_LARGE')) {
+                        errorMessage = 'Search results export is too large. Please refine your search or use range export.';
+                    }
+
+                    showModalExportStatus(errorMessage, 'error');
+                    resetModalExportFooter();
+                }
+            } catch (error) {
+                console.error('Search results export error:', error);
+
+                // Fallback: create client-side export if server export fails
+                try {
+                    showModalExportStatus('Server export failed, creating client-side export...', 'info');
+                    await createClientSideSearchExport();
+                } catch (clientError) {
+                    console.error('Client-side export also failed:', clientError);
+                    let errorMessage = 'Search results export failed: ';
+
+                    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                        errorMessage += 'Unable to connect to server. Please check your internet connection.';
+                    } else if (error.message.includes('timeout')) {
+                        errorMessage += 'Request timed out. Please try again.';
+                    } else {
+                        errorMessage += error.message;
+                    }
+
+                    showModalExportStatus(errorMessage, 'error');
+                    resetModalExportFooter();
+                }
+            }
+        }
+
+        // Client-side fallback export for search results
+        async function createClientSideSearchExport() {
+            // Create CSV content as fallback
+            const headers = ['Id', 'Phone', 'Company Name', 'Physical Address', 'Email', 'Website', 'Status'];
+            const csvContent = [
+                `# Search Results Export`,
+                `# Search Term: "${searchTerm}"`,
+                `# Results: ${filteredRecords.length} records`,
+                `# Export Date: ${new Date().toISOString()}`,
+                `# Search Type: ${currentSearchResults ? currentSearchResults.query.type : 'basic'}`,
+                '',
+                headers.join(','),
+                ...filteredRecords.map(record => [
+                    `"${(record.Id || '').replace(/"/g, '""')}"`,
+                    `"${(record.Phone || '').replace(/"/g, '""')}"`,
+                    `"${(record.CompanyName || '').replace(/"/g, '""')}"`,
+                    `"${(record.PhysicalAddress || '').replace(/"/g, '""')}"`,
+                    `"${(record.Email || '').replace(/"/g, '""')}"`,
+                    `"${(record.Website || '').replace(/"/g, '""')}"`,
+                    `"${record.Status ? 'Valid Singapore' : 'Invalid'}"`
+                ].join(','))
+            ].join('\n');
+
+            // Create and download the file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `search_results_${searchTerm.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            showModalExportStatus(
+                `Search results exported as CSV! Downloaded ${filteredRecords.length} records matching "${searchTerm}".`,
+                'success'
+            );
+
+            // Update modal footer to show completion
+            updateModalFooter([
+                { text: 'Close', class: 'primary', onclick: 'closeModal()' }
+            ]);
         }
 
         async function processModalAllExport() {
@@ -4099,6 +5869,18 @@
         });
     </script>
 
+    <!-- Enhanced Search System -->
+    <script src="/js/searchEngine.js"></script>
+    <script src="/js/patternMatcher.js"></script>
+    <script src="/js/filterEngine.js"></script>
+    <script src="/js/indexManager.js"></script>
+    <script src="/js/searchHistory.js"></script>
+    <script src="/js/savedSearches.js"></script>
+    <script src="/js/savedSearchModal.js"></script>
+    <script src="/js/urlSearchSharing.js"></script>
+    <script src="/js/enhancedSearchSystem.js"></script>
+    <script src="/js/enhancedSearchInput.js"></script>
+
     <!-- Duplicate Detection Services -->
     <script src="/js/duplicateDetectionService.js"></script>
     <script src="/js/duplicateDataManager.js"></script>
@@ -4108,6 +5890,10 @@
         // Global duplicate detection services
         let duplicateDetectionService = null;
         let duplicateDataManager = null;
+
+        // Global saved search and URL sharing services
+        let savedSearchModal = null;
+        let urlSearchSharing = null;
 
         // Initialize duplicate detection services
         function initializeDuplicateServices() {
@@ -4231,13 +6017,100 @@
             }
         }
 
+        // Initialize saved search and URL sharing services
+        function initializeSavedSearchServices() {
+            try {
+                // Initialize URL search sharing
+                urlSearchSharing = new URLSearchSharing();
+
+                // Initialize saved search modal (will be connected to search engine when available)
+                savedSearchModal = new SavedSearchModal(
+                    new SavedSearches(),
+                    null // Will be set when search engine is available
+                );
+
+                console.log('Saved search and URL sharing services initialized successfully');
+
+                // Check for search parameters in URL and execute if found
+                urlSearchSharing.executeSearchFromURL((query, filters, options) => {
+                    console.log('Executing search from URL:', { query, filters, options });
+
+                    // Set the search box value
+                    const searchBox = document.getElementById('searchBox');
+                    if (searchBox && query) {
+                        searchBox.value = query;
+                    }
+
+                    // Execute the search
+                    if (query || Object.keys(filters).length > 0) {
+                        setTimeout(() => {
+                            filterRecords();
+                        }, 500);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Failed to initialize saved search services:', error);
+            }
+        }
+
         // Initialize duplicate services when DOM is loaded
         document.addEventListener('DOMContentLoaded', function () {
             // Initialize duplicate services after a short delay to ensure other services are ready
             setTimeout(() => {
                 initializeDuplicateServices();
+                initializeSavedSearchServices();
+                initializeFooterStats();
             }, 100);
         });
+
+        // Initialize footer statistics
+        function initializeFooterStats() {
+            updateFooterStats();
+            // Update footer stats when records change
+            if (typeof window.addEventListener !== 'undefined') {
+                window.addEventListener('recordsUpdated', updateFooterStats);
+            }
+        }
+
+        // Update footer statistics
+        function updateFooterStats() {
+            try {
+                const recordCountElement = document.getElementById('footerRecordCount');
+                const lastUpdatedElement = document.getElementById('footerLastUpdated');
+                
+                if (recordCountElement) {
+                    const totalRecords = filteredRecords ? filteredRecords.length : (records ? records.length : 0);
+                    recordCountElement.textContent = totalRecords.toLocaleString();
+                    recordCountElement.className = 'footer-stat-value success';
+                }
+                
+                if (lastUpdatedElement) {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    });
+                    lastUpdatedElement.textContent = timeString;
+                    lastUpdatedElement.className = 'footer-stat-value success';
+                }
+            } catch (error) {
+                console.warn('Failed to update footer stats:', error);
+                const recordCountElement = document.getElementById('footerRecordCount');
+                const lastUpdatedElement = document.getElementById('footerLastUpdated');
+                
+                if (recordCountElement) {
+                    recordCountElement.textContent = 'Error';
+                    recordCountElement.className = 'footer-stat-value error';
+                }
+                
+                if (lastUpdatedElement) {
+                    lastUpdatedElement.textContent = 'Error';
+                    lastUpdatedElement.className = 'footer-stat-value error';
+                }
+            }
+        }
 
         // Update duplicate information when records are updated
         const originalUpdateCheckRecord = window.updateCheckRecord;
@@ -4254,10 +6127,125 @@
                     }, 500);
                 }
 
+                // Update footer stats after record update
+                setTimeout(updateFooterStats, 100);
+
+                return result;
+            };
+        }
+
+        // Override displayRecords to update footer stats
+        const originalDisplayRecords = window.displayRecords;
+        if (typeof originalDisplayRecords === 'function') {
+            window.displayRecords = function(...args) {
+                const result = originalDisplayRecords.apply(this, args);
+                setTimeout(updateFooterStats, 100);
+                return result;
+            };
+        }
+
+        // Override filterRecords to update footer stats
+        const originalFilterRecords = window.filterRecords;
+        if (typeof originalFilterRecords === 'function') {
+            window.filterRecords = function(...args) {
+                const result = originalFilterRecords.apply(this, args);
+                setTimeout(updateFooterStats, 100);
                 return result;
             };
         }
     </script>
+
+    <!-- Theme System -->
+    <script src="/js/themeController.js"></script>
+    <script src="/js/themeToggle.js"></script>
+    <script>
+        // Initialize theme system
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme controller
+            const themeController = new ThemeController();
+            
+            // Initialize theme toggle
+            const themeToggle = new ThemeToggle('themeToggleContainer', themeController);
+            
+            // Make theme controller globally available for other scripts
+            window.themeController = themeController;
+            window.themeToggle = themeToggle;
+            
+            // Add theme initialization styles
+            document.documentElement.style.setProperty('--theme-transition-duration', '300ms');
+        });
+    </script>
+
+    <!-- Footer Section -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <!-- Main Footer Content -->
+            <div class="footer-content">
+                <!-- About Section -->
+                <div class="footer-section">
+                    <h3 class="footer-heading">Singapore Phone Detect</h3>
+                    <p class="footer-description">
+                        Advanced phone number validation and processing system for Singapore telecommunications data.
+                        Streamline your data management with intelligent detection and export capabilities.
+                    </p>
+                </div>
+
+                <!-- Quick Links Section -->
+                <div class="footer-section">
+                    <h4 class="footer-subheading">Quick Actions</h4>
+                    <ul class="footer-links">
+                        <li><a href="#upload" class="footer-link" onclick="openUploadModal()">Upload Files</a></li>
+                        <li><a href="#export" class="footer-link" onclick="openExportModal()">Export Data</a></li>
+                        <li><a href="/file-manager" class="footer-link">File Manager</a></li>
+                        <li><a href="#search" class="footer-link" onclick="document.getElementById('searchBox')?.focus()">Search Records</a></li>
+                    </ul>
+                </div>
+
+                <!-- Features Section -->
+                <div class="footer-section">
+                    <h4 class="footer-subheading">Features</h4>
+                    <ul class="footer-links">
+                        <li><span class="footer-feature">PDF Processing</span></li>
+                        <li><span class="footer-feature">Excel Export</span></li>
+                        <li><span class="footer-feature">Duplicate Detection</span></li>
+                        <li><span class="footer-feature">Advanced Search</span></li>
+                    </ul>
+                </div>
+
+                <!-- System Info Section -->
+                <div class="footer-section">
+                    <h4 class="footer-subheading">System Status</h4>
+                    <div class="footer-stats">
+                        <div class="footer-stat-item">
+                            <span class="footer-stat-label">Total Records</span>
+                            <span class="footer-stat-value" id="footerRecordCount">-</span>
+                        </div>
+                        <div class="footer-stat-item">
+                            <span class="footer-stat-label">Last Updated</span>
+                            <span class="footer-stat-value" id="footerLastUpdated">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Divider -->
+            <div class="footer-divider"></div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p class="footer-copyright">
+                        &copy; 2025 Singapore Phone Detect. Built with modern web technologies.
+                    </p>
+                    <div class="footer-meta">
+                        <span class="footer-version">v2.1.0</span>
+                        <span class="footer-separator">•</span>
+                        <span class="footer-build">Build 2025.11.01</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
 
 </html>

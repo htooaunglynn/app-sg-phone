@@ -6,6 +6,10 @@ require('dotenv').config();
 // Import configuration utility
 const config = require('./utils/config');
 
+// Import authentication system
+const Routes = require('./routes');
+
+
 // Import controllers
 const UploadController = require('./controllers/uploadController');
 const ExportController = require('./controllers/exportController');
@@ -28,17 +32,17 @@ class Application {
     this.app = express();
     this.config = config;
     this.port = config.server.port;
-    
+
     // Initialize services for dual-table workflow
     this.pdfProcessor = new PDFProcessor();
     this.singaporePhoneValidator = singaporePhoneValidator;
     this.phoneValidationProcessor = phoneValidationProcessor;
-    
+
     // Initialize controllers
     this.uploadController = new UploadController();
     this.exportController = new ExportController();
     this.statsController = new StatsController();
-    
+
     this.setupMiddleware();
     this.setupRoutes();
     this.setupErrorHandling();
@@ -52,7 +56,7 @@ class Application {
     this.app.use(cors({
       origin: this.config.server.corsOrigin,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token']
     }));
 
     // Parse JSON bodies
@@ -61,6 +65,9 @@ class Application {
     // Parse URL-encoded bodies
     this.app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+    // Setup authentication system (session middleware, CSRF protection)
+    this.setupAuthentication();
+
     // Serve static files from public directory
     this.app.use(express.static(path.join(__dirname, '../public')));
 
@@ -68,10 +75,10 @@ class Application {
     this.app.use((req, res, next) => {
       const startTime = Date.now();
       const timestamp = new Date().toISOString();
-      
+
       // Log request
       console.log(`${timestamp} - ${req.method} ${req.path} - ${req.ip}`);
-      
+
       // Monitor response time
       res.on('finish', () => {
         const responseTime = Date.now() - startTime;
@@ -79,17 +86,17 @@ class Application {
           console.warn(`Slow request: ${req.method} ${req.path} took ${responseTime}ms`);
         }
       });
-      
+
       next();
     });
 
-    // Enhanced security headers
+    // Enhanced security headers (updated for authentication)
     this.app.use((req, res, next) => {
       // Basic security headers
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('X-XSS-Protection', '1; mode=block');
-      
+
       // Enhanced security headers
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -98,8 +105,8 @@ class Application {
       res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
       res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
       res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-      
-      // Content Security Policy
+
+      // Content Security Policy (updated for authentication forms)
       const csp = [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline'",
@@ -115,9 +122,9 @@ class Application {
         "base-uri 'self'",
         "form-action 'self'"
       ].join('; ');
-      
+
       res.setHeader('Content-Security-Policy', csp);
-      
+
       next();
     });
 
@@ -125,18 +132,18 @@ class Application {
     this.app.use('/upload', (req, res, next) => {
       const clientId = req.ip || req.connection.remoteAddress;
       const now = Date.now();
-      
+
       if (!this.rateLimitMap) {
         this.rateLimitMap = new Map();
       }
-      
+
       const clientData = this.rateLimitMap.get(clientId) || { count: 0, resetTime: now + 3600000 }; // 1 hour window
-      
+
       if (now > clientData.resetTime) {
         clientData.count = 0;
         clientData.resetTime = now + 3600000;
       }
-      
+
       if (clientData.count >= this.config.security.maxFilesPerHour) {
         return res.status(429).json({
           success: false,
@@ -145,12 +152,43 @@ class Application {
           retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
         });
       }
-      
+
       clientData.count++;
       this.rateLimitMap.set(clientId, clientData);
-      
+
       next();
     });
+  }
+
+  /**
+   * Setup authentication system with session middleware and CSRF protection
+   */
+  setupAuthentication() {
+    try {
+      console.log('Setting up authentication system...');
+
+      // Setup authentication with protected routes
+      Routes.setupAuthentication(this.app, {
+        protectedPaths: [
+          '/upload',
+          '/export',
+          '/check',
+          '/files',
+          '/stats',
+          '/system',
+          '/api'
+        ],
+        enableAuth: process.env.DISABLE_AUTH !== 'true'
+      });
+
+      console.log('✅ Authentication system setup completed');
+    } catch (error) {
+      console.error('❌ Failed to setup authentication system:', error);
+      // Don't throw error to allow application to start without auth in development
+      if (this.config.isProduction()) {
+        throw error;
+      }
+    }
   }
 
   /**
@@ -172,23 +210,32 @@ class Application {
       res.sendFile(path.join(__dirname, '../public/file-manager.html'));
     });
 
+    // Monitoring Dashboard page route (requires authentication)
+    this.app.get('/monitoring', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/monitoring-dashboard.html'));
+    });
+
     // Health check route (simple)
     this.app.get('/ping', (req, res) => {
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         message: 'Server is running',
         timestamp: new Date().toISOString()
       });
     });
 
+    // Monitoring and metrics routes
+    const monitoringRoutes = require('./routes/monitoringRoutes');
+    this.app.use('/api/monitoring', monitoringRoutes);
+
     // Upload routes
-    this.app.post('/upload', 
+    this.app.post('/upload',
       this.uploadController.getUploadMiddleware(),
       this.uploadController.handleMulterError.bind(this.uploadController),
       this.uploadController.handleUpload.bind(this.uploadController)
     );
 
-    this.app.get('/upload/status', 
+    this.app.get('/upload/status',
       this.uploadController.getUploadStatus.bind(this.uploadController)
     );
 
@@ -216,45 +263,45 @@ class Application {
     );
 
     // Export routes
-    this.app.get('/export/:start/:end', 
+    this.app.get('/export/:start/:end',
       this.exportController.exportByRange.bind(this.exportController)
     );
 
-    this.app.get('/export/all', 
+    this.app.get('/export/all',
       this.exportController.exportAll.bind(this.exportController)
     );
 
-    this.app.get('/export/validate/:start/:end', 
+    this.app.get('/export/validate/:start/:end',
       this.exportController.validateExportRange.bind(this.exportController)
     );
 
-    this.app.get('/export/recommendations/:start/:end', 
+    this.app.get('/export/recommendations/:start/:end',
       this.exportController.getExportRecommendations.bind(this.exportController)
     );
 
-    this.app.get('/export/info', 
+    this.app.get('/export/info',
       this.exportController.getExportInfo.bind(this.exportController)
     );
 
     // Check table management routes
-    this.app.get('/check', 
+    this.app.get('/check',
       this.exportController.getCheckRecords.bind(this.exportController)
     );
 
-    this.app.put('/check/:id', 
+    this.app.put('/check/:id',
       this.exportController.updateCheckRecord.bind(this.exportController)
     );
 
     // File management routes
-    this.app.get('/files', 
+    this.app.get('/files',
       this.uploadController.listUploadedFiles.bind(this.uploadController)
     );
 
-    this.app.get('/files/:filename', 
+    this.app.get('/files/:filename',
       this.uploadController.downloadFile.bind(this.uploadController)
     );
 
-    this.app.delete('/files/:filename', 
+    this.app.delete('/files/:filename',
       this.uploadController.deleteFile.bind(this.uploadController)
     );
 
@@ -267,25 +314,25 @@ class Application {
     );
 
     // Statistics and utility routes
-    this.app.get('/stats', 
+    this.app.get('/stats',
       this.statsController.getStats.bind(this.statsController)
     );
 
-    this.app.get('/health', 
+    this.app.get('/health',
       this.statsController.getHealthCheck.bind(this.statsController)
     );
 
-    this.app.get('/system', 
+    this.app.get('/system',
       this.statsController.getSystemInfo.bind(this.statsController)
     );
 
-    this.app.get('/api', 
+    this.app.get('/api',
       this.statsController.getApiInfo.bind(this.statsController)
     );
 
     // Development/testing routes
     if (process.env.NODE_ENV !== 'production') {
-      this.app.post('/reset', 
+      this.app.post('/reset',
         this.statsController.resetDatabase.bind(this.statsController)
       );
     }
@@ -406,7 +453,7 @@ class Application {
   async start() {
     try {
       console.log('Starting Singapore Phone Detect application...');
-      
+
       // Print configuration summary
       this.config.printSummary();
 
@@ -417,6 +464,8 @@ class Application {
       console.log('Initializing dual-table database schema...');
       await this.initializeDualTableSchema();
       console.log('Dual-table database schema initialized successfully');
+
+      // Authentication system is already set up in setupAuthentication()
 
       // Start the server
       this.server = this.app.listen(this.port, this.config.server.host, () => {
@@ -458,17 +507,17 @@ class Application {
     try {
       // Ensure database connection is established
       await databaseManager.connect();
-      
+
       // Initialize both backup_table and check_table
       await databaseManager.initializeTables();
-      
+
       // Verify tables are created properly
       const stats = await databaseManager.getTableStats();
       console.log('Database tables initialized:', {
         backupTable: stats.backupTable,
         checkTable: stats.checkTable
       });
-      
+
       return true;
     } catch (error) {
       console.error('Failed to initialize dual-table schema:', error.message);
@@ -524,13 +573,13 @@ class Application {
         console.error('❌ Singapore phone validator configuration issues:', validatorConfig.issues);
         throw new Error('Singapore phone validator configuration is invalid');
       }
-      
+
       const processorConfig = this.phoneValidationProcessor.validateConfiguration();
       if (!processorConfig.isValid) {
         console.error('❌ Phone validation processor configuration issues:', processorConfig.issues);
         throw new Error('Phone validation processor configuration is invalid');
       }
-      
+
       console.log('✅ Service configuration validation passed');
     } catch (error) {
       console.error('❌ Service configuration validation failed:', error.message);
@@ -546,13 +595,13 @@ class Application {
   async cleanup() {
     try {
       console.log('Cleaning up application resources...');
-      
+
       // Close database connections
       if (databaseManager) {
         await databaseManager.close();
         console.log('Database connections closed');
       }
-      
+
       console.log('Application cleanup completed');
     } catch (error) {
       console.error('Error during cleanup:', error);
@@ -565,16 +614,16 @@ class Application {
   setupGracefulShutdown() {
     const gracefulShutdown = async (signal) => {
       console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
-      
+
       if (this.server) {
         this.server.close(async (error) => {
           if (error) {
             console.error('Error during server shutdown:', error);
             process.exit(1);
           }
-          
+
           console.log('Server closed successfully');
-          
+
           // Close database connections
           try {
             await databaseManager.close();
@@ -582,7 +631,7 @@ class Application {
           } catch (error) {
             console.error('Error closing database connections:', error);
           }
-          
+
           console.log('Graceful shutdown completed');
           process.exit(0);
         });

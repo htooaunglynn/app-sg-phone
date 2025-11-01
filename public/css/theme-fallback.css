@@ -1,0 +1,292 @@
+/* Theme Fallback CSS - Works without JavaScript */
+/* This file provides basic theming when JavaScript is disabled or fails */
+
+/* Default light theme fallback */
+html:not([data-theme]) {
+  /* Basic color scheme */
+  background-color: #FFFFFF;
+  color: #6B7280;
+  
+  /* Font stack */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  
+  /* Basic styling */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html:not([data-theme]) body {
+  background-color: #FFFFFF;
+  color: #6B7280;
+  margin: 0;
+  padding: 0;
+}
+
+/* Respect system dark mode preference */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    background-color: #1a1a1a;
+    color: #e5e5e5;
+  }
+  
+  html:not([data-theme]) body {
+    background-color: #1a1a1a;
+    color: #e5e5e5;
+  }
+  
+  html:not([data-theme]) .content-card,
+  html:not([data-theme]) .form-container,
+  html:not([data-theme]) .header-section {
+    background-color: #2a2a2a;
+    border-color: #404040;
+  }
+  
+  html:not([data-theme]) .btn-primary {
+    background-color: #3B82F6;
+    color: #FFFFFF;
+  }
+  
+  html:not([data-theme]) .btn-secondary {
+    background-color: transparent;
+    color: #e5e5e5;
+    border-color: #404040;
+  }
+  
+  html:not([data-theme]) .form-input,
+  html:not([data-theme]) .form-textarea,
+  html:not([data-theme]) .form-select {
+    background-color: #2a2a2a;
+    border-color: #404040;
+    color: #e5e5e5;
+  }
+}
+
+/* Basic component styling without JavaScript */
+html:not([data-theme]) .content-card {
+  background-color: #F8F8F8;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+html:not([data-theme]) .header-section {
+  background-color: #FFFFFF;
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  padding: 24px 32px;
+  margin-bottom: 48px;
+}
+
+html:not([data-theme]) .form-container {
+  background-color: #FFFFFF;
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  padding: 48px;
+}
+
+html:not([data-theme]) .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  background-color: #1D4ED8;
+  color: #FFFFFF;
+  border: 1px solid #1D4ED8;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+html:not([data-theme]) .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  background-color: transparent;
+  color: #6B7280;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+html:not([data-theme]) .form-input,
+html:not([data-theme]) .form-textarea,
+html:not([data-theme]) .form-select {
+  width: 100%;
+  padding: 16px 24px;
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  color: #1F2937;
+  font-size: 16px;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+html:not([data-theme]) .form-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+html:not([data-theme]) h1 {
+  color: #1F2937;
+  text-align: center;
+  margin: 0 0 64px 0;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+html:not([data-theme]) .nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  background-color: transparent;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  color: #6B7280;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Hover states for better UX even without JavaScript */
+html:not([data-theme]) .btn-primary:hover {
+  background-color: #1E40AF;
+  border-color: #1E40AF;
+}
+
+html:not([data-theme]) .btn-secondary:hover {
+  background-color: #F9FAFB;
+  color: #1F2937;
+  border-color: #D1D5DB;
+}
+
+html:not([data-theme]) .nav-button:hover {
+  background-color: #F9FAFB;
+  color: #1F2937;
+}
+
+html:not([data-theme]) .form-input:focus,
+html:not([data-theme]) .form-textarea:focus,
+html:not([data-theme]) .form-select:focus {
+  outline: none;
+  background-color: #FFFFFF;
+  border-color: #1D4ED8;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Accessibility improvements */
+html:not([data-theme]) *:focus {
+  outline: 2px solid #1D4ED8;
+  outline-offset: 2px;
+}
+
+html:not([data-theme]) .btn-primary:focus,
+html:not([data-theme]) .btn-secondary:focus,
+html:not([data-theme]) .nav-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  html:not([data-theme]) {
+    background-color: #FFFFFF;
+    color: #000000;
+  }
+  
+  html:not([data-theme]) .content-card,
+  html:not([data-theme]) .form-container,
+  html:not([data-theme]) .header-section {
+    border-color: #000000;
+    border-width: 2px;
+  }
+  
+  html:not([data-theme]) .btn-primary {
+    background-color: #000000;
+    border-color: #000000;
+    color: #FFFFFF;
+  }
+  
+  html:not([data-theme]) .btn-secondary {
+    background-color: #FFFFFF;
+    border-color: #000000;
+    color: #000000;
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-theme]) * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  html:not([data-theme]) {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  
+  html:not([data-theme]) * {
+    background-color: transparent !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+  
+  html:not([data-theme]) .btn-primary,
+  html:not([data-theme]) .btn-secondary {
+    border: 1px solid #000000 !important;
+  }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  html:not([data-theme]) .header-section {
+    padding: 16px;
+  }
+  
+  html:not([data-theme]) .form-container {
+    padding: 24px;
+  }
+  
+  html:not([data-theme]) h1 {
+    font-size: 36px;
+    margin-bottom: 32px;
+  }
+  
+  html:not([data-theme]) .btn-primary,
+  html:not([data-theme]) .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  html:not([data-theme]) h1 {
+    font-size: 30px;
+  }
+  
+  html:not([data-theme]) .nav-button {
+    padding: 12px 16px;
+    font-size: 12px;
+  }
+}
