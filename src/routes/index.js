@@ -135,6 +135,11 @@ class Routes {
 
             // Apply CSRF protection selectively - exclude static file requests and certain paths
             app.use((req, res, next) => {
+                // Skip CSRF if disabled via environment variable
+                if (process.env.DISABLE_CSRF === 'true') {
+                    return next();
+                }
+
                 // Skip CSRF for static file requests (common static file extensions)
                 if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$/)) {
                     return next();
@@ -207,6 +212,13 @@ class Routes {
 
                 if (!authResult.isAuthenticated) {
                     console.log(`🚫 Authentication failed: ${authResult.reason}`);
+                    
+                    // For HTML requests (browser navigation), redirect to login
+                    if (req.headers.accept && req.headers.accept.includes('text/html')) {
+                        return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+                    }
+                    
+                    // For API requests, return JSON
                     return res.status(401).json({
                         success: false,
                         error: 'Authentication required',

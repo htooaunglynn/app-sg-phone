@@ -5,2253 +5,182 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Singapore Phone Detect</title>
-    <!-- Apple-Style Tailwind CSS -->
     <link rel="stylesheet" href="/css/tailwind-compiled.css">
     <style>
-        /* CSS Variables for consistent theming and performance - Light Theme */
-        :root {
-            --primary-color: #3B82F6;
-            --primary-hover: #2563EB;
-            --secondary-color: #6B7280;
-            --secondary-hover: #4B5563;
-            --success-color: #10B981;
-            --success-hover: #059669;
-            --danger-color: #EF4444;
-            --danger-hover: #DC2626;
-            --warning-color: #F59E0B;
-            --info-color: #3B82F6;
-            --light-color: #F9FAFB;
-            --dark-color: #1F2937;
-            --border-color: #E5E7EB;
-            --border-radius: 8px;
-            --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            --max-width: 800px;
-            --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            --hover-lift: translateY(-2px);
-            --active-press: translateY(0);
-
-            /* Z-index layers */
-            --z-modal-backdrop: 9999;
-            --z-modal-content: 10000;
-            --z-dropdown: 1000;
-            --z-header: 100;
-
-            /* Animation and transition variables */
-            --transition-normal: 0.3s ease;
-            --transition-fast: 0.15s ease;
-            --easing-ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-            /* Duplicate phone number styling colors - centralized configuration */
-            --duplicate-orange-color: #FFA500;
-            --duplicate-orange-hover: #FF8C00;
-            --duplicate-text-color: #000000;
-
-            /* Status-based colors */
-            --status-valid-bg: #FFFFFF;
-            --status-invalid-bg: #FEE2E2;
-            --status-text-color: #1F2937;
-
-            /* Header colors */
-            --header-bg-color: #F8F8F8;
-            --header-text-color: #1F2937;
-        }
-
-        /* Performance optimizations */
+        /* Custom smooth transitions */
         * {
-            box-sizing: border-box;
+            transition-property: color, background-color, border-color;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
         }
 
-        /* Reduce layout thrashing */
-        .container,
-        .modal-content,
-        .table-container {
-            contain: layout style;
+        /* Tab styling */
+        .tab-button {
+            position: relative;
         }
 
-        /* GPU acceleration for animations */
-        .modal.show,
-        .modal-content,
-        button:hover,
-        .modal-button:hover {
-            will-change: transform;
-        }
-
-        /* Optimize repaints */
-        .records-table tr:hover {
-            contain: layout;
-        }
-
-        /* Apple-inspired light theme base styles - Ultra-minimal approach */
-        body {
-            font-family: var(--font-family);
-            margin: 0;
-            padding: 32px 24px;
-            background: linear-gradient(135deg, #FFFFFF 0%, #F8F8F8 100%);
-            min-height: 100vh;
-            line-height: 1.625;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            color: #6B7280;
-            letter-spacing: -0.01em;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-        }
-
-        /* Skip link for accessibility */
-        .skip-link {
+        .tab-button.active::after {
+            content: '';
             position: absolute;
-            top: -40px;
-            left: 6px;
-            background: var(--primary-color);
-            color: white;
-            padding: 8px;
-            text-decoration: none;
-            border-radius: var(--border-radius);
-            z-index: 1001;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: currentColor;
         }
 
-        .skip-link:focus {
-            top: 6px;
-        }
-
-        /* Focus management */
-        :focus-visible {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
-        }
-
-        /* Remove default focus for mouse users */
-        :focus:not(:focus-visible) {
-            outline: none;
-        }
-
-        /* Ensure sufficient color contrast */
-        .status.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .status.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status.info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid #F3F4F6;
-            padding: 48px;
-            border-radius: 16px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 32px;
-        }
-
-        h1 {
-            color: #1F2937;
-            text-align: center;
-            margin-bottom: 48px;
-            font-size: 48px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            line-height: 1.25;
-            background: linear-gradient(135deg, #1F2937 0%, #6B7280 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .section {
-            margin-bottom: 0;
-            /* Remove margin, use gap instead */
-            padding: 32px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            border: 1px solid #F3F4F6;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .section:hover {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            transform: translateY(-2px);
-        }
-
-        .section h2 {
-            margin: 0 0 24px 0;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #F3F4F6;
-            color: #1F2937;
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            line-height: 1.25;
-        }
-
-        .form-group {
-            margin-bottom: var(--space-xl);
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-sm);
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #1F2937;
-            font-size: 14px;
-            letter-spacing: 0.025em;
-            text-transform: uppercase;
-        }
-
-        /* Apple-inspired form input styles */
-        input[type="file"],
-        input[type="number"],
-        input[type="text"],
-        input[type="email"],
-        input[type="url"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 16px;
-            background: #F9FAFB;
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-family: var(--font-family);
-            font-size: 16px;
-            color: #1F2937;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
+        /* Focus styles */
         input:focus,
-        textarea:focus,
-        select:focus {
+        button:focus {
             outline: none;
-            border-color: #3B82F6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            background: #FFFFFF;
         }
 
-        input:hover:not(:disabled),
-        textarea:hover:not(:disabled),
-        select:hover:not(:disabled) {
-            border-color: #D1D5DB;
-            background: #FFFFFF;
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
         }
 
-        input:disabled,
-        textarea:disabled,
-        select:disabled {
-            background: #F3F4F6;
-            border-color: #E5E7EB;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        /* Apple-inspired button styles with premium effects */
-        button {
-            background: #3B82F6;
-            color: #FFFFFF;
-            padding: 16px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-family: var(--font-family);
-            font-weight: 500;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            outline: none;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        button:hover:not(:disabled) {
-            background: #2563EB;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4), 0 0 20px rgba(59, 130, 246, 0.2);
-        }
-
-        button:active:not(:disabled) {
-            transform: translateY(0);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
-
-        button:disabled {
-            background: #D1D5DB;
-            color: #9CA3AF;
-            cursor: not-allowed;
-            opacity: 0.6;
-            transform: none;
-            box-shadow: none;
-        }
-
-        button:focus-visible {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Navigation button styles moved to apple-dark-theme.css for better organization */
-
-        .status {
-            margin-top: 24px;
-            padding: 16px 24px;
-            border-radius: 8px;
-            display: none;
-            font-size: 14px;
-            font-weight: 500;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid transparent;
-            line-height: 1.625;
-        }
-
-        .status.success {
-            background: #D1FAE5;
-            color: #065F46;
-            border: 1px solid #10B981;
-        }
-
-        .status.error {
-            background: #FEE2E2;
-            color: #991B1B;
-            border: 1px solid #EF4444;
-        }
-
-        .status.info {
-            background: #DBEAFE;
-            color: #1E40AF;
-            border: 1px solid #3B82F6;
-        }
-
-        .status.warning {
-            background: #FEF3C7;
-            color: #92400E;
-            border: 1px solid #F59E0B;
-        }
-
-        /* Enhanced error handling styles */
-        .retry-button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-            transition: var(--transition);
-            outline: none;
-            margin-left: 10px;
-        }
-
-        .retry-button:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
-        }
-
-        .retry-button:focus {
-            outline: 2px solid var(--primary-color);
-            outline-offset: 2px;
-        }
-
-        .validation-feedback {
-            font-size: 14px;
-            padding: 8px 12px;
-            border-radius: var(--border-radius);
-            margin-top: 5px;
-        }
-
-        .validation-feedback.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .validation-feedback.warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-        }
-
-        .validation-feedback.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        /* Network failure fallback styles */
-        .network-error-state {
-            text-align: center;
-            padding: 40px 20px;
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-            border: 2px dashed #dee2e6;
-        }
-
-        .network-error-state .error-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            opacity: 0.6;
-        }
-
-        .network-error-state .error-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: var(--dark-color);
-        }
-
-        .network-error-state .error-message {
-            color: #666;
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .network-error-state .error-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--space-xl);
-            margin-top: var(--space-xl);
-        }
-
-        .stat-item {
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--glass-blur));
-            -webkit-backdrop-filter: blur(var(--glass-blur));
-            border: 1px solid var(--border-primary);
-            padding: var(--space-xl);
-            border-radius: var(--radius-medium);
-            text-align: center;
-            box-shadow: var(--shadow-soft);
-            transition: var(--transition-normal);
-        }
-
-        .stat-item:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-elevated);
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #007bff;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .export-range {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-xl);
-            margin-top: var(--space-lg);
-        }
-
-        .progress {
-            width: 100%;
-            height: 20px;
-            background-color: #f0f0f0;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background-color: #007bff;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .check-record {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-
-        .check-record-header {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #495057;
-        }
-
-        .check-record-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            font-size: 14px;
-        }
-
-        .check-record-field {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .check-record-label {
-            font-weight: bold;
-            color: #6c757d;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-
-        .check-record-value {
-            color: #495057;
-            margin-top: 2px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .status-badge.singapore {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .status-badge.non-singapore {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: var(--space-lg);
-            margin-top: var(--component-spacing);
-            padding: var(--space-xl) 0;
-        }
-
-        .pagination button {
-            padding: 5px 10px;
-            font-size: 14px;
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-        }
-
-        .pagination-info {
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .file-type-info {
-            margin-bottom: 20px;
-        }
-
-        .file-format-guidance {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            border-left: 4px solid #007bff;
-        }
-
-        .file-format-guidance strong {
-            color: #007bff;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .file-format-guidance ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-
-        .file-format-guidance li {
-            margin-bottom: 4px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .processing-details {
-            margin-top: 15px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-        }
-
-        .processing-details h4 {
-            margin: 0 0 10px 0;
-            color: #495057;
-        }
-
-        .processing-step {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .processing-step .step-icon {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            margin-right: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: white;
-        }
-
-        .processing-step.pending .step-icon {
-            background-color: #6c757d;
-        }
-
-        .processing-step.processing .step-icon {
-            background-color: #007bff;
-            animation: pulse 1.5s infinite;
-        }
-
-        .processing-step.completed .step-icon {
-            background-color: #28a745;
-        }
-
-        .processing-step.error .step-icon {
-            background-color: #dc3545;
-        }
-
-        @keyframes pulse {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.5;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .file-select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
-            margin-bottom: 10px;
-        }
-
-        .extraction-report {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 15px;
-        }
-
-        .report-section {
-            margin-bottom: 20px;
-        }
-
-        .report-section h4 {
-            color: #495057;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 5px;
-        }
-
-        .report-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .report-item {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #007bff;
-        }
-
-        .report-item-label {
-            font-weight: bold;
-            color: #495057;
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-
-        .report-item-value {
-            font-size: 18px;
-            color: #007bff;
-        }
-
-        .worksheet-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .worksheet-item {
-            background: white;
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            border-radius: 5px;
-            border-left: 4px solid #28a745;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .worksheet-name {
-            font-weight: bold;
-            color: #495057;
-        }
-
-        .worksheet-stats {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .column-mapping {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-
-        .column-mapping h5 {
-            margin: 0 0 10px 0;
-            color: #495057;
-        }
-
-        .column-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .column-tag {
-            background: #e7f3ff;
-            color: #0c5460;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            border: 1px solid #bee5eb;
-        }
-
-        .column-tag.phone {
-            background: #d4edda;
-            color: #155724;
-            border-color: #c3e6cb;
-        }
-
-        .column-tag.company {
-            background: #fff3cd;
-            color: #856404;
-            border-color: #ffeaa7;
-        }
-
-        .error-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .error-item {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px 15px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            border-left: 4px solid #dc3545;
-        }
-
-        .success-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #28a745;
-            margin-bottom: 15px;
-        }
-
-        .header-section {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: var(--space-xl);
-            align-items: start;
-            margin-bottom: var(--component-spacing);
-            padding: var(--space-lg) 0;
-        }
-
-        .search-container {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-md);
-            min-width: 0;
-            /* Allow shrinking */
-            position: relative;
-        }
-
-        /* Enhanced Search Input Styles */
-        .enhanced-search-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .enhanced-search-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: var(--transition);
-            background: white;
-        }
-
-        .enhanced-search-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-        }
-
-        .enhanced-search-input.has-suggestions {
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-
-        /* Search Suggestions Dropdown */
-        .search-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid var(--primary-color);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .search-suggestions.show {
-            display: block;
-        }
-
-        .suggestion-item {
-            padding: 12px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: var(--transition);
-        }
-
-        .suggestion-item:hover,
-        .suggestion-item.highlighted {
-            background-color: #f8f9fa;
-        }
-
-        .suggestion-item:last-child {
-            border-bottom: none;
-        }
-
-        .suggestion-text {
-            flex: 1;
-            font-size: 14px;
-        }
-
-        .suggestion-source {
-            font-size: 12px;
-            color: #666;
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 12px;
-        }
-
-        .suggestion-source.history {
-            background: #e7f3ff;
-            color: #0c5460;
-        }
-
-        .suggestion-source.pattern {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        /* Search History Dropdown */
-        .search-history-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid var(--secondary-color);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 999;
-            max-height: 250px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .search-history-dropdown.show {
-            display: block;
-        }
-
-        .search-history-header {
-            padding: 8px 16px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            font-weight: bold;
-            color: #495057;
-        }
-
-        .clear-history-btn {
-            background: none;
-            border: none;
-            color: var(--danger-color);
-            cursor: pointer;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            transition: var(--transition);
-        }
-
-        .clear-history-btn:hover {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .search-history-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            padding: 10px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: var(--transition);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .history-item:hover {
-            background-color: #f8f9fa;
-        }
-
-        .history-item:last-child {
-            border-bottom: none;
-        }
-
-        .history-query {
-            flex: 1;
-            font-size: 14px;
-            color: #495057;
-        }
-
-        .history-timestamp {
-            font-size: 11px;
-            color: #6c757d;
-        }
-
-        /* Search Help */
-        .search-help {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid var(--info-color);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 998;
-            display: none;
-        }
-
-        .search-help.show {
-            display: block;
-        }
-
-        .search-help-content {
-            padding: 16px;
-        }
-
-        .search-help-content h4 {
-            margin: 0 0 12px 0;
-            font-size: 14px;
-            color: var(--dark-color);
-        }
-
-        .search-help-content ul {
-            margin: 0;
-            padding-left: 20px;
-            list-style: none;
-        }
-
-        .search-help-content li {
-            margin-bottom: 8px;
-            font-size: 13px;
-            color: #666;
-        }
-
-        .search-help-content code {
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-
-        /* Quick Search Buttons */
-        .quick-search-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-
-        .quick-search-btn,
-        .clear-search-btn,
-        .advanced-search-btn {
-            padding: 6px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            background: white;
-            color: var(--dark-color);
-            font-size: 12px;
-            cursor: pointer;
-            transition: var(--transition);
-            white-space: nowrap;
-        }
-
-        .quick-search-btn:hover {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-            transform: translateY(-1px);
-        }
-
-        .clear-search-btn {
-            background: var(--warning-color);
-            color: var(--dark-color);
-            border-color: var(--warning-color);
-        }
-
-        .clear-search-btn:hover {
-            background: #e0a800;
-            border-color: #e0a800;
-            transform: translateY(-1px);
-        }
-
-        .advanced-search-btn {
-            background: var(--secondary-color);
-            color: white;
-            border-color: var(--secondary-color);
-        }
-
-        .advanced-search-btn:hover {
-            background: var(--secondary-hover);
-            border-color: var(--secondary-hover);
-            transform: translateY(-1px);
-        }
-
-        /* Search State Indicators */
-        .search-loading {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-
-        .search-loading.show {
-            display: block;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: translateY(-50%) rotate(0deg);
-            }
-
-            100% {
-                transform: translateY(-50%) rotate(360deg);
-            }
-        }
-
-        /* Responsive Design for Enhanced Search */
+        /* Table responsive */
         @media (max-width: 768px) {
-            .enhanced-search-wrapper {
-                margin-bottom: 10px;
+            table {
+                font-size: 0.875rem;
             }
 
-            .quick-search-buttons {
-                justify-content: center;
-            }
-
-            .quick-search-btn,
-            .advanced-search-btn {
-                font-size: 11px;
-                padding: 5px 10px;
-            }
-
-            .search-suggestions,
-            .search-history-dropdown,
-            .search-help {
-                max-height: 200px;
-            }
-        }
-
-        .header-buttons {
-            display: flex;
-            gap: var(--space-md);
-            align-items: flex-start;
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-
-        .theme-toggle-container {
-            display: flex;
-            align-items: center;
-            margin-right: 8px;
-        }
-
-        /* Ensure theme toggle integrates well with navigation */
-        .theme-toggle-wrapper {
-            order: -1;
-            /* Place theme toggle first in the navigation */
-        }
-
-        /* Responsive navigation integration */
-        @media (max-width: 768px) {
-            .theme-toggle-container {
-                margin-right: 0;
-                margin-bottom: 8px;
-                order: -1;
-                width: 100%;
-                justify-content: center;
-            }
-
-            .theme-toggle-wrapper {
-                width: 100%;
-                max-width: 200px;
-            }
-
-            .theme-toggle-button {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header-buttons {
-                flex-direction: column;
-                align-items: stretch;
-                gap: var(--space-sm);
-            }
-
-            .theme-toggle-container {
-                margin-bottom: var(--space-sm);
-            }
-        }
-
-        /* Header button styles moved to apple-dark-theme.css for better organization */
-
-        .search-box {
-            width: 100%;
-            padding: 16px;
-            background: #F9FAFB;
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            font-size: 16px;
-            font-family: var(--font-family);
-            color: #1F2937;
-            box-sizing: border-box;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .search-box:focus {
-            outline: none;
-            border-color: #3B82F6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            background: #FFFFFF;
-        }
-
-        .search-box:hover {
-            border-color: #D1D5DB;
-            background: #FFFFFF;
-        }
-
-        .search-box::placeholder {
-            color: #9CA3AF;
-        }
-
-        .records-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: transparent;
-        }
-
-        .records-table th,
-        .records-table td {
-            padding: 16px 24px;
-            text-align: left;
-            border-bottom: 1px solid #F3F4F6;
-            vertical-align: middle;
-        }
-
-        .records-table th {
-            background: #F8F8F8;
-            font-weight: 500;
-            color: #1F2937;
-            font-size: 12px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            border-bottom: 2px solid #E5E7EB;
-        }
-
-        .records-table tbody tr {
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .records-table tbody tr:hover {
-            background: rgba(248, 248, 248, 0.5);
-        }
-
-        .records-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .records-table td {
-            color: #6B7280;
-            font-size: 14px;
-        }
-
-        /* Status styling for false records */
-        .records-table tr.status-false {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .records-table tr.status-false:hover {
-            background-color: #f5c6cb;
-        }
-
-        .records-table tr.status-false td {
-            color: #721c24;
-        }
-
-        /* Status styling for true records */
-        .records-table tr.status-true {
-            background-color: #ffffff;
-            color: #495057;
-        }
-
-        /* Duplicate phone record styling - using centralized color configuration */
-        .records-table tr.duplicate-phone-record {
-            background-color: var(--duplicate-orange-color) !important;
-            color: var(--duplicate-text-color);
-        }
-
-        .records-table tr.duplicate-phone-record:hover {
-            background-color: var(--duplicate-orange-hover) !important;
-            color: var(--duplicate-text-color);
-        }
-
-        .records-table tr.duplicate-phone-record td {
-            color: var(--duplicate-text-color);
-            font-weight: 500;
-        }
-
-        /* Duplicate indicator styling */
-        .duplicate-indicator {
-            display: inline-block;
-            margin-left: 5px;
-            font-size: 14px;
-            animation: pulse-duplicate 2s infinite;
-        }
-
-        @keyframes pulse-duplicate {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.6;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        /* Ensure duplicate styling takes precedence over status styling */
-        .records-table tr.duplicate-phone-record.status-false {
-            background-color: var(--duplicate-orange-color) !important;
-            color: var(--duplicate-text-color) !important;
-        }
-
-        .records-table tr.duplicate-phone-record.status-false:hover {
-            background-color: var(--duplicate-orange-hover) !important;
-            color: var(--duplicate-text-color) !important;
-        }
-
-        .records-table tr.duplicate-phone-record.status-false td {
-            color: var(--duplicate-text-color) !important;
-        }
-
-        /* Accessibility: Ensure sufficient contrast for duplicate records */
-        @media (prefers-contrast: high) {
-            .records-table tr.duplicate-phone-record {
-                background-color: #FF8C00 !important;
-                color: #000000 !important;
-                border: 2px solid #000000;
-            }
-
-            .records-table tr.duplicate-phone-record td {
-                color: #000000 !important;
-                font-weight: bold;
-            }
-        }
-
-        /* Dark mode support for duplicate styling */
-        @media (prefers-color-scheme: dark) {
-            .records-table tr.duplicate-phone-record {
-                background-color: #CC8400 !important;
-                color: #000000 !important;
-            }
-
-            .records-table tr.duplicate-phone-record:hover {
-                background-color: #B8770A !important;
-                color: #000000 !important;
-            }
-
-            .records-table tr.duplicate-phone-record td {
-                color: #000000 !important;
-            }
-        }
-
-        /* Fallback styling when duplicate detection fails */
-        .records-table tr.duplicate-phone-fallback {
-            background-color: #FFE4B5 !important;
-            /* Light orange background as fallback */
-            color: #8B4513 !important;
-            /* Brown text for contrast */
-            border-left: 3px solid var(--duplicate-orange-color) !important;
-            /* Orange left border indicator */
-        }
-
-        .records-table tr.duplicate-phone-fallback:hover {
-            background-color: #FFDAB9 !important;
-            /* Slightly darker on hover */
-        }
-
-        .records-table tr.duplicate-phone-fallback td {
-            color: #8B4513 !important;
-        }
-
-        /* Table-wide fallback styling when duplicate detection is unavailable */
-        .records-table.duplicate-detection-unavailable {
-            border: 2px dashed var(--duplicate-orange-color) !important;
-            opacity: 0.95;
-        }
-
-        .duplicate-detection-warning {
-            background-color: #FFF3CD;
-            color: #856404;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            border: 1px solid #FFEAA7;
-            border-radius: 4px;
-            font-size: 13px;
-            text-align: center;
-            display: none;
-            /* Hidden by default, shown by JavaScript when needed */
-        }
-
-        .duplicate-detection-warning.show {
-            display: block;
-        }
-
-        .duplicate-detection-warning::before {
-            content: "⚠️ ";
-            margin-right: 5px;
-        }
-
-        /* Dark mode support for fallback styling */
-        @media (prefers-color-scheme: dark) {
-            .records-table tr.duplicate-phone-fallback {
-                background-color: #8B4513 !important;
-                color: #FFE4B5 !important;
-                border-left: 3px solid #CC8400 !important;
-            }
-
-            .records-table tr.duplicate-phone-fallback:hover {
-                background-color: #A0522D !important;
-            }
-
-            .records-table tr.duplicate-phone-fallback td {
-                color: #FFE4B5 !important;
-            }
-
-            .duplicate-detection-warning {
-                background-color: #664D03;
-                color: #FFECB5;
-                border-color: #997404;
-            }
-        }
-
-        .edit-button {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-            transition: var(--transition);
-            outline: none;
-        }
-
-        .edit-button:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
-        }
-
-        .save-button {
-            background-color: var(--success-color);
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 12px;
-            margin-right: 5px;
-            font-family: inherit;
-            transition: var(--transition);
-            outline: none;
-        }
-
-        .save-button:hover {
-            background-color: var(--success-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
-        }
-
-        .cancel-button {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 6px 12px;
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-            transition: var(--transition);
-            outline: none;
-        }
-
-        .cancel-button:hover {
-            background-color: var(--secondary-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(108, 117, 125, 0.3);
-        }
-
-        .edit-button:focus,
-        .save-button:focus,
-        .cancel-button:focus {
-            outline: 2px solid currentColor;
-            outline-offset: 2px;
-        }
-
-        .edit-input {
-            width: 100%;
-            padding: 6px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            font-size: 12px;
-            box-sizing: border-box;
-            font-family: inherit;
-            transition: var(--transition);
-        }
-
-        .edit-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-        }
-
-        .edit-textarea {
-            width: 100%;
-            padding: 6px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            font-size: 12px;
-            resize: vertical;
-            min-height: 40px;
-            box-sizing: border-box;
-            font-family: inherit;
-            transition: var(--transition);
-        }
-
-        .edit-textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-
-        .search-highlight {
-            background-color: #fff3cd;
-            padding: 1px 2px;
-            border-radius: 2px;
-        }
-
-        .phone-search-buttons {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
-            flex-wrap: wrap;
-        }
-
-        .phone-search-btn {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
-            transition: var(--transition);
-            cursor: pointer;
-        }
-
-        .phone-search-btn.plus65 {
-            background-color: #007bff;
-        }
-
-        .phone-search-btn.plus65:hover {
-            background-color: #0056b3;
-            transform: translateY(-1px);
-        }
-
-        .phone-search-btn.quotes {
-            background-color: #28a745;
-        }
-
-        .phone-search-btn.quotes:hover {
-            background-color: #218838;
-            transform: translateY(-1px);
-        }
-
-        .phone-search-btn:visited {
-            color: white;
-        }
-
-        .file-details {
-            font-size: 11px;
-            color: #666;
-            margin-top: 2px;
-        }
-
-        .table-container {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid #E5E7EB;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            margin-top: 24px;
-            max-height: 70vh;
-            overflow-y: auto;
-            width: 100%;
-        }
-
-        /* Improved table scrollbar styling */
-        .table-container::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        .table-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-
-        .table-container::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-
-        .table-container::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-
-        @media (max-width: 1024px) {
-            .container {
-                padding: var(--space-2xl);
-                gap: var(--space-2xl);
-            }
-
-            .section {
-                padding: var(--space-2xl);
-                gap: var(--space-xl);
-            }
-
-            .header-section {
-                grid-template-columns: 1fr;
-                gap: var(--space-lg);
-            }
-
-            .header-buttons {
-                justify-content: flex-start;
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: var(--space-lg);
-            }
-
-            .container {
-                padding: var(--space-xl);
-                gap: var(--space-xl);
-            }
-
-            .section {
-                padding: var(--space-xl);
-                gap: var(--space-lg);
-            }
-
-            .export-range {
-                grid-template-columns: 1fr;
-                gap: var(--space-lg);
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-                gap: var(--space-lg);
-            }
-
-            .records-table th,
-            .records-table td {
-                padding: var(--space-md) var(--space-lg);
-            }
-        }
-
-        /* Apple-inspired Modal Styles with glass morphism */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: var(--z-modal-backdrop);
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            /* Ensure modal is always on top */
-            pointer-events: auto;
-        }
-
-        .modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: modalFadeIn var(--transition-normal) var(--easing-ease-out);
-        }
-
-        .modal-content {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            z-index: var(--z-modal-content);
-            animation: modalSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .modal-header {
-            padding: 24px 32px;
-            border-bottom: 1px solid #E5E7EB;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #F8F8F8;
-            border-radius: 16px 16px 0 0;
-        }
-
-        .modal-title {
-            margin: 0;
-            font-size: 20px;
-            color: #1F2937;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-        }
-
-        .modal-close {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid #E5E7EB;
-            font-size: 20px;
-            cursor: pointer;
-            color: #6B7280;
-            padding: 0;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .modal-close:hover {
-            background: rgba(248, 248, 248, 0.8);
-            color: #1F2937;
-            transform: scale(1.05);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .modal-close:focus-visible {
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .modal-body {
-            padding: 32px;
-            max-height: calc(90vh - 140px);
-            overflow-y: auto;
-            color: #6B7280;
-        }
-
-        .modal-footer {
-            padding: 24px 32px;
-            border-top: 1px solid #E5E7EB;
-            display: flex;
-            justify-content: flex-end;
-            gap: 16px;
-            background: #F8F8F8;
-            border-radius: 0 0 16px 16px;
-        }
-
-        .modal-button {
-            padding: var(--space-md) var(--space-xl);
-            border: none;
-            border-radius: var(--radius-medium);
-            cursor: pointer;
-            font-size: var(--font-size-base);
-            font-family: var(--font-family-primary);
-            font-weight: var(--font-weight-medium);
-            transition: var(--transition-normal);
-            outline: none;
-            position: relative;
-            overflow: hidden;
-            box-shadow: var(--shadow-soft);
-        }
-
-        .modal-button.primary {
-            background: var(--accent-blue);
-            color: var(--text-primary);
-        }
-
-        .modal-button.primary:hover:not(:disabled) {
-            background: var(--accent-blue-hover);
-            transform: var(--hover-lift);
-            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4), 0 0 20px rgba(74, 144, 226, 0.2);
-        }
-
-        .modal-button.secondary {
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--glass-blur));
-            -webkit-backdrop-filter: blur(var(--glass-blur));
-            border: 1px solid var(--border-primary);
-            color: var(--text-primary);
-        }
-
-        .modal-button.secondary:hover:not(:disabled) {
-            background: var(--interactive-hover);
-            border-color: var(--accent-silver);
-            transform: var(--hover-lift);
-            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-button:disabled {
-            background: var(--bg-surface);
-            color: var(--text-disabled);
-            cursor: not-allowed;
-            opacity: 0.6;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .modal-button:focus-visible {
-            box-shadow: var(--shadow-focus), var(--shadow-soft);
-        }
-
-        .modal-button:active:not(:disabled) {
-            transform: var(--active-press);
-        }
-
-        @keyframes modalFadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.95);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* Enhanced Modal responsive design */
-        @media (max-width: 768px) {
-            .modal-content {
-                width: 95%;
-                margin: 10px;
-                max-height: 95vh;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: 20px;
-            }
-
-            .modal-footer {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .modal-button {
-                width: 100%;
-                padding: 12px 20px;
-                font-size: 16px;
-            }
-
-            .modal-close {
-                width: 40px;
-                height: 40px;
-                font-size: 28px;
-            }
-        }
-
-        /* Tablet responsive design */
-        @media (max-width: 1024px) and (min-width: 769px) {
-            .modal-content {
-                width: 85%;
-                max-width: 700px;
-            }
-
-            .header-section {
-                gap: 10px;
-            }
-
-            /* Responsive header button styles moved to apple-dark-theme.css */
-        }
-
-        /* Large screen optimizations */
-        @media (min-width: 1200px) {
-            .modal-content {
-                max-width: 800px;
-            }
-
-            .records-table {
-                font-size: 14px;
-            }
-
-            .records-table th,
-            .records-table td {
-                padding: 14px;
-            }
-        }
-
-        /* Small mobile devices */
-        @media (max-width: 480px) {
-            body {
-                padding: var(--space-md);
-            }
-
-            .container {
-                padding: var(--space-lg);
-                gap: var(--space-lg);
-            }
-
-            h1 {
-                font-size: var(--font-size-2xl);
-                margin-bottom: var(--space-xl);
-            }
-
-            .section {
-                padding: var(--space-lg);
-                gap: var(--space-md);
-            }
-
-            .header-buttons {
-                flex-direction: column;
-                align-items: stretch;
-                gap: var(--space-sm);
-            }
-
-            .records-table th,
-            .records-table td {
-                padding: var(--space-sm) var(--space-md);
-                font-size: var(--font-size-xs);
-            }
-
-            .modal-content {
-                width: 98%;
-                margin: 5px;
-                max-height: 98vh;
-            }
-
-            .modal-header,
-            .modal-body,
-            .modal-footer {
-                padding: var(--space-lg);
-            }
-
-            .modal-title {
-                font-size: var(--font-size-lg);
-            }
-
-            .form-group {
-                margin-bottom: var(--space-lg);
-            }
-
-            .export-range {
-                grid-template-columns: 1fr;
-                gap: var(--space-lg);
-            }
-        }
-
-        /* Print styles */
-        @media print {
-            body {
-                background-color: white;
-                padding: 0;
-            }
-
-            .container {
-                box-shadow: none;
-                padding: 20px;
-            }
-
-            .header-buttons,
-            .modal,
-            .pagination,
-            .edit-button,
-            .save-button,
-            .cancel-button {
-                display: none !important;
-            }
-
-            .records-table {
-                font-size: 12px;
-            }
-
-            .records-table th,
-            .records-table td {
-                padding: 8px;
-                border: 1px solid #ddd;
-            }
-        }
-
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-            .container {
-                border: 2px solid #000;
-            }
-
-            .records-table th {
-                background-color: #000;
-                color: #fff;
-            }
-
-            .records-table tr:hover {
-                background-color: #f0f0f0;
-            }
-
-            .modal-content {
-                border: 2px solid #000;
-            }
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-            .modal.show {
-                animation: none;
-            }
-
-            .modal-content {
-                animation: none;
-            }
-
-            .progress-bar {
-                transition: none;
-            }
-
-            @keyframes pulse {
-
-                0%,
-                100% {
-                    opacity: 1;
-                }
-            }
-        }
-
-        /* Dark mode support */
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: #1a1a1a;
-                color: #e0e0e0;
-            }
-
-            .container {
-                background: #2d2d2d;
-                color: #e0e0e0;
-            }
-
-            .section {
-                border-color: #444;
-                background: #333;
-            }
-
-            .records-table th {
-                background-color: #444;
-                color: #e0e0e0;
-            }
-
-            .records-table tr:hover {
-                background-color: #3a3a3a;
-            }
-
-            .modal-content {
-                background-color: #2d2d2d;
-                color: #e0e0e0;
-            }
-
-            .modal-header {
-                border-bottom-color: #444;
-            }
-
-            .modal-footer {
-                border-top-color: #444;
-            }
-
-            input,
-            textarea,
-            select {
-                background-color: #444;
-                color: #e0e0e0;
-                border-color: #666;
-            }
-
-            .search-box {
-                background-color: #444;
-                color: #e0e0e0;
-                border-color: #666;
+            td,
+            th {
+                padding: 0.75rem !important;
             }
         }
     </style>
 </head>
 
-<body>
-    <!-- Fallback message for when JavaScript is disabled -->
-    <!-- <noscript>
-        <div
-            style="background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 16px; margin: 16px; text-align: center; color: #92400E;">
-            <strong>JavaScript Required</strong><br>
-            This application requires JavaScript to function properly. Please enable JavaScript in your browser
-            settings.
-            <br><br>
-            <small>Basic functionality will work with the fallback styles, but full features require JavaScript.</small>
+<body class="bg-white text-gray-900">
+    <!-- Header -->
+    <header class="border-b border-gray-100">
+        <nav class="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm font-semibold">M</span>
+                </div>
+                <span class="font-semibold">Minimalist</span>
+            </div>
+            <a href="profile.html" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Back to Profile</a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 md:px-6 py-12">
+        <div class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-semibold mb-2">Data Management</h1>
+            <p class="text-gray-500">View and manage your records</p>
         </div>
-    </noscript> -->
 
-    <!-- Skip link for accessibility -->
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-
-    <!-- Modal Container -->
-    <div id="modal" class="modal" role="dialog" aria-hidden="true">
-        <div class="modal-content" role="document">
-            <div class="modal-header">
-                <h2 id="modalTitle" class="modal-title">Modal Title</h2>
-                <button class="modal-close" onclick="closeModal()" aria-label="Close modal">&times;</button>
-            </div>
-            <div id="modalBody" class="modal-body">
-                <!-- Modal content will be inserted here -->
-            </div>
-            <div id="modalFooter" class="modal-footer" style="display: none;">
-                <!-- Modal footer buttons will be inserted here -->
-            </div>
-        </div>
-    </div>
-
-    <h1
-        class="text-4xl md:text-5xl font-bold text-center mb-12 text-gradient bg-gradient-to-r from-neutral-800 to-neutral-600 bg-clip-text text-transparent">
-        Singapore Phone Detect</h1>
-
-    <main id="main-content" style="width: 80%;">
-        <!-- Check Table Records Section -->
-        <div class="glass-card mb-8">
-            <h2 class="text-xl font-semibold text-neutral-800 mb-6 flex items-center gap-2">
-                <span>🔍</span> Check Table Records
-            </h2>
-
-            <div class="flex gap-4 mb-6">
-                <input type="text" id="searchInput" placeholder="Search phone numbers, companies, IDs..."
-                    class="search-input-apple flex-1" autocomplete="off">
-
-                <button class="nav-button" onclick="openUploadModal()" aria-label="Upload files">
-                    <span class="icon">📤</span>
-                    Upload
-                </button>
-
-                <button class="nav-button" onclick="openExportModal()" aria-label="Export records">
-                    <span class="icon">📥</span>
-                    Export
-                </button>
+        <!-- Modal Container -->
+        <div id="modal" class="modal" role="dialog" aria-hidden="true">
+            <div class="modal-content" role="document">
+                <div class="modal-header">
+                    <h2 id="modalTitle" class="modal-title">Modal Title</h2>
+                    <button class="modal-close" onclick="closeModal()" aria-label="Close modal">&times;</button>
+                </div>
+                <div id="modalBody" class="modal-body">
+                    <!-- Modal content will be inserted here -->
+                </div>
+                <div id="modalFooter" class="modal-footer" style="display: none;">
+                    <!-- Modal footer buttons will be inserted here -->
+                </div>
             </div>
         </div>
 
-        <div class="duplicate-detection-warning" id="duplicateDetectionWarning">
-            Duplicate detection is temporarily unavailable. The table will continue to work normally without
-            duplicate highlighting.
+        <!-- Search and Filter -->
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <input type="text" placeholder="Search phone numbers, companies, IDs..."
+                class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                id="searchInput" onkeyup="filterTable()">
+            <!-- Added export and upload buttons -->
+            <button class="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-900 transition-colors"
+                onclick="openExportModal()">Export</button>
+            <button class="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-900 transition-colors"
+                onclick="openUploadModal()">Upload</button>
+            <button class="px-6 py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-900 transition-colors">Add
+                Record</button>
         </div>
 
-        <div class="table-container">
-            <table class="records-table" id="recordsTable">
+        <!-- Table -->
+        <div class="overflow-x-auto border border-gray-100 rounded-lg">
+            <table class="w-full" id="recordsTable">
                 <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Phone</th>
-                        <th>Company Name</th>
-                        <th>Physical Address</th>
-                        <th>Email</th>
-                        <th>Website</th>
-                        <th>Action</th>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="px-6 py-4 text-left text-sm font-semibold">ID</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Phone</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Company Name</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Physical Address</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Website</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold">Action</th>
                     </tr>
                 </thead>
                 <tbody id="recordsTableBody">
                     <tr>
                         <td colspan="7" class="loading">Loading records...</td>
                     </tr>
+                    <!-- <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-sm">#001</td>
+                        <td class="px-6 py-4 text-sm font-medium">Sarah Johnson</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">sarah@example.com</td>
+                        <td class="px-6 py-4 text-sm"><span
+                                class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Active</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">Jan 15, 2024</td>
+                        <td class="px-6 py-4 text-sm">
+                            <button class="text-gray-600 hover:text-black">Edit</button>
+                        </td>
+                    </tr> -->
                 </tbody>
             </table>
         </div>
 
-        <div class="pagination" id="paginationContainer">
-            <!-- Pagination controls will be inserted here -->
+        <!-- Pagination -->
+        <div class="mt-8 flex items-center justify-between" id="paginationContainer">
+            <p class="text-sm text-gray-600">Showing <span class="font-medium">1</span> to <span
+                    class="font-medium">5</span> of <span class="font-medium">42</span> results</p>
+            <div class="flex gap-2">
+                <button
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">Previous</button>
+                <button class="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium">1</button>
+                <button
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">2</button>
+                <button
+                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">Next</button>
+            </div>
         </div>
 
-        <div class="status" id="checkTableStatus"></div>
+        <!-- Added upload modal -->
+        <div id="uploadModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-semibold">Upload File</h2>
+                    <button onclick="closeUploadModal()"
+                        class="text-gray-500 hover:text-gray-900 text-2xl font-light">&times;</button>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-black transition-colors cursor-pointer"
+                        id="dropZone" onclick="document.getElementById('fileInput').click()">
+                        <p class="text-sm font-medium text-gray-700">Drag and drop or click to upload</p>
+                        <p class="text-xs text-gray-500 mt-1">CSV, Excel, or JSON files supported</p>
+                    </div>
+
+                    <input type="file" id="fileInput" class="hidden" accept=".csv,.xlsx,.json"
+                        onchange="handleFileUpload(event)">
+
+                    <div class="flex gap-3">
+                        <button onclick="closeUploadModal()"
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50">Cancel</button>
+                        <button onclick="submitUpload()"
+                            class="flex-1 px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-900">Upload</button>
+                    </div>
+                </div>
+            </div>
         </div>
-
-
-
     </main>
 
     <script>
@@ -2263,6 +192,10 @@
         let editingRecordId = null;
         let searchTerm = '';
         let performanceMode = 'normal'; // 'normal' or 'high-performance'
+
+        // Authentication state
+        let isUserAuthenticated = false;
+        let currentUser = null;
 
         // Adaptive pagination based on dataset size and performance
         function setOptimalPageSize() {
@@ -2289,6 +222,377 @@
             searchTimes: [],
             renderTimes: []
         };
+
+        /**
+         * Check authentication status and redirect to login if not authenticated
+         * @returns {Promise<boolean>} - Returns true if authenticated, false otherwise
+         */
+        async function checkAuthenticationAndRedirect() {
+            // Only skip authentication if explicitly requested via URL parameter
+            if (window.location.search.includes('skip_auth=true')) {
+                console.log('Authentication check skipped via URL parameter');
+                isUserAuthenticated = true;
+                currentUser = { id: 'dev-user', role: 'user', email: 'dev@example.com' };
+                updateUIForAuthenticatedUser();
+                return true;
+            }
+
+            try {
+                console.log('Checking authentication status...');
+
+                const response = await fetch('/api/auth/status', {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Debug the response
+                    console.log('Auth status response:', data);
+
+                    // Handle both possible response formats
+                    const authData = data.data || data;
+                    const isAuth = authData.isAuthenticated || false;
+                    const user = authData.user || null;
+
+                    console.log('Parsed auth data:', { authData, isAuth, user, success: data.success });
+
+                    if (data.success && isAuth) {
+                        // User is authenticated
+                        isUserAuthenticated = true;
+                        currentUser = user || { id: 'user', role: 'user' };
+
+                        console.log('User authenticated:', {
+                            userId: currentUser?.id || 'unknown',
+                            role: currentUser?.role || 'user'
+                        });
+
+                        // Update UI to show authenticated state
+                        updateUIForAuthenticatedUser();
+
+                        return true;
+                    } else {
+                        // User is not authenticated - redirect to login
+                        console.log('User not authenticated, redirecting to login. Reason:', {
+                            success: data.success,
+                            isAuth: isAuth,
+                            authData: authData
+                        });
+                        redirectToLogin('Authentication required');
+                        return false;
+                    }
+                } else if (response.status === 401) {
+                    // Unauthorized - redirect to login
+                    console.log('Unauthorized access, redirecting to login');
+                    redirectToLogin('Session expired or invalid');
+                    return false;
+                } else {
+                    // Other error - redirect to login
+                    console.error('Authentication check failed with status:', response.status);
+                    redirectToLogin('Authentication service unavailable');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Authentication check error:', error);
+
+                // Network error or other issue - redirect to login
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    redirectToLogin('Unable to connect to authentication service');
+                } else {
+                    redirectToLogin('Authentication check failed');
+                }
+
+                return false;
+            }
+        }
+
+        /**
+         * Redirect to login page with current page as redirect parameter
+         * @param {string} reason - Reason for redirect (for logging)
+         */
+        function redirectToLogin(reason = 'Authentication required') {
+            console.log('Redirecting to login:', reason);
+
+            // Prevent infinite redirect loops
+            if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+                console.log('Already on auth page, not redirecting');
+                return;
+            }
+
+            // Check if we've recently redirected to prevent loops (reduced to 2 seconds)
+            const lastRedirect = sessionStorage.getItem('lastAuthRedirect');
+            const now = Date.now();
+            if (lastRedirect && (now - parseInt(lastRedirect)) < 2000) {
+                console.log('Recent redirect detected, showing error instead');
+                showAuthenticationMessage('Authentication failed. Please try refreshing the page.', 'error');
+                return;
+            }
+
+            // Store redirect timestamp
+            sessionStorage.setItem('lastAuthRedirect', now.toString());
+
+            // Get current URL for redirect after login
+            const currentUrl = window.location.pathname + window.location.search;
+            const loginUrl = `/login?redirect=${encodeURIComponent(currentUrl)}`;
+
+            // Show brief message before redirect
+            showAuthenticationMessage('Redirecting to login...', 'info');
+
+            // Redirect immediately (no delay needed)
+            window.location.href = loginUrl;
+        }
+
+        /**
+         * Update UI elements for authenticated user
+         */
+        function updateUIForAuthenticatedUser() {
+            if (!currentUser) return;
+
+            try {
+                // Update page title to include user info
+                const originalTitle = document.title;
+                document.title = `${originalTitle} - ${currentUser.email || currentUser.id}`;
+
+                // Add user info to header if there's a suitable container
+                const headerSection = document.querySelector('.header-section');
+                if (headerSection && !document.getElementById('userInfo')) {
+                    const userInfoDiv = document.createElement('div');
+                    userInfoDiv.id = 'userInfo';
+                    userInfoDiv.className = 'user-info';
+                    userInfoDiv.style.cssText = `
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        padding: 8px 16px;
+                        background: rgba(255, 255, 255, 0.1);
+                        border-radius: 8px;
+                        font-size: 14px;
+                        color: #1F2937;
+                    `;
+
+                    userInfoDiv.innerHTML = `
+                        <span>👤 ${currentUser.email || currentUser.id}</span>
+                        <button onclick="handleLogout()" style="
+                            padding: 4px 8px;
+                            background: #EF4444;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            font-size: 12px;
+                            cursor: pointer;
+                            transition: background 0.2s;
+                        " onmouseover="this.style.background='#DC2626'" onmouseout="this.style.background='#EF4444'">
+                            Logout
+                        </button>
+                    `;
+
+                    headerSection.appendChild(userInfoDiv);
+                }
+
+                console.log('UI updated for authenticated user');
+            } catch (error) {
+                console.error('Error updating UI for authenticated user:', error);
+            }
+        }
+
+        /**
+         * Handle user logout
+         */
+        async function handleLogout() {
+            if (!confirm('Are you sure you want to logout?')) {
+                return;
+            }
+
+            try {
+                showAuthenticationMessage('Logging out...', 'info');
+
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                // Redirect to login regardless of response status
+                // (server might return error if session already expired)
+                window.location.href = '/login?message=logged_out';
+
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Force redirect to login even if logout request failed
+                window.location.href = '/login?error=logout_failed';
+            }
+        }
+
+        /**
+         * Show authentication-related messages to user
+         * @param {string} message - Message to display
+         * @param {string} type - Message type (info, error, warning)
+         */
+        function showAuthenticationMessage(message, type = 'info') {
+            // Try to use existing status elements first
+            const statusElements = [
+                document.getElementById('checkTableStatus'),
+                document.getElementById('modalUploadStatus'),
+                document.getElementById('modalExportStatus')
+            ];
+
+            let messageShown = false;
+            for (const element of statusElements) {
+                if (element) {
+                    element.textContent = message;
+                    element.className = `status ${type}`;
+                    element.style.display = 'block';
+                    messageShown = true;
+                    break;
+                }
+            }
+
+            // Fallback: create a temporary message element
+            if (!messageShown) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'auth-message';
+                messageDiv.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    max-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    font-family: var(--font-family);
+                    font-size: 14px;
+                    font-weight: 500;
+                `;
+
+                // Set colors based on message type
+                switch (type) {
+                    case 'error':
+                        messageDiv.style.background = '#FEE2E2';
+                        messageDiv.style.color = '#991B1B';
+                        messageDiv.style.border = '1px solid #EF4444';
+                        break;
+                    case 'warning':
+                        messageDiv.style.background = '#FEF3C7';
+                        messageDiv.style.color = '#92400E';
+                        messageDiv.style.border = '1px solid #F59E0B';
+                        break;
+                    case 'info':
+                    default:
+                        messageDiv.style.background = '#DBEAFE';
+                        messageDiv.style.color = '#1E40AF';
+                        messageDiv.style.border = '1px solid #3B82F6';
+                        break;
+                }
+
+                messageDiv.textContent = message;
+                document.body.appendChild(messageDiv);
+
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 5000);
+            }
+        }
+
+        /**
+         * Enhanced fetch wrapper that handles authentication errors
+         * @param {string} url - URL to fetch
+         * @param {Object} options - Fetch options
+         * @returns {Promise<Response>} - Fetch response
+         */
+        async function authenticatedFetch(url, options = {}) {
+            const defaultOptions = {
+                credentials: 'include',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...options.headers
+                }
+            };
+
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers
+                }
+            };
+
+            try {
+                const response = await fetch(url, mergedOptions);
+
+                // Handle authentication errors
+                if (response.status === 401) {
+                    console.log('Request failed with 401, checking authentication status');
+
+                    // Double-check authentication status before redirecting
+                    try {
+                        const authCheck = await fetch('/api/auth/status', {
+                            method: 'GET',
+                            credentials: 'include',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        if (authCheck.status === 401 || !authCheck.ok) {
+                            redirectToLogin('Session expired');
+                            throw new Error('Authentication required');
+                        }
+
+                        // If auth check passes, the original request might have failed for another reason
+                        console.warn('Auth check passed but original request failed with 401');
+
+                    } catch (authError) {
+                        console.error('Auth status check failed:', authError);
+                        redirectToLogin('Authentication verification failed');
+                        throw new Error('Authentication required');
+                    }
+                }
+
+                return response;
+            } catch (error) {
+                if (error.message === 'Authentication required') {
+                    throw error;
+                }
+
+                console.error('Authenticated fetch error:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Test authentication functionality (for development/debugging)
+         */
+        function testAuthentication() {
+            console.log('Testing authentication...');
+
+            checkAuthenticationAndRedirect().then(isAuth => {
+                console.log('Authentication test result:', isAuth);
+                if (isAuth) {
+                    console.log('Current user:', currentUser);
+                    console.log('Authentication state:', isUserAuthenticated);
+                }
+            }).catch(error => {
+                console.error('Authentication test failed:', error);
+            });
+        }
+
+        // Make test function available globally for debugging
+        window.testAuthentication = testAuthentication;
 
         function trackPerformance(operation, startTime) {
             const endTime = Date.now();
@@ -2317,9 +621,25 @@
         // Load page components on page load with performance tracking
         document.addEventListener('DOMContentLoaded', function () {
             performanceMetrics.loadStart = Date.now();
-            setupRealTimeValidation();
-            loadRecords();
-            setupSearch();
+
+            // Skip authentication check if we're on the login page
+            if (window.location.pathname === '/login' || window.location.pathname === '/register') {
+                console.log('On auth page, skipping authentication check');
+                return;
+            }
+
+            // Check authentication first before loading any data
+            checkAuthenticationAndRedirect().then(isAuthenticated => {
+                if (isAuthenticated) {
+                    setupRealTimeValidation();
+                    loadRecords();
+                    setupSearch();
+                }
+            }).catch(error => {
+                console.error('Authentication check failed:', error);
+                // Redirect to login on authentication error
+                redirectToLogin('Authentication check failed');
+            });
         });
 
         // Setup real-time validation for modal forms
@@ -2694,7 +1014,7 @@
                     });
 
                     // Race between fetch and timeout to ensure fast loading
-                    const fetchPromise = fetch('/check?limit=1000');
+                    const fetchPromise = authenticatedFetch('/check?limit=1000');
                     const response = await Promise.race([fetchPromise, timeoutPromise]);
 
                     if (!response.ok) {
@@ -4274,7 +2594,7 @@
             try {
                 showStatus('checkTableStatus', 'Updating record...', 'info');
 
-                const response = await fetch(`/check/${recordId}`, {
+                const response = await authenticatedFetch(`/check/${recordId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -4818,7 +3138,7 @@
             showModalStatus('Uploading and analyzing Excel file...', 'info');
 
             try {
-                const response = await fetch('/upload', {
+                const response = await authenticatedFetch('/upload', {
                     method: 'POST',
                     body: formData
                 });
@@ -5382,7 +3702,7 @@
             showModalExportStatus('Preparing export from check table...', 'info');
 
             try {
-                const response = await fetch(`/export/${startRecord}/${endRecord}`);
+                const response = await authenticatedFetch(`/export/${startRecord}/${endRecord}`);
 
                 if (response.ok) {
                     // Get filename from response headers
@@ -5484,7 +3804,7 @@
                     exportType: 'searchResults'
                 };
 
-                const response = await fetch('/export/search-results', {
+                const response = await authenticatedFetch('/export/search-results', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -5611,7 +3931,7 @@
             showModalExportStatus('Preparing full export from check table...', 'info');
 
             try {
-                const response = await fetch('/export/all');
+                const response = await authenticatedFetch('/export/all');
 
                 if (response.ok) {
                     const contentDisposition = response.headers.get('Content-Disposition');
@@ -5717,6 +4037,13 @@
         window.addEventListener('unhandledrejection', function (event) {
             console.error('Unhandled promise rejection:', event.reason);
 
+            // Check if this is an authentication error
+            if (event.reason && event.reason.message === 'Authentication required') {
+                // Authentication error already handled by authenticatedFetch
+                event.preventDefault();
+                return;
+            }
+
             // Show user-friendly error message
             const errorMessage = formatErrorMessage(event.reason, 'Unexpected error occurred');
 
@@ -5786,6 +4113,9 @@
         });
 
     </script>
+
+    <!-- Authentication System -->
+    <script src="/js/auth.js"></script>
 
     <!-- Color Configuration -->
     <script src="/js/colorConfig.js"></script>
@@ -6019,7 +4349,102 @@
                 initializeDuplicateServices();
                 initializeSavedSearchServices();
                 initializeFooterStats();
+
+                // Start periodic authentication checks if user is authenticated
+                if (isUserAuthenticated) {
+                    startPeriodicAuthCheck();
+                }
+
+                // Integrate with external auth manager if available
+                integrateWithExternalAuthManager();
             }, 100);
+        });
+
+        /**
+         * Integrate with external authentication manager if available
+         */
+        function integrateWithExternalAuthManager() {
+            // Check if external auth manager is available
+            if (window.authManager && typeof window.authManager.checkAuthStatus === 'function') {
+                console.log('External auth manager detected, integrating...');
+
+                // Listen for auth state changes from external manager
+                window.addEventListener('authStateChange', function (event) {
+                    const { type, isAuthenticated: extIsAuth, user } = event.detail;
+
+                    console.log('External auth state change:', { type, extIsAuth, user });
+
+                    if (type === 'unauthenticated' || type === 'logout') {
+                        if (isUserAuthenticated) {
+                            console.log('External auth manager triggered logout');
+                            redirectToLogin('Session ended');
+                        }
+                    } else if (type === 'authenticated' || type === 'login') {
+                        if (!isUserAuthenticated) {
+                            console.log('External auth manager reports authentication, updating state');
+                            isUserAuthenticated = true;
+                            currentUser = user;
+                            updateUIForAuthenticatedUser();
+                        }
+                    }
+                });
+            } else {
+                console.log('External auth manager not available, using built-in authentication');
+            }
+        }
+
+        /**
+         * Start periodic authentication checks to ensure user stays authenticated
+         */
+        function startPeriodicAuthCheck() {
+            // Temporarily disabled to prevent redirect loops during debugging
+            console.log('Periodic auth check disabled for debugging');
+            return;
+
+            // Check authentication every 10 minutes
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/api/auth/status', {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok || response.status === 401) {
+                        console.log('Periodic auth check failed, redirecting to login');
+                        redirectToLogin('Session expired');
+                    } else {
+                        const data = await response.json();
+                        const authData = data.data || data;
+                        if (!data.success || !authData.isAuthenticated) {
+                            console.log('User no longer authenticated, redirecting to login');
+                            redirectToLogin('Session expired');
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Periodic auth check failed:', error);
+                    // Don't redirect on network errors, just log the warning
+                }
+            }, 10 * 60 * 1000); // 10 minutes
+        }
+
+        /**
+         * Handle page visibility changes - check auth when page becomes visible
+         */
+        document.addEventListener('visibilitychange', function () {
+            // Temporarily disabled to prevent redirect loops during debugging
+            console.log('Visibility change auth check disabled for debugging');
+            return;
+
+            if (!document.hidden && isUserAuthenticated) {
+                // Page became visible, check auth status
+                checkAuthenticationAndRedirect().catch(error => {
+                    console.error('Auth check on visibility change failed:', error);
+                });
+            }
         });
 
         // Initialize footer statistics
@@ -6133,7 +4558,6 @@
             document.documentElement.style.setProperty('--theme-transition-duration', '300ms');
         });
     </script>
-
 </body>
 
 </html>

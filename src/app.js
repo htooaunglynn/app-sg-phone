@@ -187,8 +187,8 @@ class Application {
 
             // Setup new authentication routes
             const AuthRoutes = require('./routes/authRoutes');
-            const authRoutes = new AuthRoutes();
-            authRoutes.setupRoutes(this.app, '/api/auth');
+            this.authRoutes = new AuthRoutes();
+            this.authRoutes.setupRoutes(this.app, '/api/auth');
 
             console.log('✅ Authentication system setup completed');
         } catch (error) {
@@ -201,24 +201,185 @@ class Application {
     }
 
     /**
+     * Authentication middleware for HTML pages - redirects to login if not authenticated
+     */
+    requireAuthentication(req, res, next) {
+        // Skip authentication if disabled
+        if (process.env.DISABLE_AUTH === 'true') {
+            return next();
+        }
+
+        try {
+            // Check authentication using the Routes class method
+            const authResult = Routes.checkAuthentication(req);
+
+            if (!authResult.isAuthenticated) {
+                console.log(`🚫 Unauthenticated access attempt to ${req.path} - redirecting to login`);
+                
+                // For AJAX requests, return JSON error
+                if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                    return res.status(401).json({
+                        success: false,
+                        error: 'Authentication required',
+                        code: 'UNAUTHORIZED',
+                        redirectTo: '/login'
+                    });
+                }
+
+                // For regular page requests, redirect to login
+                return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+            }
+
+            // Add authentication info to request
+            req.auth = {
+                isAuthenticated: true,
+                user: authResult.user,
+                sessionId: authResult.sessionId
+            };
+
+            console.log(`✅ Authenticated access to ${req.path} by user: ${authResult.user?.id || 'anonymous'}`);
+            next();
+        } catch (error) {
+            console.error('❌ Authentication middleware error:', error.message);
+            
+            // For AJAX requests, return JSON error
+            if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Authentication system error',
+                    code: 'AUTH_SYSTEM_ERROR'
+                });
+            }
+
+            // For regular requests, redirect to login with error
+            return res.redirect('/login?error=auth_system_error');
+        }
+    }
+
+    /**
      * Setup API routes
      */
     setupRoutes() {
         // Authentication routes (must come before other routes)
         this.app.get('/login', (req, res) => {
+            // If user is already authenticated, redirect to intended page or home
+            if (process.env.DISABLE_AUTH !== 'true') {
+                const authResult = Routes.checkAuthentication(req);
+                if (authResult.isAuthenticated) {
+                    const redirectTo = req.query.redirect || '/';
+                    return res.redirect(redirectTo);
+                }
+            }
             res.sendFile(path.join(__dirname, '../public/login.html'));
         });
 
         this.app.get('/register', (req, res) => {
+            // If user is already authenticated, redirect to intended page or home
+            if (process.env.DISABLE_AUTH !== 'true') {
+                const authResult = Routes.checkAuthentication(req);
+                if (authResult.isAuthenticated) {
+                    const redirectTo = req.query.redirect || '/';
+                    return res.redirect(redirectTo);
+                }
+            }
             res.sendFile(path.join(__dirname, '../public/register.html'));
         });
 
-        // Root route - serve main application
-        this.app.get('/', (req, res) => {
+        // Simple login endpoint for basic authentication
+        this.app.post('/api/auth/login', (req, res) => {
+            const { email, password } = req.body;
+
+            console.log('Login attempt:', { email, hasPassword: !!password, hasSession: !!req.session });
+
+            if (!email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Email and password required',
+                    code: 'MISSING_CREDENTIALS'
+                });
+            }
+
+            // Use email as username for the Routes class validation
+            const isValid = Routes.validateCredentials(email, password);
+            console.log('Credential validation result:', isValid);
+
+            if (!isValid) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Invalid credentials',
+                    code: 'INVALID_CREDENTIALS'
+                });
+            }
+
+            // Set session data
+            if (req.session) {
+                req.session.authenticated = true;
+                req.session.user = { id: email, role: 'user', email: email };
+                req.session.expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+                req.session.lastActivity = Date.now();
+                console.log('Session data set:', req.session);
+            } else {
+                console.log('No session available');
+            }
+
+            res.json({
+                success: true,
+                message: 'Login successful',
+                user: { id: email, role: 'user', email: email }
+            });
+        });
+
+        // Simple logout endpoint
+        this.app.post('/api/auth/logout', (req, res) => {
+            if (req.session) {
+                req.session.destroy((err) => {
+                    if (err) {
+                        console.error('Session destruction error:', err);
+                        return res.status(500).json({
+                            success: false,
+                            error: 'Logout failed'
+                        });
+                    }
+                    res.json({
+                        success: true,
+                        message: 'Logged out successfully'
+                    });
+                });
+            } else {
+                res.json({
+                    success: true,
+                    message: 'Logged out successfully'
+                });
+            }
+        });
+
+        // Simple auth status endpoint
+        this.app.get('/api/auth/status', (req, res) => {
+            const authResult = Routes.checkAuthentication(req);
+            
+            // Debug session info
+            console.log('Auth status check:', {
+                hasSession: !!req.session,
+                sessionAuth: req.session?.authenticated,
+                sessionUser: req.session?.user,
+                authResult: authResult
+            });
+            
+            res.json({
+                success: true,
+                data: {
+                    isAuthenticated: authResult.isAuthenticated,
+                    user: authResult.user || null
+                }
+            });
+        });
+
+        // Root route - serve main application (protected)
+        this.app.get('/', this.requireAuthentication.bind(this), (req, res) => {
             res.sendFile(path.join(__dirname, '../public/index.html'));
         });
 
-        this.app.get('/profile', (req, res) => {
+        this.app.get('/profile', this.requireAuthentication.bind(this), (req, res) => {
             res.sendFile(path.join(__dirname, '../public/profile.html'));
         });
 
@@ -227,13 +388,13 @@ class Application {
             res.redirect(301, '/');
         });
 
-        // File Manager page route
-        this.app.get('/file-manager', (req, res) => {
+        // File Manager page route (protected)
+        this.app.get('/file-manager', this.requireAuthentication.bind(this), (req, res) => {
             res.sendFile(path.join(__dirname, '../public/file-manager.html'));
         });
 
-        // Monitoring Dashboard page route (requires authentication)
-        this.app.get('/monitoring', (req, res) => {
+        // Monitoring Dashboard page route (protected)
+        this.app.get('/monitoring', this.requireAuthentication.bind(this), (req, res) => {
             res.sendFile(path.join(__dirname, '../public/monitoring-dashboard.html'));
         });
 
