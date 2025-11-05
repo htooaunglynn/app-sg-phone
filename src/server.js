@@ -2,9 +2,11 @@ const express = require('express')
 const multer = require('multer')
 const ExcelJS = require('exceljs')
 const session = require('express-session')
+const pgSession = require('connect-pg-simple')(session)
 const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const path = require('path')
+const { Pool } = require('pg')
 require('dotenv').config()
 
 const authRoutes = require('./routes/auth')
@@ -34,8 +36,25 @@ app.use(cors({
     credentials: true
 }))
 
-// Session configuration
+// Create PostgreSQL pool for session store
+const sessionPool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    ssl: process.env.DB_SSL === 'true' ? {
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true'
+    } : false
+})
+
+// Session configuration with PostgreSQL store
 app.use(session({
+    store: new pgSession({
+        pool: sessionPool,
+        tableName: 'session',
+        createTableIfMissing: true
+    }),
     secret: process.env.SESSION_SECRET || 'singapore-phone-detect-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
