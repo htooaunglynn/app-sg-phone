@@ -105,7 +105,7 @@ git push origin main
 7. **Copy connection details**:
    - Host
    - Database
-   - User  
+   - User
    - Password
    - Port (5432)
 
@@ -179,12 +179,12 @@ After initial setup, deployment is automatic:
 
 ## 🎯 Key Features
 
-✅ **Automatic Deployment**: Push to `main` = auto-deploy  
-✅ **Database Auto-Init**: Schema runs on every deployment  
-✅ **Zero Data Loss**: Existing tables/data preserved  
-✅ **Full Logging**: Detailed logs for monitoring  
-✅ **Production Ready**: SSL, sessions, authentication  
-✅ **Free Tier**: Runs 24/7 on Render free plan  
+✅ **Automatic Deployment**: Push to `main` = auto-deploy
+✅ **Database Auto-Init**: Schema runs on every deployment
+✅ **Zero Data Loss**: Existing tables/data preserved
+✅ **Full Logging**: Detailed logs for monitoring
+✅ **Production Ready**: SSL, sessions, authentication
+✅ **Free Tier**: Runs 24/7 on Render free plan
 
 ---
 

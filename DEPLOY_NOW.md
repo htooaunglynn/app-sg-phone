@@ -27,23 +27,23 @@ Open **`DEPLOYMENT_CHECKLIST.md`** and follow each step.
 
 ## 📚 Documentation
 
-| File | Purpose |
-|------|---------|
+| File                        | Purpose                                      |
+| --------------------------- | -------------------------------------------- |
 | **DEPLOYMENT_CHECKLIST.md** | ⭐ START HERE - Step-by-step deployment guide |
-| **RENDER_DEPLOYMENT.md** | Detailed deployment instructions |
-| **DEPLOYMENT_SUMMARY.md** | Complete technical overview |
-| **schema-postgres.sql** | PostgreSQL database schema |
-| **render.yaml** | Render infrastructure configuration |
+| **RENDER_DEPLOYMENT.md**    | Detailed deployment instructions             |
+| **DEPLOYMENT_SUMMARY.md**   | Complete technical overview                  |
+| **schema-postgres.sql**     | PostgreSQL database schema                   |
+| **render.yaml**             | Render infrastructure configuration          |
 
 ---
 
 ## 🎯 What's Configured
 
-✅ **Auto-Deploy**: Push to `main` = automatic deployment  
-✅ **Auto-Schema**: Database schema runs automatically on deploy  
-✅ **PostgreSQL**: Production-ready database  
-✅ **Zero Data Loss**: Existing data preserved on redeploy  
-✅ **Full Logging**: Detailed build and runtime logs  
+✅ **Auto-Deploy**: Push to `main` = automatic deployment
+✅ **Auto-Schema**: Database schema runs automatically on deploy
+✅ **PostgreSQL**: Production-ready database
+✅ **Zero Data Loss**: Existing data preserved on redeploy
+✅ **Full Logging**: Detailed build and runtime logs
 
 ---
 

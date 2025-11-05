@@ -28,19 +28,19 @@ The `scripts/init-postgres.js` script automatically:
 
 Make sure these are set in your Render web service:
 
-| Variable | Example | Description |
-|----------|---------|-------------|
-| `DB_HOST` | `dpg-xxxxx.oregon-postgres.render.com` | From Render PostgreSQL |
-| `DB_PORT` | `5432` | PostgreSQL port (default 5432) |
-| `DB_NAME` | `your_database_name` | From Render PostgreSQL |
-| `DB_USER` | `your_database_user` | From Render PostgreSQL |
-| `DB_PASSWORD` | `your_database_password` | From Render PostgreSQL |
-| `DB_SSL` | `true` | Enable SSL for production |
-| `NODE_ENV` | `production` | Environment mode |
-| `PORT` | `4000` | Server port |
-| `SESSION_SECRET` | `your-random-secret-key` | Session encryption key |
-| `SESSION_TIMEOUT` | `86400000` | Session timeout (24h) |
-| `CORS_ORIGIN` | `https://your-app.onrender.com` | Your Render URL |
+| Variable          | Example                                | Description                    |
+| ----------------- | -------------------------------------- | ------------------------------ |
+| `DB_HOST`         | `dpg-xxxxx.oregon-postgres.render.com` | From Render PostgreSQL         |
+| `DB_PORT`         | `5432`                                 | PostgreSQL port (default 5432) |
+| `DB_NAME`         | `your_database_name`                   | From Render PostgreSQL         |
+| `DB_USER`         | `your_database_user`                   | From Render PostgreSQL         |
+| `DB_PASSWORD`     | `your_database_password`               | From Render PostgreSQL         |
+| `DB_SSL`          | `true`                                 | Enable SSL for production      |
+| `NODE_ENV`        | `production`                           | Environment mode               |
+| `PORT`            | `4000`                                 | Server port                    |
+| `SESSION_SECRET`  | `your-random-secret-key`               | Session encryption key         |
+| `SESSION_TIMEOUT` | `86400000`                             | Session timeout (24h)          |
+| `CORS_ORIGIN`     | `https://your-app.onrender.com`        | Your Render URL                |
 
 ### Deployment Steps
 

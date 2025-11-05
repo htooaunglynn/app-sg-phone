@@ -45,7 +45,7 @@ async function initializeDatabase() {
         // Read schema file
         const schemaPath = path.join(__dirname, '../schema-postgres.sql');
         console.log(`📄 Reading schema from: ${schemaPath}`);
-        
+
         if (!fs.existsSync(schemaPath)) {
             throw new Error(`Schema file not found: ${schemaPath}`);
         }
@@ -60,9 +60,9 @@ async function initializeDatabase() {
         // Verify tables were created
         console.log('🔍 Verifying tables...');
         const tablesResult = await client.query(`
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
             AND table_type = 'BASE TABLE'
             ORDER BY table_name
         `);
@@ -73,7 +73,7 @@ async function initializeDatabase() {
         // Verify expected tables
         const expectedTables = ['users', 'user_logins', 'check_table'];
         const missingTables = expectedTables.filter(table => !tables.includes(table));
-        
+
         if (missingTables.length > 0) {
             console.warn('⚠️  Warning: Some expected tables are missing:', missingTables.join(', '));
         } else {

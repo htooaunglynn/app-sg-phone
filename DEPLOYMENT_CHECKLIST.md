@@ -19,7 +19,7 @@
 - [ ] Wait for provisioning
 - [ ] **Copy these values** (you'll need them):
   - [ ] Host
-  - [ ] Database  
+  - [ ] Database
   - [ ] User
   - [ ] Password
   - [ ] Port
