@@ -23,19 +23,19 @@ DROP TABLE IF EXISTS `backup_table`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `backup_table` (
-  `Id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `source_file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Original PDF filename',
   `extracted_metadata` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON metadata from PDF extraction',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
-  `CompanyName` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `PhysicalAddress` text COLLATE utf8mb4_unicode_ci,
-  `Email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `Website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `Email` (`Email`),
-  KEY `idx_phone` (`Phone`),
+  `company_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `physical_address` text COLLATE utf8mb4_unicode_ci,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`),
+  KEY `idx_phone` (`phone`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_source_file` (`source_file`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Immutable table for storing raw PDF data';
@@ -49,45 +49,26 @@ DROP TABLE IF EXISTS `check_table`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `check_table` (
-  `Id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `numeric_id` int DEFAULT NULL COMMENT 'Extracted numeric portion from Id column',
-  `Phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `Status` tinyint(1) DEFAULT NULL COMMENT 'true for Singapore phone, false for non-Singapore',
-  `CompanyName` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `PhysicalAddress` text COLLATE utf8mb4_unicode_ci,
-  `Email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `Website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` tinyint(1) DEFAULT NULL COMMENT 'true for Singapore phone, false for non-Singapore',
+  `company_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `physical_address` text COLLATE utf8mb4_unicode_ci,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`Id`),
-  UNIQUE KEY `unique_email` (`Email`),
-  KEY `idx_phone` (`Phone`),
-  KEY `idx_status` (`Status`),
-  KEY `idx_email` (`Email`),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_email` (`email`),
+  KEY `idx_phone` (`phone`),
+  KEY `idx_status` (`status`),
+  KEY `idx_email` (`email`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_updated_at` (`updated_at`),
-  KEY `idx_company_name` (`CompanyName`),
+  KEY `idx_company_name` (`company_name`),
   KEY `idx_numeric_id` (`numeric_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Editable table for validated phone data with company information';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `schema_migrations`
---
-
-DROP TABLE IF EXISTS `schema_migrations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `schema_migrations` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `migration_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `applied_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `migration_name` (`migration_name`),
-  KEY `idx_migration_name` (`migration_name`),
-  KEY `idx_applied_at` (`applied_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks applied database migrations';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

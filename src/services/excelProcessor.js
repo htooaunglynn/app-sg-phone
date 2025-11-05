@@ -1328,8 +1328,15 @@ class ExcelProcessor {
             const storageResult = await this.storeToBackupTable(phoneRecords, sourceFile);
             console.log(`Storage completed: ${storageResult.storedRecords} records stored`);
 
-            if (!storageResult.success || storageResult.storedRecords === 0) {
-                throw new Error('Failed to store Excel records to backup table');
+            if (!storageResult.success) {
+                const errorDetails = storageResult.errors.length > 0
+                    ? storageResult.errors.join(', ')
+                    : 'Unknown storage error';
+                throw new Error(`Failed to store Excel records to backup table: ${errorDetails}`);
+            }
+
+            if (storageResult.storedRecords === 0 && storageResult.duplicatesSkipped === 0) {
+                throw new Error('No records were stored or found. The Excel file may be empty or invalid.');
             }
 
             // Step 3: Trigger phone validation if enabled

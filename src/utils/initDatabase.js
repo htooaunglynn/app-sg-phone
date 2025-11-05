@@ -24,6 +24,8 @@ class DatabaseInitializer {
             await this.createBackupTable();
             await this.createCheckTable();
             await this.createUploadedFilesTable();
+            await this.createUsersTable();
+            await this.createUserLoginsTable();
 
             // Verify table creation
             await this.verifyTables();
@@ -463,6 +465,72 @@ class DatabaseInitializer {
             console.error('Constraint testing failed:', error.message);
             throw error;
         }
+    }
+
+    /**
+     * Create users table for authentication
+     */
+    async createUsersTable() {
+        console.log('Creating users table...');
+
+        const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        status ENUM('active','inactive','banned') DEFAULT 'active',
+        device VARCHAR(200) NULL,
+        ip_address VARCHAR(45) NULL,
+        location VARCHAR(255) NULL,
+        last_seen DATETIME NULL,
+        login_token VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY email (email),
+        INDEX idx_status (status),
+        INDEX idx_last_seen (last_seen),
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB
+        DEFAULT CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_ci
+        COMMENT='User accounts for authentication system'
+    `;
+
+        await this.databaseManager.query(createTableSQL);
+        console.log('users table created or verified successfully');
+    }
+
+    /**
+     * Create user_logins table for login tracking
+     */
+    async createUserLoginsTable() {
+        console.log('Creating user_logins table...');
+
+        const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS user_logins (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        device VARCHAR(200) NULL,
+        ip_address VARCHAR(45) NULL,
+        location VARCHAR(255) NULL,
+        result ENUM('success','failed') NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_result (result),
+        INDEX idx_created_at (created_at),
+        INDEX idx_ip_address (ip_address)
+      ) ENGINE=InnoDB
+        DEFAULT CHARSET=utf8mb4
+        COLLATE=utf8mb4_unicode_ci
+        COMMENT='Login attempt tracking for security monitoring'
+    `;
+
+        await this.databaseManager.query(createTableSQL);
+        console.log('user_logins table created or verified successfully');
     }
 }
 

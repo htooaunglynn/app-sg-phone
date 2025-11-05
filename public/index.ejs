@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataHub - Business Management</title>
+    <link rel="stylesheet" href="css/output.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="/js/app.js" defer></script>
+</head>
+
+<body class="bg-white text-gray-900 font-sans">
+    <!-- Navigation -->
+    <nav class="border-b border-gray-200 sticky top-0 bg-white/80 backdrop-blur-sm z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">D</span>
+                    </div>
+                    <span class="font-semibold text-lg">DataHub</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="/" class="text-gray-600 hover:text-black text-sm font-medium">Home</a>
+                    <a href="/file-management" class="text-gray-600 hover:text-black text-sm font-medium">Files</a>
+                    <div class="flex items-center gap-2">
+                        <% if (user) { %>
+                            <span class="text-sm text-gray-600">Hello, <%= user.name %></span>
+                            <form action="/auth/logout" method="POST">
+                                <button type="submit"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">Logout</button>
+                            </form>
+                            <% } else { %>
+                                <a href="/login" class="text-sm font-medium text-gray-700 hover:underline">Login</a>
+                                <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-semibold mb-2">Companies</h1>
+            <p class="text-gray-600">Manage and track your business contacts</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <!-- Search Box -->
+            <input type="text" id="searchInput" placeholder="Search by company, email, or phone..."
+                class="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition"
+                onkeyup="filterTable()">
+
+            <!-- Buttons -->
+            <div class="flex gap-3 flex-wrap sm:flex-nowrap">
+                <button onclick="openExcelModal()"
+                    class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 font-medium transition flex items-center gap-2">
+                    <span>↑</span> Upload Excel
+                </button>
+                <button onclick="exportToExcel()"
+                    class="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 font-medium transition flex items-center gap-2">
+                    <span>↓</span> Export Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Validation Legend -->
+        <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 class="text-sm font-semibold mb-2">Phone Number Validation:</h3>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-orange-200 border border-orange-300 rounded"></div>
+                    <span>Duplicate Phone Number</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
+                    <span>Invalid Singapore Phone Number</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-white border border-gray-300 rounded"></div>
+                    <span>Valid Singapore Phone Number</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-200 bg-gray-50">
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">ID</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">Phone</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">Company Name</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">Physical Address</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">Email</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">Website</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-900">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+            <div id="emptyState" class="text-center py-12">
+                <p class="text-gray-600">No companies found. Upload an Excel file to get started.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Excel Upload Modal -->
+    <div id="excelModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Upload Excel File</h2>
+                <button onclick="closeExcelModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            <p class="text-gray-600 text-sm mb-4">Upload an Excel file with columns: ID, Phone, Company Name, Physical
+                Address, Email, Website</p>
+
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
+                <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="hidden"
+                    onchange="handleFileUpload(event)">
+                <button onclick="document.getElementById('excelFile').click()"
+                    class="text-black font-medium hover:underline">
+                    Click to browse or drag file
+                </button>
+                <p id="fileName" class="text-sm text-gray-600 mt-2"></p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeExcelModal()"
+                    class="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 font-medium transition">Cancel</button>
+                <button onclick="uploadExcel()"
+                    class="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 font-medium transition">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional: add client-side scripts as needed -->
+</body>
+
+</html>
