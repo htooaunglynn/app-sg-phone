@@ -8,8 +8,8 @@
         "server": "nodemon src/server.js",
         "server:prod": "node src/server.js",
         "build": "npm run build:css",
-        "build:css": "npx tailwindcss -i ./public/css/styles.css -o ./public/css/output.css --minify",
-        "watch:css": "npx tailwindcss -i ./public/css/styles.css -o ./public/css/output.css --watch",
+        "build:css": "tailwindcss -i ./public/css/styles.css -o ./public/css/output.css --minify",
+        "watch:css": "tailwindcss -i ./public/css/styles.css -o ./public/css/output.css --watch",
         "start": "npm run build:css && npm run server:prod & npm run client",
         "lint": "eslint ."
     },
