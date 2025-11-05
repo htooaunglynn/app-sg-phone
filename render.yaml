@@ -3,8 +3,8 @@ services:
     name: app-sg-phone
     env: node
     plan: free
-  buildCommand: npm ci --only=production
-    startCommand: node scripts/start.js
+    buildCommand: npm ci --only=production
+    startCommand: node src/server.js
     envVars:
       - key: NODE_ENV
         value: production
