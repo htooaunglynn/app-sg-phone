@@ -3,7 +3,7 @@ services:
     name: app-sg-phone
     env: node
     plan: free
-    buildCommand: npm install && npm run build:css
+    buildCommand: npm install --include=dev && npm run build:css
     startCommand: node scripts/start.js
     envVars:
       - key: NODE_ENV

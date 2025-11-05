@@ -12,7 +12,7 @@ The deployment failed because **Render doesn't expose environment variables duri
 3. Starts the Express server
 
 ✅ **Updated `render.yaml`** to:
-- **Build**: `npm install && npm run build:css` (no database init)
+- **Build**: `npm install --include=dev && npm run build:css` (installs dev deps for Tailwind)
 - **Start**: `node scripts/start.js` (database init + server start)
 
 ## How It Works Now
@@ -20,8 +20,8 @@ The deployment failed because **Render doesn't expose environment variables duri
 ```
 ┌─────────────────────────────────────────────┐
 │  BUILD PHASE (no env vars)                  │
-│  - npm install                              │
-│  - npm run build:css                        │
+│  - npm install --include=dev                │
+│  - npm run build:css (Tailwind)             │
 └─────────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────────┐
