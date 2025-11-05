@@ -6,20 +6,16 @@
         "node": "20.x"
     },
     "scripts": {
-        "dev": "npm run build:css && nodemon src/server.js",
-        "build": "npm run build:css",
-        "build:css": "tailwindcss -i ./public/css/styles.css -o ./public/css/output.css --minify",
+        "dev": "nodemon src/server.js",
+        "build": "echo 'No build needed - using Tailwind CDN'",
         "start": "node src/server.js",
         "lint": "eslint ."
     },
     "dependencies": {
-        "autoprefixer": "^10.4.20",
         "bcrypt": "^5.1.1",
-        "class-variance-authority": "^0.7.1",
-        "clsx": "^2.1.1",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
-        "csurf": "^1.11.0",
+        "csurf": "^1.2.2",
         "date-fns": "4.1.0",
         "dotenv": "^16.3.1",
         "ejs": "^3.1.10",
@@ -31,17 +27,11 @@
         "mysql2": "^3.6.5",
         "pdf-parse": "^1.1.1",
         "pg": "^8.11.3",
-        "postcss": "^8.5.0",
-        "tailwind-merge": "^3.3.1",
-        "tailwindcss": "^4.1.16",
-        "@tailwindcss/forms": "^0.5.10",
-        "@tailwindcss/typography": "^0.5.19",
-        "tailwindcss-animate": "^1.0.7",
         "xlsx": "^0.18.5",
         "xlsx-js-style": "^1.2.0",
         "zod": "3.25.76"
     },
     "devDependencies": {
-        "nodemon": "^2.0.22"
+        "nodemon": "^3.1.10"
     }
 }
