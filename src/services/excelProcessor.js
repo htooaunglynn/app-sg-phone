@@ -1618,14 +1618,25 @@ class ExcelProcessor {
 
                     // Extract data from various possible column names
                     const record = {
-                        id: this.getFieldValue(row, ['Id', 'ID', 'id', 'No', 'Number']) || `Row_${i + 1}`,
+                        id: this.getFieldValue(row, ['Id', 'ID', 'id', 'No', 'Number', 'Record ID', 'RecordID']) || `Row_${i + 1}`,
                         phone: this.cleanPhoneNumber(
-                            this.getFieldValue(row, ['Phone', 'phone', 'Mobile', 'Tel', 'Telephone', 'Contact'])
+                            this.getFieldValue(row, [
+                                // Common variants
+                                'Phone', 'phone', 'Phone Number', 'PhoneNumber', 'Phone No', 'PhoneNo',
+                                // Contact variants
+                                'Contact', 'Contact Number', 'ContactNumber', 'Contact No', 'ContactNo',
+                                // Tel variants
+                                'Tel', 'Telephone', 'Tel No', 'Telephone Number',
+                                // Mobile variants
+                                'Mobile', 'Mobile Number', 'MobileNumber', 'Mobile No', 'MobileNo',
+                                // Other common labels
+                                'HP', 'Handphone', 'Hand Phone', 'WhatsApp', 'WhatsApp Number', 'Whatsapp', 'Whatsapp Number'
+                            ])
                         ),
-                        companyName: this.getFieldValue(row, ['Company Name', 'CompanyName', 'Company', 'Name']),
-                        physicalAddress: this.getFieldValue(row, ['Physical Address', 'PhysicalAddress', 'Address']),
-                        email: this.getFieldValue(row, ['Email', 'email', 'E-mail']),
-                        website: this.getFieldValue(row, ['Website', 'website', 'Web', 'URL'])
+                        companyName: this.getFieldValue(row, ['Company Name', 'CompanyName', 'Company', 'Name', 'Business Name', 'Organisation', 'Organization']),
+                        physicalAddress: this.getFieldValue(row, ['Physical Address', 'PhysicalAddress', 'Address', 'Addr', 'Location']),
+                        email: this.getFieldValue(row, ['Email', 'email', 'E-mail', 'Mail', 'Email Address', 'EmailAddress']),
+                        website: this.getFieldValue(row, ['Website', 'website', 'Web', 'URL', 'Site', 'Homepage'])
                     };
 
                     // Only include if we have at least a phone number
@@ -1636,6 +1647,28 @@ class ExcelProcessor {
             }
 
             console.log(`Extracted ${allRecords.length} records total`);
+            // Fallback: if no records found using simplified headers, try advanced extraction + mapping
+            if (allRecords.length === 0) {
+                try {
+                    console.log('No records found with simplified extraction. Falling back to advanced detection...');
+                    const advancedRecords = await this.extractData(excelBuffer);
+                    const mapped = (advancedRecords || []).map((r, idx) => ({
+                        id: r.id || `Row_${idx + 1}`,
+                        phone: this.cleanPhoneNumber(r.phoneNumber),
+                        companyName: r.companyName || null,
+                        physicalAddress: r.physicalAddress || null,
+                        email: r.email || null,
+                        website: r.website || null
+                    })).filter(r => r.phone);
+
+                    console.log(`Advanced fallback extracted ${mapped.length} records`);
+                    return mapped;
+                } catch (fallbackErr) {
+                    console.warn('Advanced extraction fallback failed:', fallbackErr.message);
+                    return allRecords; // remain empty
+                }
+            }
+
             return allRecords;
 
         } catch (error) {
@@ -1651,11 +1684,27 @@ class ExcelProcessor {
      * @returns {string|null} Field value or null
      */
     getFieldValue(row, possibleNames) {
+        // 1) Exact header match first
         for (const name of possibleNames) {
             if (row[name] !== undefined && row[name] !== null && String(row[name]).trim()) {
                 return String(row[name]).trim();
             }
         }
+
+        // 2) Flexible header match: normalize keys and synonyms
+        const normalize = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normalizedRow = {};
+        for (const key of Object.keys(row)) {
+            normalizedRow[normalize(key)] = row[key];
+        }
+
+        for (const name of possibleNames) {
+            const key = normalize(name);
+            if (normalizedRow[key] !== undefined && normalizedRow[key] !== null && String(normalizedRow[key]).trim()) {
+                return String(normalizedRow[key]).trim();
+            }
+        }
+
         return null;
     }
 
