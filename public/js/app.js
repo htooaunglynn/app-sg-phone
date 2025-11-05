@@ -77,12 +77,26 @@ async function uploadExcel() {
         const result = await response.json();
 
         // Success
-        const message = `Successfully uploaded!\n` +
-            `Rows processed: ${result.rows || 0}\n` +
-            `New records: ${result.stored || 0}\n` +
-            `Duplicates: ${result.duplicates || 0}\n` +
-            `Validated: ${result.validated || 0}`;
-        alert(message);
+        const lines = [
+            `Successfully uploaded!`,
+            `Rows processed: ${result.rows || 0}`,
+            `New records: ${result.stored || 0}`,
+            `Updated records: ${result.updated || 0}`,
+            `Validated (SG): ${result.validated || 0}`
+        ];
+
+        if (typeof result.insertedDelta === 'number') {
+            lines.push(`Inserted into DB (delta): ${result.insertedDelta}`);
+        }
+        if (typeof result.checkTableCountAfter === 'number') {
+            lines.push(`Check table total after: ${result.checkTableCountAfter}`);
+        }
+        if (result.errors && result.errors.length) {
+            lines.push(`(First ${result.errors.length} error(s)):`);
+            result.errors.forEach((e, idx) => lines.push(`  ${idx + 1}. ${e}`));
+        }
+
+        alert(lines.join('\n'));
 
         closeExcelModal();
 
@@ -159,18 +173,37 @@ function renderTable(data = []) {
         let rowBgColor = '';
         let phoneStyle = '';
 
+        // Get Status from either camelCase (Id, Phone, Status) or lowercase (id, phone, status)
+        const status = company.Status !== undefined ? company.Status : company.status;
+        const isValidSingapore = company.isValidSingaporePhone;
+
+        // Debug logging
+        if (index === 0) {
+            console.log('Sample company data:', {
+                isDuplicate: company.isDuplicate,
+                isValidSingaporePhone: isValidSingapore,
+                Status: status,
+                Phone: company.Phone || company.phone
+            });
+        }
+
+        // Priority: 1. Duplicates (Orange), 2. Invalid (Red), 3. Valid (White)
         if (company.isDuplicate) {
             // Orange background for duplicate phone numbers (highest priority)
             rowBgColor = 'bg-orange-100';
             phoneStyle = 'bg-orange-200 font-semibold';
-        } else if (company.isValidSingaporePhone === false) {
-            // Red background for invalid Singapore phone numbers
+        } else if (status === 0 || status === false || isValidSingapore === false) {
+            // Red background for invalid Singapore phone numbers (Status = 0 or false)
             rowBgColor = 'bg-red-50';
             phoneStyle = 'bg-red-200 font-semibold';
-        } else if (company.isValidSingaporePhone === true) {
-            // White/normal background for valid Singapore phone numbers
+        } else if (status === 1 || status === true || isValidSingapore === true) {
+            // White/normal background for valid Singapore phone numbers (Status = 1 or true)
             rowBgColor = '';
             phoneStyle = '';
+        } else {
+            // Default fallback - treat as invalid if status is unclear
+            rowBgColor = 'bg-red-50';
+            phoneStyle = 'bg-red-200 font-semibold';
         }
 
         // Prepare phone helpers
@@ -178,9 +211,16 @@ function renderTable(data = []) {
         const digitsOnly = rawPhone.replace(/\D+/g, '');
         const encodedPhone = encodeURIComponent(digitsOnly);
 
+        // Get field values supporting both cases
+        const id = company.Id || company.id || (index + 1);
+        const companyName = company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '';
+        const physicalAddress = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '';
+        const email = company.Email || company.email || '';
+        const website = company.Website || company.website || '';
+
         return `
         <tr class="hover:bg-gray-50 border-b border-gray-100 ${rowBgColor}">
-            <td class="px-6 py-4 text-sm font-medium">${escapeHtml(company.Id || company.id || index + 1)}</td>
+            <td class="px-6 py-4 text-sm font-medium">${escapeHtml(id)}</td>
             <td class="px-6 py-4 text-sm ${phoneStyle}">
                 <div>${escapeHtml(rawPhone)}</div>
                 <div class="phone-search-buttons mt-1 flex gap-2">
@@ -188,16 +228,16 @@ function renderTable(data = []) {
                     <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
             </td>
-            <td class="px-6 py-4 text-sm">${escapeHtml(company.CompanyName || company['Company Name'] || company.companyName || '')}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || '')}</td>
+            <td class="px-6 py-4 text-sm">${escapeHtml(companyName)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(physicalAddress)}</td>
             <td class="px-6 py-4 text-sm text-blue-600 break-all">
-                ${company.Email || company.email ? `<a href="mailto:${escapeHtml(company.Email || company.email)}">${escapeHtml(company.Email || company.email)}</a>` : ''}
+                ${email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''}
             </td>
             <td class="px-6 py-4 text-sm text-blue-600">
-                ${company.Website || company.website ? `<a href="http://${escapeHtml(company.Website || company.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(company.Website || company.website)}</a>` : ''}
+                ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(website)}</a>` : ''}
             </td>
             <td class="px-6 py-4 text-sm">
-                <button onclick="openEditModal('${escapeHtml(String(company.Id || company.id || index))}')"
+                <button onclick="openEditModal('${escapeHtml(String(id))}')"
                     class="text-gray-700 hover:text-black font-medium transition">
                     Edit
                 </button>
@@ -309,11 +349,11 @@ function filterTable() {
 
     // Filter current page data only
     const filtered = companiesData.filter(company => {
-        const companyName = (company.CompanyName || company['Company Name'] || company.companyName || '').toLowerCase();
+        const companyName = (company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '').toLowerCase();
         const email = (company.Email || company.email || '').toLowerCase();
         const phone = (company.Phone || company.phone || '').toLowerCase();
         const website = (company.Website || company.website || '').toLowerCase();
-        const address = (company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || '').toLowerCase();
+        const address = (company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '').toLowerCase();
 
         return companyName.includes(searchTerm) ||
             email.includes(searchTerm) ||
@@ -369,8 +409,8 @@ async function exportToExcel() {
         const exportData = result.data.map(company => ({
             Id: company.Id || company.id || '',
             Phone: company.Phone || company.phone || '',
-            'Company Name': company.CompanyName || company['Company Name'] || company.companyName || '',
-            'Physical Address': company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || '',
+            'Company Name': company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '',
+            'Physical Address': company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '',
             Email: company.Email || company.email || '',
             Website: company.Website || company.website || ''
         }));
@@ -441,8 +481,8 @@ function openEditModal(id) {
 
         idInput.value = company.Id || company.id || '';
         phoneInput.value = company.Phone || company.phone || '';
-        nameInput.value = company.CompanyName || company['Company Name'] || company.companyName || '';
-        addrInput.value = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || '';
+        nameInput.value = company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '';
+        addrInput.value = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '';
         emailInput.value = company.Email || company.email || '';
         websiteInput.value = company.Website || company.website || '';
 
@@ -497,11 +537,22 @@ async function saveEdit() {
         const idx = companiesData.findIndex(c => String(c.Id || c.id) === String(id));
         if (idx !== -1) {
             const item = companiesData[idx];
-            // Update multiple key shapes defensively
-            item.CompanyName = companyName; item['Company Name'] = companyName; item.companyName = companyName;
-            item.PhysicalAddress = physicalAddress; item['Physical Address'] = physicalAddress; item.physicalAddress = physicalAddress;
-            item.Email = email; item.email = email;
-            item.Website = website; item.website = website;
+            // Update all possible column name variations for compatibility
+            item.CompanyName = companyName;
+            item['Company Name'] = companyName;
+            item.companyName = companyName;
+            item.company_name = companyName;
+
+            item.PhysicalAddress = physicalAddress;
+            item['Physical Address'] = physicalAddress;
+            item.physicalAddress = physicalAddress;
+            item.physical_address = physicalAddress;
+
+            item.Email = email;
+            item.email = email;
+
+            item.Website = website;
+            item.website = website;
         }
 
         renderTable(companiesData);

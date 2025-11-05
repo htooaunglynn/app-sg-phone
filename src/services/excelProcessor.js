@@ -1741,6 +1741,331 @@ class ExcelProcessor {
             };
         }
     }
+
+    /**
+     * Process Excel file and save directly to check_table only (no backup_table)
+     * Simplified: Store ALL data without validation, update duplicates by ID+Phone
+     * @param {Buffer} excelBuffer - Excel file buffer
+     * @param {string} sourceFile - Original filename
+     * @returns {Promise<Object>} Processing results
+     */
+    async processExcelDirectToCheckTable(excelBuffer, sourceFile = null) {
+        const startTime = Date.now();
+
+        try {
+            console.log('Starting simplified Excel processing - storing ALL data...');
+
+            // Step 1: Read Excel directly without column detection
+            const records = await this.extractDataSimplified(excelBuffer);
+            console.log(`Extracted ${records.length} records from Excel`);
+
+            if (records.length === 0) {
+                return {
+                    success: false,
+                    error: 'No records found in Excel file',
+                    totalRecords: 0,
+                    storedRecords: 0,
+                    updatedRecords: 0,
+                    validRecords: 0,
+                    invalidRecords: 0
+                };
+            }
+
+            // Step 2: Process each record - insert or update
+            const result = {
+                success: false,
+                totalRecords: records.length,
+                storedRecords: 0,
+                updatedRecords: 0,
+                validRecords: 0,
+                invalidRecords: 0,
+                errors: []
+            };
+
+            const singaporePhoneValidator = require('./singaporePhoneValidator');
+
+            for (const record of records) {
+                try {
+                    const { id, phone, companyName, physicalAddress, email, website } = record;
+
+                    if (!phone) {
+                        console.warn(`Skipping record with no phone: ${id}`);
+                        continue;
+                    }
+
+                    // Check if record exists by ID and Phone
+                    const existing = await this.checkExistingRecordByIdAndPhone(id, phone);
+
+                    // Validate Singapore phone (but store regardless)
+                    const isValidSingapore = singaporePhoneValidator.validateSingaporePhone(phone);
+
+                    if (existing) {
+                        // Update existing record
+                        await this.updateRecordInCheckTable(id, phone, {
+                            companyName,
+                            physicalAddress,
+                            email,
+                            website,
+                            status: isValidSingapore ? 1 : 0
+                        });
+                        result.updatedRecords++;
+                    } else {
+                        // Insert new record
+                        await databaseManager.insertCheckRecord(
+                            id,
+                            phone,
+                            isValidSingapore,
+                            companyName,
+                            physicalAddress,
+                            email,
+                            website
+                        );
+                        result.storedRecords++;
+                    }
+
+                    if (isValidSingapore) {
+                        result.validRecords++;
+                    } else {
+                        result.invalidRecords++;
+                    }
+
+                } catch (error) {
+                    console.error(`Error processing record ${record.id}:`, error.message);
+                    result.errors.push(`Record ${record.id}: ${error.message}`);
+                }
+            }
+
+            result.success = result.storedRecords > 0 || result.updatedRecords > 0;
+
+            const processingTime = Date.now() - startTime;
+            console.log(`Excel processing completed in ${processingTime}ms:`);
+            console.log(`- Total: ${result.totalRecords}`);
+            console.log(`- New: ${result.storedRecords}`);
+            console.log(`- Updated: ${result.updatedRecords}`);
+            console.log(`- Valid SG: ${result.validRecords}`);
+            console.log(`- Invalid: ${result.invalidRecords}`);
+
+            return result;
+
+        } catch (error) {
+            console.error('Error in Excel processing:', error.message);
+            return {
+                success: false,
+                error: error.message,
+                totalRecords: 0,
+                storedRecords: 0,
+                updatedRecords: 0,
+                validRecords: 0,
+                invalidRecords: 0
+            };
+        }
+    }
+
+    /**
+     * Simplified Excel data extraction - NO column detection
+     * Expects Excel with columns: Id, Phone, Company Name, Physical Address, Email, Website
+     * @param {Buffer} excelBuffer - Excel file buffer
+     * @returns {Promise<Array>} Array of records
+     */
+    async extractDataSimplified(excelBuffer) {
+        try {
+            if (!excelBuffer || !Buffer.isBuffer(excelBuffer)) {
+                throw new Error('Invalid Excel buffer');
+            }
+
+            if (excelBuffer.length === 0) {
+                throw new Error('Empty Excel file');
+            }
+
+            // Parse Excel workbook
+            const workbook = XLSX.read(excelBuffer, { type: 'buffer' });
+
+            if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+                throw new Error('No worksheets found in Excel file');
+            }
+
+            const allRecords = [];
+
+            // Process first worksheet only (or all if needed)
+            for (const sheetName of workbook.SheetNames) {
+                const worksheet = workbook.Sheets[sheetName];
+
+                // Convert to JSON with first row as headers
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+                    raw: false,
+                    defval: ''
+                });
+
+                console.log(`Processing worksheet "${sheetName}": ${jsonData.length} rows`);
+
+                // Map each row to our format
+                for (let i = 0; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+
+                    // Extract data from various possible column names
+                    const record = {
+                        id: this.getFieldValue(row, ['Id', 'ID', 'id', 'No', 'Number']) || `Row_${i + 1}`,
+                        phone: this.cleanPhoneNumber(
+                            this.getFieldValue(row, ['Phone', 'phone', 'Mobile', 'Tel', 'Telephone', 'Contact'])
+                        ),
+                        companyName: this.getFieldValue(row, ['Company Name', 'CompanyName', 'Company', 'Name']),
+                        physicalAddress: this.getFieldValue(row, ['Physical Address', 'PhysicalAddress', 'Address']),
+                        email: this.getFieldValue(row, ['Email', 'email', 'E-mail']),
+                        website: this.getFieldValue(row, ['Website', 'website', 'Web', 'URL'])
+                    };
+
+                    // Only include if we have at least a phone number
+                    if (record.phone) {
+                        allRecords.push(record);
+                    }
+                }
+            }
+
+            console.log(`Extracted ${allRecords.length} records total`);
+            return allRecords;
+
+        } catch (error) {
+            console.error('Excel extraction error:', error);
+            throw new Error(`Failed to extract Excel data: ${error.message}`);
+        }
+    }
+
+    /**
+     * Get field value from row object trying multiple possible column names
+     * @param {Object} row - Excel row object
+     * @param {Array} possibleNames - Array of possible column names
+     * @returns {string|null} Field value or null
+     */
+    getFieldValue(row, possibleNames) {
+        for (const name of possibleNames) {
+            if (row[name] !== undefined && row[name] !== null && String(row[name]).trim()) {
+                return String(row[name]).trim();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check if record exists by both ID and Phone
+     * @param {string} id - Record ID
+     * @param {string} phone - Phone number
+     * @returns {Promise<boolean>} True if exists
+     */
+    async checkExistingRecordByIdAndPhone(id, phone) {
+        try {
+            const sql = `SELECT COUNT(*) as count FROM check_table WHERE id = ? AND phone = ?`;
+            const results = await databaseManager.query(sql, [id, phone]);
+            return results[0].count > 0;
+        } catch (error) {
+            console.error('Error checking existing record:', error.message);
+            return false;
+        }
+    }
+
+    /**
+     * Update record in check_table by ID and Phone
+     * @param {string} id - Record ID
+     * @param {string} phone - Phone number
+     * @param {Object} data - Data to update
+     * @returns {Promise<void>}
+     */
+    async updateRecordInCheckTable(id, phone, data) {
+        try {
+            const sql = `
+                UPDATE check_table
+                SET company_name = COALESCE(?, company_name),
+                    physical_address = COALESCE(?, physical_address),
+                    email = COALESCE(?, email),
+                    website = COALESCE(?, website),
+                    status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND phone = ?
+            `;
+
+            await databaseManager.query(sql, [
+                data.companyName || null,
+                data.physicalAddress || null,
+                data.email || null,
+                data.website || null,
+                data.status !== undefined ? data.status : 0,
+                id,
+                phone
+            ]);
+
+            console.log(`Updated record: ID=${id}, Phone=${phone}`);
+
+        } catch (error) {
+            console.error(`Error updating record ${id}:`, error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Check which phone numbers already exist in check_table
+     * @param {Array} phoneNumbers - Array of phone numbers to check
+     * @returns {Promise<Array>} Array of existing phone numbers
+     */
+    async checkExistingPhonesInCheckTable(phoneNumbers) {
+        try {
+            if (!phoneNumbers || phoneNumbers.length === 0) {
+                return [];
+            }
+
+            const batchSize = 1000;
+            const existingPhones = [];
+
+            // Process in batches
+            for (let i = 0; i < phoneNumbers.length; i += batchSize) {
+                const batch = phoneNumbers.slice(i, i + batchSize);
+                const placeholders = batch.map(() => '?').join(',');
+
+                const sql = `SELECT DISTINCT phone as Phone FROM check_table WHERE phone IN (${placeholders})`;
+                const results = await databaseManager.query(sql, batch);
+
+                existingPhones.push(...results.map(r => r.Phone));
+            }
+
+            return existingPhones;
+
+        } catch (error) {
+            console.error('Error checking existing phones:', error.message);
+            return [];
+        }
+    }
+
+    /**
+     * Update company data for existing phone number in check_table
+     * @param {string} phone - Phone number
+     * @param {Object} companyData - Company data to update
+     * @returns {Promise<void>}
+     */
+    async updateCompanyDataInCheckTable(phone, companyData) {
+        try {
+            const sql = `
+                UPDATE check_table
+                SET company_name = COALESCE(?, company_name),
+                    physical_address = COALESCE(?, physical_address),
+                    email = COALESCE(?, email),
+                    website = COALESCE(?, website),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE phone = ?
+            `;
+
+            await databaseManager.query(sql, [
+                companyData.companyName || null,
+                companyData.physicalAddress || null,
+                companyData.email || null,
+                companyData.website || null,
+                phone
+            ]);
+
+            console.log(`Updated company data for phone: ${phone}`);
+
+        } catch (error) {
+            console.error(`Error updating company data for ${phone}:`, error.message);
+            throw error;
+        }
+    }
 }
 
 module.exports = ExcelProcessor;

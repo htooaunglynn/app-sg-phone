@@ -16,32 +16,6 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `backup_table`
---
-
-DROP TABLE IF EXISTS `backup_table`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `backup_table` (
-  `id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `source_file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Original PDF filename',
-  `extracted_metadata` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON metadata from PDF extraction',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
-  `company_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `physical_address` text COLLATE utf8mb4_unicode_ci,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`),
-  KEY `idx_phone` (`phone`),
-  KEY `idx_created_at` (`created_at`),
-  KEY `idx_source_file` (`source_file`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Immutable table for storing raw PDF data';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
 -- Table structure for table `check_table`
 --
 
@@ -69,39 +43,6 @@ CREATE TABLE `check_table` (
   KEY `idx_company_name` (`company_name`),
   KEY `idx_numeric_id` (`numeric_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Editable table for validated phone data with company information';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `uploaded_files`
---
-
-DROP TABLE IF EXISTS `uploaded_files`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `uploaded_files` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Original filename as uploaded',
-  `stored_filename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Unique filename in storage',
-  `file_size` bigint NOT NULL COMMENT 'File size in bytes',
-  `file_type` enum('pdf','excel') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pdf' COMMENT 'File type to distinguish between PDF and Excel files',
-  `checksum` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'SHA-256 checksum for integrity',
-  `upload_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'When file was uploaded',
-  `processing_status` enum('pending','processed','failed','archived') COLLATE utf8mb4_unicode_ci DEFAULT 'pending' COMMENT 'Processing status',
-  `records_extracted` int DEFAULT '0' COMMENT 'Number of records extracted from file',
-  `worksheets_processed` int DEFAULT '0' COMMENT 'Number of worksheets processed for Excel files',
-  `extraction_report` text COLLATE utf8mb4_unicode_ci COMMENT 'Detailed processing reports for Excel files',
-  `duplicates_skipped` int DEFAULT '0' COMMENT 'Number of duplicate records skipped during processing',
-  `duplicate_percentage` decimal(5,2) DEFAULT '0.00' COMMENT 'Percentage of records that were duplicates',
-  `duplicate_handling_status` enum('unknown','no_duplicates_found','duplicates_skipped','storage_failed') COLLATE utf8mb4_unicode_ci DEFAULT 'unknown' COMMENT 'Status of duplicate handling for this file',
-  `processed_at` timestamp NULL DEFAULT NULL COMMENT 'When processing completed',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `stored_filename` (`stored_filename`),
-  KEY `idx_stored_filename` (`stored_filename`),
-  KEY `idx_upload_timestamp` (`upload_timestamp`),
-  KEY `idx_processing_status` (`processing_status`),
-  KEY `idx_original_filename` (`original_filename`),
-  KEY `idx_file_type` (`file_type`)
-) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='File metadata tracking for uploaded PDFs';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

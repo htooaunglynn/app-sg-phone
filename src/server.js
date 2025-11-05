@@ -95,12 +95,14 @@ app.get('/api/companies', requireAuth, async (req, res) => {
             }
         })
 
-        // Validate Singapore phone numbers and mark duplicates for current page
-        const singaporePhoneValidator = require('./services/singaporePhoneValidator')
+        // Mark duplicates for current page (Status already indicates if valid Singapore phone)
         const enrichedCompanies = companies.map(company => {
             const phone = company.Phone || company.phone
             const isDuplicate = phone && duplicatePhones.has(phone)
-            const isValidSingaporePhone = phone ? singaporePhoneValidator.validateSingaporePhone(phone) : null
+            // Status: 1/true = valid Singapore phone, 0/false = invalid
+            // Handle both boolean and number types
+            const status = company.Status !== undefined ? company.Status : company.status
+            const isValidSingaporePhone = status === 1 || status === true
 
             return {
                 ...company,
@@ -139,24 +141,29 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
         const filename = req.file.originalname
         console.log(`Processing Excel file: ${filename}`)
 
-        // Process Excel file with full pipeline
-        const result = await excelProcessor.processExcelWithValidation(
+        // Capture count before insert for accurate delta
+        const countBefore = await db.getCheckRecordsCount()
+
+        // Process Excel file - direct to check_table only (no backup_table)
+        const result = await excelProcessor.processExcelDirectToCheckTable(
             req.file.buffer,
-            filename,
-            true // Auto-validate
+            filename
         )
+
+        // Capture count after processing
+        const countAfter = await db.getCheckRecordsCount()
+        const insertedDelta = Math.max(0, countAfter - countBefore)
 
         console.log('Processing result:', {
             success: result.success,
             error: result.error,
-            extraction: result.extraction ? {
-                totalRecords: result.extraction.totalRecords
-            } : 'no extraction',
-            storage: result.storage ? {
-                storedRecords: result.storage.storedRecords,
-                duplicatesSkipped: result.storage.duplicatesSkipped,
-                errors: result.storage.errors
-            } : 'no storage'
+            totalRecords: result.totalRecords,
+            storedRecords: result.storedRecords,
+            updatedRecords: result.updatedRecords,
+            insertedDelta,
+            validRecords: result.validRecords,
+            invalidRecords: result.invalidRecords,
+            errorsCount: (result.errors || []).length
         })
 
         if (!result.success) {
@@ -166,14 +173,19 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
             })
         }
 
-        // Return success with summary
+        // Return success with summary, including DB snapshot counts for debugging
         return res.json({
             success: true,
             message: 'Excel file processed successfully',
-            rows: result.extraction.totalRecords,
-            stored: result.storage.storedRecords,
-            duplicates: result.storage.duplicatesSkipped,
-            validated: result.validation?.validationResults?.validatedRecords || 0
+            rows: result.totalRecords,
+            stored: result.storedRecords,
+            updated: result.updatedRecords,
+            insertedDelta,
+            duplicates: 0,
+            validated: result.validRecords,
+            checkTableCountBefore: countBefore,
+            checkTableCountAfter: countAfter,
+            errors: (result.errors || []).slice(0, 5) // surface a few errors if any
         })
     } catch (err) {
         console.error('Upload error:', err)

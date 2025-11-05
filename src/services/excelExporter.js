@@ -221,13 +221,13 @@ class ExcelExporter {
         // Add headers as first row
         worksheetData.push(headers);
 
-        // Add data rows - support both camelCase and space-separated field names
+        // Add data rows - support lowercase (db) and uppercase (legacy) field names
         records.forEach(record => {
             const row = [
                 record.Id || record.id || '',
                 record.Phone || record.phone || '',
-                record.CompanyName || record['Company Name'] || record.companyName || '',
-                record.PhysicalAddress || record['Physical Address'] || record.physicalAddress || '',
+                record.CompanyName || record['Company Name'] || record.companyName || record.company_name || '',
+                record.PhysicalAddress || record['Physical Address'] || record.physicalAddress || record.physical_address || '',
                 record.Email || record.email || '',
                 record.Website || record.website || ''
             ];
@@ -248,9 +248,11 @@ class ExcelExporter {
             return null;
         }
 
-        // Handle the primary 'Status' field, accepting boolean, number (0/1), or string representations
-        if (record.hasOwnProperty('Status')) {
-            const statusValue = record.Status;
+        // Handle the primary 'Status' field (uppercase) and 'status' field (lowercase)
+        // Accept boolean, number (0/1), or string representations
+        const statusValue = record.Status !== undefined ? record.Status : record.status;
+
+        if (statusValue !== undefined && statusValue !== null) {
             if (typeof statusValue === 'boolean') {
                 return statusValue;
             }
@@ -269,7 +271,7 @@ class ExcelExporter {
         }
 
         // Fallback: Check for other common status-like fields
-        const statusFields = ['status', 'isValid', 'valid', 'success', 'passed'];
+        const statusFields = ['isValid', 'valid', 'success', 'passed'];
         for (const field of statusFields) {
             if (record.hasOwnProperty(field)) {
                 const value = record[field];
@@ -523,8 +525,11 @@ class ExcelExporter {
                         if (record) {
                             try {
                                 // Check if this record has a duplicate phone number
-                                const isDuplicatePhone = duplicatePhoneInfo &&
-                                    duplicatePhoneInfo.duplicateRecordIndices.includes(recordIndex);
+                                // First check if record already has isDuplicate flag from server (preferred)
+                                // Otherwise fall back to duplicate detection from current export batch
+                                const isDuplicatePhone = record.isDuplicate !== undefined
+                                    ? record.isDuplicate
+                                    : (duplicatePhoneInfo && duplicatePhoneInfo.duplicateRecordIndices.includes(recordIndex));
 
                                 // Detect and apply status-based formatting
                                 const statusValue = this.detectStatusValue(record);

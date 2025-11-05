@@ -1095,7 +1095,7 @@ class DatabaseManager {
         const numericId = this.extractNumericId(id);
 
         const sql = `
-      INSERT INTO check_table (Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website)
+          INSERT INTO check_table (id, numeric_id, phone, status, company_name, physical_address, email, website)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
         try {
@@ -1103,8 +1103,16 @@ class DatabaseManager {
             return result;
         } catch (error) {
             if (error.code === 'ER_DUP_ENTRY') {
+                // Handle duplicate email gracefully by retrying without email
                 if (error.message.includes('Email') || error.message.includes('unique_email')) {
-                    throw new Error(`Email address already exists: ${email}`);
+                    console.warn(`Duplicate email for check_table record ${id} (${email}). Retrying insert without email.`);
+                    try {
+                        const result = await this.query(sql, [id, numericId, phone, status, companyName, physicalAddress, null, website]);
+                        return result;
+                    } catch (retryError) {
+                        console.error(`Retry without email failed for ${id}:`, retryError.message);
+                        throw new Error(`Email address already exists and retry failed for ${id}: ${email}`);
+                    }
                 } else {
                     console.warn(`Duplicate entry for check_table: ${id}`);
                     return null; // Handle gracefully
@@ -1121,8 +1129,8 @@ class DatabaseManager {
         const { companyName, physicalAddress, email, website } = companyData;
         const sql = `
       UPDATE check_table
-      SET CompanyName = ?, PhysicalAddress = ?, Email = ?, Website = ?
-      WHERE Id = ?
+          SET company_name = ?, physical_address = ?, email = ?, website = ?
+          WHERE id = ?
     `;
         try {
             const result = await this.query(sql, [companyName, physicalAddress, email, website, id]);
@@ -1199,7 +1207,7 @@ class DatabaseManager {
      */
     async getCheckRecords(limit = 50, offset = 0) {
         const sql = `
-      SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at
+        SELECT id as Id, numeric_id, phone as Phone, status as Status, company_name as CompanyName, physical_address as PhysicalAddress, email as Email, website as Website, created_at, updated_at
       FROM check_table
       ORDER BY numeric_id ASC, Id ASC
       LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
