@@ -1199,13 +1199,22 @@ class DatabaseManager {
      */
     async getCheckRecords(limit = 50, offset = 0) {
         const sql = `
-      SELECT Id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at
+      SELECT Id, numeric_id, Phone, Status, CompanyName, PhysicalAddress, Email, Website, created_at, updated_at
       FROM check_table
-      ORDER BY created_at DESC
+      ORDER BY numeric_id ASC, Id ASC
       LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}
     `;
 
         return await this.query(sql);
+    }
+
+    /**
+     * Get total count of check_table records
+     */
+    async getCheckRecordsCount() {
+        const sql = 'SELECT COUNT(*) as total FROM check_table';
+        const result = await this.query(sql);
+        return result[0]?.total || 0;
     }
 
     /**

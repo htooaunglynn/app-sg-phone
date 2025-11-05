@@ -1,701 +1,533 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Import configuration utility
 const config = require('./utils/config');
 
-// Import authentication system
-const Routes = require('./routes');
-
-
-// Import controllers
-const UploadController = require('./controllers/uploadController');
-const ExportController = require('./controllers/exportController');
-const StatsController = require('./controllers/statsController');
-
-// Import models for database initialization
-const PhoneRecord = require('./models/PhoneRecord');
-const CheckTable = require('./models/CheckTable');
-
-// Import database manager for connection management
-const databaseManager = require('./utils/database');
-
-// Import services for dual-table workflow
-const PDFProcessor = require('./services/pdfProcessor');
-const singaporePhoneValidator = require('./services/singaporePhoneValidator');
-const phoneValidationProcessor = require('./services/phoneValidationProcessor');
-
-class Application {
-    constructor() {
-        this.app = express();
-        this.config = config;
-        this.port = config.server.port;
-
-        // Initialize services for dual-table workflow
-        this.pdfProcessor = new PDFProcessor();
-        this.singaporePhoneValidator = singaporePhoneValidator;
-        this.phoneValidationProcessor = phoneValidationProcessor;
-
-        // Initialize controllers
-        this.uploadController = new UploadController();
-        this.exportController = new ExportController();
-        this.statsController = new StatsController();
-
-        this.setupMiddleware();
-        this.setupRoutes();
-        this.setupErrorHandling();
-    }
-
-    /**
-     * Setup Express middleware
-     */
-    setupMiddleware() {
-        // Enable CORS for all routes
-        this.app.use(cors({
-            origin: this.config.server.corsOrigin,
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token']
-        }));
-
-        // Parse JSON bodies
-        this.app.use(express.json({ limit: '1mb' }));
-
-        // Parse URL-encoded bodies
-        this.app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-        // Setup authentication system (session middleware, CSRF protection)
-        this.setupAuthentication();
-
-        // Serve static files from public directory
-        this.app.use(express.static(path.join(__dirname, '../public')));
-
-        // Performance monitoring middleware
-        this.app.use((req, res, next) => {
-            const startTime = Date.now();
-            const timestamp = new Date().toISOString();
-
-            // Log request
-            console.log(`${timestamp} - ${req.method} ${req.path} - ${req.ip}`);
-
-            // Monitor response time
-            res.on('finish', () => {
-                const responseTime = Date.now() - startTime;
-                if (responseTime > 1000) { // Log slow requests
-                    console.warn(`Slow request: ${req.method} ${req.path} took ${responseTime}ms`);
-                }
-            });
-
-            next();
-        });
-
-        // Enhanced security headers (updated for authentication)
-        this.app.use((req, res, next) => {
-            // Basic security headers
-            res.setHeader('X-Content-Type-Options', 'nosniff');
-            res.setHeader('X-Frame-Options', 'DENY');
-            res.setHeader('X-XSS-Protection', '1; mode=block');
-
-            // Enhanced security headers
-            res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-            res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-            res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-            res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
-            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-            res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
-
-            // Content Security Policy (updated for authentication forms)
-            const csp = [
-                "default-src 'self'",
-                "script-src 'self' 'unsafe-inline'",
-                "style-src 'self' 'unsafe-inline'",
-                "img-src 'self' data:",
-                "font-src 'self'",
-                "connect-src 'self'",
-                "media-src 'none'",
-                "object-src 'none'",
-                "child-src 'none'",
-                "worker-src 'none'",
-                "frame-src 'none'",
-                "base-uri 'self'",
-                "form-action 'self'"
-            ].join('; ');
-
-            res.setHeader('Content-Security-Policy', csp);
-
-            next();
-        });
-
-        // Rate limiting middleware for file uploads
-        this.app.use('/upload', (req, res, next) => {
-            const clientId = req.ip || req.connection.remoteAddress;
-            const now = Date.now();
-
-            if (!this.rateLimitMap) {
-                this.rateLimitMap = new Map();
-            }
-
-            const clientData = this.rateLimitMap.get(clientId) || { count: 0, resetTime: now + 3600000 }; // 1 hour window
-
-            if (now > clientData.resetTime) {
-                clientData.count = 0;
-                clientData.resetTime = now + 3600000;
-            }
-
-            if (clientData.count >= this.config.security.maxFilesPerHour) {
-                return res.status(429).json({
-                    success: false,
-                    error: 'Rate limit exceeded. Too many file uploads.',
-                    code: 'RATE_LIMIT_EXCEEDED',
-                    retryAfter: Math.ceil((clientData.resetTime - now) / 1000)
-                });
-            }
-
-            clientData.count++;
-            this.rateLimitMap.set(clientId, clientData);
-
-            next();
-        });
-    }
-
-    /**
-     * Setup authentication system with session middleware and CSRF protection
-     */
-    setupAuthentication() {
-        try {
-            console.log('Setting up authentication system...');
-
-            // Setup authentication with protected routes
-            Routes.setupAuthentication(this.app, {
-                protectedPaths: [
-                    '/upload',
-                    '/export',
-                    '/check',
-                    '/files',
-                    '/stats',
-                    '/system',
-                    '/api'
-                ],
-                enableAuth: process.env.DISABLE_AUTH !== 'true'
-            });
-
-            console.log('✅ Authentication system setup completed');
-        } catch (error) {
-            console.error('❌ Failed to setup authentication system:', error);
-            // Don't throw error to allow application to start without auth in development
-            if (this.config.isProduction()) {
-                throw error;
-            }
-        }
-    }
-
-    /**
-     * Setup API routes
-     */
-    setupRoutes() {
-        // Root route - serve main application
-        this.app.get('/', (req, res) => {
-            res.sendFile(path.join(__dirname, '../public/index.html'));
-        });
-
-        // Check Table Records page route - redirect to main page for backward compatibility
-        this.app.get('/check-records', (req, res) => {
-            res.redirect(301, '/');
-        });
-
-        // File Manager page route
-        this.app.get('/file-manager', (req, res) => {
-            res.sendFile(path.join(__dirname, '../public/file-manager.html'));
-        });
-
-        // Monitoring Dashboard page route (requires authentication)
-        this.app.get('/monitoring', (req, res) => {
-            res.sendFile(path.join(__dirname, '../public/monitoring-dashboard.html'));
-        });
-
-        // Health check route (simple)
-        this.app.get('/ping', (req, res) => {
-            res.status(200).json({
-                success: true,
-                message: 'Server is running',
-                timestamp: new Date().toISOString()
-            });
-        });
-
-        // Monitoring and metrics routes
-        const monitoringRoutes = require('./routes/monitoringRoutes');
-        this.app.use('/api/monitoring', monitoringRoutes);
-
-        // Upload routes
-        this.app.post('/upload',
-            this.uploadController.getUploadMiddleware(),
-            this.uploadController.handleMulterError.bind(this.uploadController),
-            this.uploadController.handleUpload.bind(this.uploadController)
-        );
-
-        this.app.get('/upload/status',
-            this.uploadController.getUploadStatus.bind(this.uploadController)
-        );
-
-        // Excel-specific processing endpoints
-        this.app.get('/processing-status/:fileId',
-            this.uploadController.getProcessingStatus.bind(this.uploadController)
-        );
-
-        // HTML extraction report page
-        this.app.get('/extraction-report/:fileId', (req, res) => {
-            res.sendFile(path.join(__dirname, '../public/extraction-report.html'));
-        });
-
-        // JSON API for extraction report data
-        this.app.get('/api/extraction-report/:fileId',
-            this.uploadController.getExtractionReport.bind(this.uploadController)
-        );
-
-        this.app.get('/worksheet-info/:fileId',
-            this.uploadController.getWorksheetInfo.bind(this.uploadController)
-        );
-
-        this.app.get('/column-mapping/:fileId',
-            this.uploadController.getColumnMapping.bind(this.uploadController)
-        );
-
-        // Export routes
-        this.app.get('/export/:start/:end',
-            this.exportController.exportByRange.bind(this.exportController)
-        );
-
-        this.app.get('/export/all',
-            this.exportController.exportAll.bind(this.exportController)
-        );
-
-        this.app.get('/export/validate/:start/:end',
-            this.exportController.validateExportRange.bind(this.exportController)
-        );
-
-        this.app.get('/export/recommendations/:start/:end',
-            this.exportController.getExportRecommendations.bind(this.exportController)
-        );
-
-        this.app.get('/export/info',
-            this.exportController.getExportInfo.bind(this.exportController)
-        );
-
-        // Check table management routes
-        this.app.get('/check',
-            this.exportController.getCheckRecords.bind(this.exportController)
-        );
-
-        this.app.put('/check/:id',
-            this.exportController.updateCheckRecord.bind(this.exportController)
-        );
-
-        // File management routes
-        this.app.get('/files',
-            this.uploadController.listUploadedFiles.bind(this.uploadController)
-        );
-
-        this.app.get('/files/:filename',
-            this.uploadController.downloadFile.bind(this.uploadController)
-        );
-
-        this.app.delete('/files/:filename',
-            this.uploadController.deleteFile.bind(this.uploadController)
-        );
-
-        this.app.post('/files/archive',
-            this.uploadController.archiveOldFiles.bind(this.uploadController)
-        );
-
-        this.app.post('/files/cleanup-failed',
-            this.uploadController.cleanupFailedFiles.bind(this.uploadController)
-        );
-
-        // Backup table management routes
-        this.app.get('/backup-records',
-            this.uploadController.getBackupRecords.bind(this.uploadController)
-        );
-
-        this.app.get('/backup-records/:id',
-            this.uploadController.getBackupRecord.bind(this.uploadController)
-        );
-
-        this.app.put('/backup-records/:id/company-info',
-            this.uploadController.updateBackupRecordCompanyInfo.bind(this.uploadController)
-        );
-
-        // Statistics and utility routes
-        this.app.get('/stats',
-            this.statsController.getStats.bind(this.statsController)
-        );
-
-        this.app.get('/health',
-            this.statsController.getHealthCheck.bind(this.statsController)
-        );
-
-        this.app.get('/system',
-            this.statsController.getSystemInfo.bind(this.statsController)
-        );
-
-        this.app.get('/api',
-            this.statsController.getApiInfo.bind(this.statsController)
-        );
-
-        // Development/testing routes
-        if (process.env.NODE_ENV !== 'production') {
-            this.app.post('/reset',
-                this.statsController.resetDatabase.bind(this.statsController)
-            );
-        }
-
-        // 404 handler for API routes
-        this.app.use('/api/*', (req, res) => {
-            res.status(404).json({
-                success: false,
-                error: 'API endpoint not found',
-                code: 'NOT_FOUND',
-                path: req.path
-            });
-        });
-
-        // 404 handler for all other routes
-        this.app.use('*', (req, res) => {
-            // For non-API routes, serve the main application
-            if (!req.path.startsWith('/api')) {
-                res.sendFile(path.join(__dirname, '../public/index.html'));
-            } else {
-                res.status(404).json({
-                    success: false,
-                    error: 'Endpoint not found',
-                    code: 'NOT_FOUND',
-                    path: req.path
-                });
-            }
-        });
-    }
-
-    /**
-     * Setup error handling middleware
-     */
-    setupErrorHandling() {
-        // Global error handler
-        this.app.use((error, req, res, next) => {
-            console.error('Unhandled error:', error);
-
-            // Don't send error details in production
-            const isDevelopment = this.config.isDevelopment();
-
-            // Handle specific error types
-            if (error.name === 'ValidationError') {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Validation failed',
-                    code: 'VALIDATION_ERROR',
-                    details: this.config.isDevelopment() ? error.message : undefined
-                });
-            }
-
-            if (error.name === 'UnauthorizedError') {
-                return res.status(401).json({
-                    success: false,
-                    error: 'Unauthorized',
-                    code: 'UNAUTHORIZED'
-                });
-            }
-
-            if (error.code === 'ENOENT') {
-                return res.status(404).json({
-                    success: false,
-                    error: 'Resource not found',
-                    code: 'NOT_FOUND'
-                });
-            }
-
-            if (error.code === 'EACCES') {
-                return res.status(403).json({
-                    success: false,
-                    error: 'Access denied',
-                    code: 'FORBIDDEN'
-                });
-            }
-
-            // Database errors
-            if (error.code && error.code.startsWith('ER_')) {
-                return res.status(500).json({
-                    success: false,
-                    error: 'Database error occurred',
-                    code: 'DATABASE_ERROR',
-                    details: isDevelopment ? error.message : undefined
-                });
-            }
-
-            // Generic server error
-            res.status(500).json({
-                success: false,
-                error: 'Internal server error',
-                code: 'SERVER_ERROR',
-                details: isDevelopment ? error.message : undefined,
-                stack: isDevelopment ? error.stack : undefined
-            });
-        });
-
-        // Handle uncaught exceptions
-        process.on('uncaughtException', (error) => {
-            console.error('Uncaught Exception:', error);
-            // In production, you might want to restart the process
-            if (this.config.isProduction()) {
-                process.exit(1);
-            }
-        });
-
-        // Handle unhandled promise rejections
-        process.on('unhandledRejection', (reason, promise) => {
-            console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-            // In production, you might want to restart the process
-            if (this.config.isProduction()) {
-                process.exit(1);
-            }
-        });
-    }
-
-    /**
-     * Initialize database and start server
-     */
-    async start() {
-        try {
-            console.log('Starting Singapore Phone Detect application...');
-
-            // Print configuration summary
-            this.config.printSummary();
-
-            // Perform startup health checks
-            await this.performStartupChecks();
-
-            // Initialize dual-table database schema
-            console.log('Initializing dual-table database schema...');
-            await this.initializeDualTableSchema();
-            console.log('Dual-table database schema initialized successfully');
-
-            // Authentication system is already set up in setupAuthentication()
-
-            // Start the server
-            this.server = this.app.listen(this.port, this.config.server.host, () => {
-                console.log(`✅ Server running on ${this.config.server.host}:${this.port}`);
-                console.log(`🌍 Environment: ${this.config.server.environment}`);
-                console.log(`🔗 Access the application at: http://localhost:${this.port}`);
-                console.log('\n📡 API endpoints:');
-                console.log('  POST /upload - Upload PDF or Excel files (stores to backup_table)');
-                console.log('  GET /export/:start/:end - Export check_table records by range');
-                console.log('  GET /check - List check_table records with pagination');
-                console.log('  PUT /check/:id - Update company information in check_table');
-                console.log('  GET /backup-records - List backup_table records with pagination');
-                console.log('  GET /backup-records/:id - Get specific backup_table record');
-                console.log('  PUT /backup-records/:id/company-info - Update company info in backup_table');
-                console.log('  GET /files - List uploaded PDF and Excel files with metadata');
-                console.log('  GET /files/:filename - Download original PDF or Excel files');
-                console.log('  DELETE /files/:filename - Archive or delete PDF/Excel files');
-                console.log('  GET /processing-status/:fileId - Get file processing status');
-                console.log('  GET /extraction-report/:fileId - Get detailed extraction report');
-                console.log('  GET /worksheet-info/:fileId - Get Excel worksheet information');
-                console.log('  GET /column-mapping/:fileId - Get Excel column mapping');
-                console.log('  GET /stats - Get dual-table database statistics');
-                console.log('  GET /health - Health check');
-                console.log('  GET /api - API documentation');
-                console.log('\n🚀 Application started successfully!');
-            });
-
-            // Graceful shutdown handling
-            this.setupGracefulShutdown();
-
-        } catch (error) {
-            console.error('❌ Failed to start application:', error);
-            await this.cleanup();
-            process.exit(1);
-        }
-    }
-
-    /**
-     * Initialize dual-table database schema
-     */
-    async initializeDualTableSchema() {
-        try {
-            // Ensure database connection is established
-            await databaseManager.connect();
-
-            // Initialize both backup_table and check_table
-            await databaseManager.initializeTables();
-
-            // Verify tables are created properly
-            const stats = await databaseManager.getTableStats();
-            console.log('Database tables initialized:', {
-                backupTable: stats.backupTable,
-                checkTable: stats.checkTable
-            });
-
-            return true;
-        } catch (error) {
-            console.error('Failed to initialize dual-table schema:', error.message);
-            throw error;
-        }
-    }
-
-    /**
-     * Perform startup health checks
-     */
-    async performStartupChecks() {
-        console.log('Performing startup health checks...');
-
-        // Check database connectivity
-        try {
-            await databaseManager.connect();
-            console.log('✅ Database connectivity check passed');
-        } catch (error) {
-            console.error('❌ Database connectivity check failed:', error.message);
-            throw error;
-        }
-
-        // Check required directories
-        const fs = require('fs');
-        const requiredDirs = [
-            this.config.upload.directory,
-            this.config.export.directory
-        ];
-
-        for (const dir of requiredDirs) {
-            if (!fs.existsSync(dir)) {
-                console.error(`❌ Required directory missing: ${dir}`);
-                throw new Error(`Required directory missing: ${dir}`);
-            }
-        }
-        console.log('✅ Directory structure check passed');
-
-        // Check write permissions
-        try {
-            const testFile = path.join(this.config.upload.directory, '.write-test');
-            fs.writeFileSync(testFile, 'test');
-            fs.unlinkSync(testFile);
-            console.log('✅ File system permissions check passed');
-        } catch (error) {
-            console.error('❌ File system permissions check failed:', error.message);
-            throw error;
-        }
-
-        // Validate service configurations
-        try {
-            const validatorConfig = this.singaporePhoneValidator.validateConfiguration();
-            if (!validatorConfig.isValid) {
-                console.error('❌ Singapore phone validator configuration issues:', validatorConfig.issues);
-                throw new Error('Singapore phone validator configuration is invalid');
-            }
-
-            const processorConfig = this.phoneValidationProcessor.validateConfiguration();
-            if (!processorConfig.isValid) {
-                console.error('❌ Phone validation processor configuration issues:', processorConfig.issues);
-                throw new Error('Phone validation processor configuration is invalid');
-            }
-
-            console.log('✅ Service configuration validation passed');
-        } catch (error) {
-            console.error('❌ Service configuration validation failed:', error.message);
-            throw error;
-        }
-
-        console.log('All startup health checks passed ✅\n');
-    }
-
-    /**
-     * Cleanup resources
-     */
-    async cleanup() {
-        try {
-            console.log('Cleaning up application resources...');
-
-            // Close database connections
-            if (databaseManager) {
-                await databaseManager.close();
-                console.log('Database connections closed');
-            }
-
-            console.log('Application cleanup completed');
-        } catch (error) {
-            console.error('Error during cleanup:', error);
-        }
-    }
-
-    /**
-     * Setup graceful shutdown handling
-     */
-    setupGracefulShutdown() {
-        const gracefulShutdown = async (signal) => {
-            console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
-
-            if (this.server) {
-                this.server.close(async (error) => {
-                    if (error) {
-                        console.error('Error during server shutdown:', error);
-                        process.exit(1);
-                    }
-
-                    console.log('Server closed successfully');
-
-                    // Close database connections
-                    try {
-                        await databaseManager.close();
-                        console.log('Database connections closed successfully');
-                    } catch (error) {
-                        console.error('Error closing database connections:', error);
-                    }
-
-                    console.log('Graceful shutdown completed');
-                    process.exit(0);
-                });
-
-                // Force shutdown after configured timeout
-                setTimeout(() => {
-                    console.error('Forced shutdown after timeout');
-                    process.exit(1);
-                }, this.config.shutdown.timeout);
-            } else {
-                process.exit(0);
-            }
-        };
-
-        // Listen for shutdown signals
-        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    }
-
-    /**
-     * Get Express app instance
-     */
-    getApp() {
-        return this.app;
-    }
-
-    /**
-     * Get service instances for external access
-     */
-    getServices() {
-        return {
-            pdfProcessor: this.pdfProcessor,
-            singaporePhoneValidator: this.singaporePhoneValidator,
-            phoneValidationProcessor: this.phoneValidationProcessor,
-            databaseManager: databaseManager
-        };
+// ============= DATA MANAGEMENT =============
+
+// Initialize localStorage with demo data
+function initializeDemoData() {
+    if (!localStorage.getItem("companies")) {
+        const demoData = [
+            {
+                id: "001",
+                phone: "+1 (555) 123-4567",
+                companyName: "Tech Innovations Inc",
+                physicalAddress: "123 Silicon Valley, CA 94025",
+                email: "contact@techinnovations.com",
+                website: "www.techinnovations.com",
+            },
+            {
+                id: "002",
+                phone: "+1 (555) 234-5678",
+                companyName: "Global Solutions Ltd",
+                physicalAddress: "456 Business Park, NY 10001",
+                email: "info@globalsolutions.com",
+                website: "www.globalsolutions.com",
+            },
+            {
+                id: "003",
+                phone: "+1 (555) 345-6789",
+                companyName: "Digital Marketing Co",
+                physicalAddress: "789 Creative Street, TX 75001",
+                email: "hello@digitalmarketing.com",
+                website: "www.digitalmarketing.com",
+            },
+        ]
+        localStorage.setItem("companies", JSON.stringify(demoData))
     }
 }
 
-// Create and export application instance
-const application = new Application();
-
-// Start the application if this file is run directly
-if (require.main === module) {
-    application.start().catch(error => {
-        console.error('Application startup failed:', error);
-        process.exit(1);
-    });
+// Get all companies
+function getCompanies() {
+    const data = localStorage.getItem("companies")
+    return data ? JSON.parse(data) : []
 }
 
-module.exports = application;
+// Save companies
+function saveCompanies(data) {
+    localStorage.setItem("companies", JSON.stringify(data))
+}
+
+// Add new company
+function addCompany(company) {
+    const companies = getCompanies()
+    company.id = Date.now().toString()
+    companies.push(company)
+    saveCompanies(companies)
+}
+
+// Delete company
+function deleteCompany(id) {
+    const companies = getCompanies()
+    const filtered = companies.filter((c) => c.id !== id)
+    saveCompanies(filtered)
+    renderTable()
+}
+
+// ============= TABLE OPERATIONS =============
+
+function renderTable() {
+    const companies = getCompanies()
+    const tableBody = document.getElementById("tableBody")
+    const emptyState = document.getElementById("emptyState")
+
+    if (!tableBody) return
+
+    if (companies.length === 0) {
+        tableBody.innerHTML = ""
+        if (emptyState) emptyState.classList.remove("hidden")
+        return
+    }
+
+    if (emptyState) emptyState.classList.add("hidden")
+
+    tableBody.innerHTML = companies
+        .map(
+            (company) => {
+                const rawPhone = String(company.phone || "");
+                const digitsOnly = rawPhone.replace(/\D+/g, "");
+                const encodedPhone = encodeURIComponent(digitsOnly);
+                return `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm font-medium">${escapeHtml(company.id)}</td>
+            <td class="px-6 py-4 text-sm">
+                <div>${escapeHtml(company.phone)}</div>
+                <div class="phone-search-buttons mt-1 flex gap-2">
+                    <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm">${escapeHtml(company.companyName)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(company.physicalAddress)}</td>
+            <td class="px-6 py-4 text-sm text-blue-600 break-all"><a href="mailto:${company.email}">${escapeHtml(company.email)}</a></td>
+            <td class="px-6 py-4 text-sm text-blue-600"><a href="http://${company.website}" target="_blank">${escapeHtml(company.website)}</a></td>
+            <td class="px-6 py-4 text-sm">
+                <button onclick="openEditModal('${escapeHtml(company.id)}')" class="text-gray-700 font-medium hover:text-black">Edit</button>
+            </td>
+        </tr>
+    `},
+        )
+        .join("")
+}
+
+function filterTable() {
+    const searchInput = document.getElementById("searchInput")
+    if (!searchInput) return
+
+    const searchTerm = searchInput.value.toLowerCase()
+    const companies = getCompanies()
+    const tableBody = document.getElementById("tableBody")
+    const emptyState = document.getElementById("emptyState")
+
+    const filtered = companies.filter(
+        (company) =>
+            company.companyName.toLowerCase().includes(searchTerm) ||
+            company.email.toLowerCase().includes(searchTerm) ||
+            company.phone.includes(searchTerm) ||
+            company.website.toLowerCase().includes(searchTerm),
+    )
+
+    if (filtered.length === 0) {
+        tableBody.innerHTML = ""
+        emptyState.classList.remove("hidden")
+        return
+    }
+
+    emptyState.classList.add("hidden")
+
+    tableBody.innerHTML = filtered
+        .map(
+            (company) => {
+                const rawPhone = String(company.phone || "");
+                const digitsOnly = rawPhone.replace(/\D+/g, "");
+                const encodedPhone = encodeURIComponent(digitsOnly);
+                return `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm font-medium">${escapeHtml(company.id)}</td>
+            <td class="px-6 py-4 text-sm">
+                <div>${escapeHtml(company.phone)}</div>
+                <div class="phone-search-buttons mt-1 flex gap-2">
+                    <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm">${escapeHtml(company.companyName)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(company.physicalAddress)}</td>
+            <td class="px-6 py-4 text-sm text-blue-600 break-all"><a href="mailto:${company.email}">${escapeHtml(company.email)}</a></td>
+            <td class="px-6 py-4 text-sm text-blue-600"><a href="http://${company.website}" target="_blank">${escapeHtml(company.website)}</a></td>
+            <td class="px-6 py-4 text-sm">
+                <button onclick="openEditModal('${escapeHtml(company.id)}')" class="text-gray-700 font-medium hover:text-black">Edit</button>
+            </td>
+        </tr>
+    `},
+        )
+        .join("")
+}
+
+// ============= EDIT MODAL (LOCAL DEMO) =============
+function openEditModal(id) {
+    const companies = getCompanies()
+    const company = companies.find(c => String(c.id) === String(id))
+    const modal = document.getElementById("editModal")
+    if (!company || !modal) return
+
+    document.getElementById("editId")?.setAttribute('value', company.id)
+    const idInput = document.getElementById("editId"); if (idInput) idInput.value = company.id
+    const phoneInput = document.getElementById("editPhone"); if (phoneInput) phoneInput.value = company.phone || ''
+    const nameInput = document.getElementById("editCompanyName"); if (nameInput) nameInput.value = company.companyName || ''
+    const addrInput = document.getElementById("editPhysicalAddress"); if (addrInput) addrInput.value = company.physicalAddress || ''
+    const emailInput = document.getElementById("editEmail"); if (emailInput) emailInput.value = company.email || ''
+    const websiteInput = document.getElementById("editWebsite"); if (websiteInput) websiteInput.value = company.website || ''
+
+    // Stash current editing id on modal element
+    modal.dataset.editingId = company.id
+    modal.classList.remove("hidden")
+}
+
+function closeEditModal() {
+    const modal = document.getElementById("editModal")
+    if (modal) {
+        modal.classList.add("hidden")
+        delete modal.dataset.editingId
+    }
+}
+
+function saveEdit() {
+    const modal = document.getElementById("editModal")
+    if (!modal || !modal.dataset.editingId) return
+
+    const companies = getCompanies()
+    const id = modal.dataset.editingId
+    const idx = companies.findIndex(c => String(c.id) === String(id))
+    if (idx === -1) return
+
+    const companyName = document.getElementById("editCompanyName")?.value?.trim() || ''
+    const physicalAddress = document.getElementById("editPhysicalAddress")?.value?.trim() || ''
+    const email = document.getElementById("editEmail")?.value?.trim() || ''
+    const website = document.getElementById("editWebsite")?.value?.trim() || ''
+
+    // Basic email check
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert('Please enter a valid email address')
+        return
+    }
+
+    companies[idx] = {
+        ...companies[idx],
+        companyName,
+        physicalAddress,
+        email,
+        website
+    }
+
+    saveCompanies(companies)
+    renderTable()
+    closeEditModal()
+}
+
+// ============= EXCEL OPERATIONS =============
+
+let selectedFile = null
+const XLSX = require("xlsx") // Declare the XLSX variable
+
+function openExcelModal() {
+    document.getElementById("excelModal").classList.remove("hidden")
+}
+
+function closeExcelModal() {
+    document.getElementById("excelModal").classList.add("hidden")
+    document.getElementById("fileName").textContent = ""
+    document.getElementById("excelFile").value = ""
+    selectedFile = null
+}
+
+function handleFileUpload(event) {
+    selectedFile = event.target.files[0]
+    if (selectedFile) {
+        document.getElementById("fileName").textContent = `Selected: ${selectedFile.name}`
+    }
+}
+
+function uploadExcel() {
+    if (!selectedFile) {
+        alert("Please select a file")
+        return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+        try {
+            const data = new Uint8Array(e.target.result)
+            const workbook = XLSX.read(data, { type: "array" })
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+            const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+            // Validate and map columns
+            const companies = jsonData.map((row, index) => ({
+                id: row["ID"] || row["id"] || (index + 1).toString(),
+                phone: row["Phone"] || row["phone"] || "",
+                companyName: row["Company Name"] || row["company name"] || row["Company"] || "",
+                physicalAddress: row["Physical Address"] || row["physical address"] || row["Address"] || "",
+                email: row["Email"] || row["email"] || "",
+                website: row["Website"] || row["website"] || "",
+            }))
+
+            if (companies.length === 0) {
+                alert("No data found in Excel file")
+                return
+            }
+
+            saveCompanies(companies)
+            trackUploadedFile(selectedFile.name)
+            renderTable()
+            renderFilesList()
+            closeExcelModal()
+            alert(`Successfully imported ${companies.length} companies`)
+        } catch (error) {
+            alert("Error reading Excel file: " + error.message)
+        }
+    }
+    reader.readAsArrayBuffer(selectedFile)
+}
+
+function exportToExcel() {
+    const companies = getCompanies()
+    if (companies.length === 0) {
+        alert("No data to export")
+        return
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(companies)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Companies")
+    XLSX.writeFile(workbook, "companies_export.xlsx")
+}
+
+// ============= AUTHENTICATION =============
+
+function initializeAuth() {
+    // Create demo user if not exists
+    if (!localStorage.getItem("users")) {
+        localStorage.setItem(
+            "users",
+            JSON.stringify([
+                {
+                    email: "demo@example.com",
+                    password: "demo123",
+                    name: "Demo User",
+                },
+            ]),
+        )
+    }
+
+    updateUserDisplay()
+    checkAuthentication()
+}
+
+function handleLogin(event) {
+    event.preventDefault()
+
+    const email = document.getElementById("loginEmail").value
+    const password = document.getElementById("loginPassword").value
+    const errorDiv = document.getElementById("loginError")
+
+    const users = JSON.parse(localStorage.getItem("users") || "[]")
+    const user = users.find((u) => u.email === email && u.password === password)
+
+    if (user) {
+        localStorage.setItem("currentUser", JSON.stringify(user))
+        navigateTo("index.html")
+    } else {
+        errorDiv.textContent = "Invalid email or password"
+        errorDiv.classList.remove("hidden")
+    }
+}
+
+function handleRegister(event) {
+    event.preventDefault()
+
+    const name = document.getElementById("registerName").value
+    const email = document.getElementById("registerEmail").value
+    const password = document.getElementById("registerPassword").value
+    const confirmPassword = document.getElementById("registerConfirmPassword").value
+    const errorDiv = document.getElementById("registerError")
+
+    if (password !== confirmPassword) {
+        errorDiv.textContent = "Passwords do not match"
+        errorDiv.classList.remove("hidden")
+        return
+    }
+
+    const users = JSON.parse(localStorage.getItem("users") || "[]")
+
+    if (users.find((u) => u.email === email)) {
+        errorDiv.textContent = "Email already registered"
+        errorDiv.classList.remove("hidden")
+        return
+    }
+
+    users.push({ email, password, name })
+    localStorage.setItem("users", JSON.stringify(users))
+    localStorage.setItem("currentUser", JSON.stringify({ email, name }))
+
+    navigateTo("index.html")
+}
+
+function logout() {
+    localStorage.removeItem("currentUser")
+    navigateTo("login.html")
+}
+
+function updateUserDisplay() {
+    const userDisplay = document.getElementById("userDisplay")
+    if (!userDisplay) return
+
+    const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null")
+    if (currentUser) {
+        userDisplay.textContent = currentUser.name || currentUser.email
+    }
+}
+
+function checkAuthentication() {
+    const currentUser = localStorage.getItem("currentUser")
+    const currentPage = window.location.pathname.split("/").pop() || "index.html"
+
+    if (!currentUser && currentPage !== "login.html" && currentPage !== "register.html") {
+        navigateTo("login.html")
+    }
+}
+
+// ============= FILE MANAGEMENT =============
+
+function handleFileSelect(event) {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    // Simulate file storage
+    addFile({
+        name: file.name,
+        size: (file.size / 1024).toFixed(2),
+        uploadDate: new Date().toLocaleDateString(),
+        type: file.type,
+    })
+
+    renderFilesList()
+    document.getElementById("fileInput").value = ""
+}
+
+function addFile(file) {
+    const files = JSON.parse(localStorage.getItem("uploadedFiles") || "[]")
+    file.id = Date.now().toString()
+    files.push(file)
+    localStorage.setItem("uploadedFiles", JSON.stringify(files))
+}
+
+function getFiles() {
+    return JSON.parse(localStorage.getItem("uploadedFiles") || "[]")
+}
+
+function deleteFile(id) {
+    const files = getFiles()
+    const filtered = files.filter((f) => f.id !== id)
+    localStorage.setItem("uploadedFiles", JSON.stringify(filtered))
+    renderFilesList()
+}
+
+function renderFilesList() {
+    const filesList = document.getElementById("filesList")
+    if (!filesList) return
+
+    const files = getFiles()
+    const fileCount = document.getElementById("fileCount")
+
+    if (fileCount) {
+        fileCount.textContent = `${files.length} file${files.length !== 1 ? "s" : ""}`
+    }
+
+    if (files.length === 0) {
+        filesList.innerHTML = '<div class="px-6 py-8 text-center text-gray-600">No files uploaded yet</div>'
+        return
+    }
+
+    filesList.innerHTML = files
+        .map(
+            (file) => `
+        <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+            <div class="flex items-center gap-3 flex-1">
+                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"></path>
+                </svg>
+                <div>
+                    <p class="font-medium text-gray-900">${escapeHtml(file.name)}</p>
+                    <p class="text-sm text-gray-600">${file.type} • ${file.uploadDate}</p>
+                </div>
+            </div>
+            <button class="text-gray-700 font-medium text-sm px-3 py-2 opacity-60 cursor-not-allowed" title="Edit access only">Edit</button>
+        </div>
+    `,
+        )
+        .join("")
+}
+
+function trackUploadedFile(filename) {
+    const files = getFiles()
+    const newFile = {
+        id: Date.now().toString(),
+        name: filename,
+        uploadDate: new Date().toLocaleDateString(),
+        type: "Excel (.xlsx)",
+    }
+    files.push(newFile)
+    localStorage.setItem("uploadedFiles", JSON.stringify(files))
+}
+
+// ============= UTILITIES =============
+
+function navigateTo(page) {
+    window.location.href = page
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div")
+    div.textContent = text
+    return div.innerHTML
+}
+
+// ============= INITIALIZATION =============
+
+document.addEventListener("DOMContentLoaded", () => {
+    initializeAuth()
+    initializeDemoData()
+    renderTable()
+    renderFilesList()
+    updateUserDisplay()
+})
+
+// Drag and drop for file uploads
+const fileInput = document.getElementById("fileInput")
+if (fileInput) {
+    document.addEventListener("dragover", (e) => {
+        e.preventDefault()
+        e.currentTarget.classList.add("drag-over")
+    })
+
+    document.addEventListener("dragleave", () => {
+        document.querySelector('[id="fileInput"]')?.parentElement?.classList.remove("drag-over")
+    })
+
+    document.addEventListener("drop", (e) => {
+        e.preventDefault()
+        if (e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files
+            handleFileSelect({ target: { files: e.dataTransfer.files } })
+        }
+    })
+}
