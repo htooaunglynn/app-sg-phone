@@ -229,6 +229,34 @@ app.post('/api/export', requireAuth, async (req, res) => {
     }
 })
 
+// PUT /api/companies/:id - update company info (company fields only)
+app.put('/api/companies/:id', requireAuth, async (req, res) => {
+    try {
+        const id = req.params.id;
+        if (!id) return res.status(400).json({ success: false, error: 'Missing company ID' });
+
+        const { companyName = null, physicalAddress = null, email = null, website = null } = req.body || {};
+
+        // Optional: simple sanitization/validation
+        const toStrOrNull = (v) => (v === undefined || v === null || v === '' ? null : String(v));
+
+        const payload = {
+            companyName: toStrOrNull(companyName),
+            physicalAddress: toStrOrNull(physicalAddress),
+            email: toStrOrNull(email),
+            website: toStrOrNull(website)
+        };
+
+        // Update in check_table only (Id/Phone/Status are immutable here)
+        const result = await db.updateCheckRecord(id, payload);
+
+        return res.json({ success: true, updated: result?.affectedRows || 0 });
+    } catch (error) {
+        console.error('Error updating company:', error);
+        return res.status(500).json({ success: false, error: error.message || 'Failed to update company' });
+    }
+})
+
 const PORT = process.env.PORT || 4000
 
 // Initialize database connection

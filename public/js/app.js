@@ -5,6 +5,7 @@ const API_BASE_URL = window.location.origin;
 
 // State management
 let companiesData = [];
+let editingCompanyId = null;
 let selectedFile = null;
 let currentPage = 1;
 let pageSize = 50;
@@ -172,10 +173,21 @@ function renderTable(data = []) {
             phoneStyle = '';
         }
 
+        // Prepare phone helpers
+        const rawPhone = String(company.Phone || company.phone || '');
+        const digitsOnly = rawPhone.replace(/\D+/g, '');
+        const encodedPhone = encodeURIComponent(digitsOnly);
+
         return `
         <tr class="hover:bg-gray-50 border-b border-gray-100 ${rowBgColor}">
             <td class="px-6 py-4 text-sm font-medium">${escapeHtml(company.Id || company.id || index + 1)}</td>
-            <td class="px-6 py-4 text-sm ${phoneStyle}">${escapeHtml(company.Phone || company.phone || '')}</td>
+            <td class="px-6 py-4 text-sm ${phoneStyle}">
+                <div>${escapeHtml(rawPhone)}</div>
+                <div class="phone-search-buttons mt-1 flex gap-2">
+                    <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                </div>
+            </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(company.CompanyName || company['Company Name'] || company.companyName || '')}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || '')}</td>
             <td class="px-6 py-4 text-sm text-blue-600 break-all">
@@ -185,9 +197,9 @@ function renderTable(data = []) {
                 ${company.Website || company.website ? `<a href="http://${escapeHtml(company.Website || company.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(company.Website || company.website)}</a>` : ''}
             </td>
             <td class="px-6 py-4 text-sm">
-                <button onclick="deleteCompany('${company.Id || company.id || index}')"
-                    class="text-red-600 hover:text-red-700 font-medium transition">
-                    Delete
+                <button onclick="openEditModal('${escapeHtml(String(company.Id || company.id || index))}')"
+                    class="text-gray-700 hover:text-black font-medium transition">
+                    Edit
                 </button>
             </td>
         </tr>
@@ -319,23 +331,7 @@ function filterTable() {
     }
 }
 
-async function deleteCompany(id) {
-    if (!confirm('Are you sure you want to delete this company?')) {
-        return;
-    }
-
-    try {
-        // This would need a DELETE /api/companies/:id endpoint
-        // For now, just remove from local data
-        companiesData = companiesData.filter(c => (c.Id || c.id) !== id);
-        renderTable(companiesData);
-        filterTable(); // Reapply filter if active
-
-    } catch (error) {
-        console.error('Delete error:', error);
-        alert('Failed to delete company');
-    }
-}
+// Note: Delete functionality removed per access restrictions. All delete actions have been disabled.
 
 // ============= EXPORT FUNCTIONALITY =============
 
@@ -425,6 +421,97 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = String(text);
     return div.innerHTML;
+}
+
+// ============= EDIT MODAL FUNCTIONS =============
+
+function openEditModal(id) {
+    try {
+        editingCompanyId = id;
+        const company = companiesData.find(c => String(c.Id || c.id) === String(id));
+        const modal = document.getElementById('editModal');
+        if (!modal || !company) return;
+
+        const idInput = document.getElementById('editId');
+        const phoneInput = document.getElementById('editPhone');
+        const nameInput = document.getElementById('editCompanyName');
+        const addrInput = document.getElementById('editPhysicalAddress');
+        const emailInput = document.getElementById('editEmail');
+        const websiteInput = document.getElementById('editWebsite');
+
+        idInput.value = company.Id || company.id || '';
+        phoneInput.value = company.Phone || company.phone || '';
+        nameInput.value = company.CompanyName || company['Company Name'] || company.companyName || '';
+        addrInput.value = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || '';
+        emailInput.value = company.Email || company.email || '';
+        websiteInput.value = company.Website || company.website || '';
+
+        modal.classList.remove('hidden');
+    } catch (e) {
+        console.error('Failed to open edit modal:', e);
+    }
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editModal');
+    if (modal) modal.classList.add('hidden');
+    editingCompanyId = null;
+}
+
+async function saveEdit() {
+    const modal = document.getElementById('editModal');
+    if (!modal || !editingCompanyId) return;
+
+    const id = editingCompanyId;
+    const companyName = document.getElementById('editCompanyName').value.trim();
+    const physicalAddress = document.getElementById('editPhysicalAddress').value.trim();
+    const email = document.getElementById('editEmail').value.trim();
+    const website = document.getElementById('editWebsite').value.trim();
+
+    // Basic validation (optional)
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert('Please enter a valid email address');
+        return;
+    }
+
+    // Button loading state
+    const saveBtn = modal.querySelector('button[onclick="saveEdit()"]');
+    const originalText = saveBtn?.textContent;
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+    try {
+        // Attempt server update if API available
+        const response = await fetch(`${API_BASE_URL}/api/companies/${encodeURIComponent(id)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ companyName, physicalAddress, email, website })
+        });
+
+        if (!response.ok) {
+            // If server not supporting update, we still update locally for UX
+            console.warn('Update API not available or failed, applying local update.');
+        }
+
+        // Update local data for immediate UX
+        const idx = companiesData.findIndex(c => String(c.Id || c.id) === String(id));
+        if (idx !== -1) {
+            const item = companiesData[idx];
+            // Update multiple key shapes defensively
+            item.CompanyName = companyName; item['Company Name'] = companyName; item.companyName = companyName;
+            item.PhysicalAddress = physicalAddress; item['Physical Address'] = physicalAddress; item.physicalAddress = physicalAddress;
+            item.Email = email; item.email = email;
+            item.Website = website; item.website = website;
+        }
+
+        renderTable(companiesData);
+        closeEditModal();
+    } catch (err) {
+        console.error('Save edit failed:', err);
+        alert('Failed to save changes');
+    } finally {
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = originalText || 'Save'; }
+    }
 }
 
 // ============= INITIALIZATION =============

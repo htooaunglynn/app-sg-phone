@@ -88,19 +88,29 @@ function renderTable() {
 
     tableBody.innerHTML = companies
         .map(
-            (company) => `
+            (company) => {
+                const rawPhone = String(company.phone || "");
+                const digitsOnly = rawPhone.replace(/\D+/g, "");
+                const encodedPhone = encodeURIComponent(digitsOnly);
+                return `
         <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 text-sm font-medium">${escapeHtml(company.id)}</td>
-            <td class="px-6 py-4 text-sm">${escapeHtml(company.phone)}</td>
+            <td class="px-6 py-4 text-sm">
+                <div>${escapeHtml(company.phone)}</div>
+                <div class="phone-search-buttons mt-1 flex gap-2">
+                    <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                </div>
+            </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(company.companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(company.physicalAddress)}</td>
             <td class="px-6 py-4 text-sm text-blue-600 break-all"><a href="mailto:${company.email}">${escapeHtml(company.email)}</a></td>
             <td class="px-6 py-4 text-sm text-blue-600"><a href="http://${company.website}" target="_blank">${escapeHtml(company.website)}</a></td>
             <td class="px-6 py-4 text-sm">
-                <button onclick="deleteCompany('${company.id}')" class="text-red-600 hover:text-red-700 font-medium">Delete</button>
+                <button onclick="openEditModal('${escapeHtml(company.id)}')" class="text-gray-700 font-medium hover:text-black">Edit</button>
             </td>
         </tr>
-    `,
+    `},
         )
         .join("")
 }
@@ -132,21 +142,92 @@ function filterTable() {
 
     tableBody.innerHTML = filtered
         .map(
-            (company) => `
+            (company) => {
+                const rawPhone = String(company.phone || "");
+                const digitsOnly = rawPhone.replace(/\D+/g, "");
+                const encodedPhone = encodeURIComponent(digitsOnly);
+                return `
         <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 text-sm font-medium">${escapeHtml(company.id)}</td>
-            <td class="px-6 py-4 text-sm">${escapeHtml(company.phone)}</td>
+            <td class="px-6 py-4 text-sm">
+                <div>${escapeHtml(company.phone)}</div>
+                <div class="phone-search-buttons mt-1 flex gap-2">
+                    <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                </div>
+            </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(company.companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(company.physicalAddress)}</td>
             <td class="px-6 py-4 text-sm text-blue-600 break-all"><a href="mailto:${company.email}">${escapeHtml(company.email)}</a></td>
             <td class="px-6 py-4 text-sm text-blue-600"><a href="http://${company.website}" target="_blank">${escapeHtml(company.website)}</a></td>
             <td class="px-6 py-4 text-sm">
-                <button onclick="deleteCompany('${company.id}')" class="text-red-600 hover:text-red-700 font-medium">Delete</button>
+                <button onclick="openEditModal('${escapeHtml(company.id)}')" class="text-gray-700 font-medium hover:text-black">Edit</button>
             </td>
         </tr>
-    `,
+    `},
         )
         .join("")
+}
+
+// ============= EDIT MODAL (LOCAL DEMO) =============
+function openEditModal(id) {
+    const companies = getCompanies()
+    const company = companies.find(c => String(c.id) === String(id))
+    const modal = document.getElementById("editModal")
+    if (!company || !modal) return
+
+    document.getElementById("editId")?.setAttribute('value', company.id)
+    const idInput = document.getElementById("editId"); if (idInput) idInput.value = company.id
+    const phoneInput = document.getElementById("editPhone"); if (phoneInput) phoneInput.value = company.phone || ''
+    const nameInput = document.getElementById("editCompanyName"); if (nameInput) nameInput.value = company.companyName || ''
+    const addrInput = document.getElementById("editPhysicalAddress"); if (addrInput) addrInput.value = company.physicalAddress || ''
+    const emailInput = document.getElementById("editEmail"); if (emailInput) emailInput.value = company.email || ''
+    const websiteInput = document.getElementById("editWebsite"); if (websiteInput) websiteInput.value = company.website || ''
+
+    // Stash current editing id on modal element
+    modal.dataset.editingId = company.id
+    modal.classList.remove("hidden")
+}
+
+function closeEditModal() {
+    const modal = document.getElementById("editModal")
+    if (modal) {
+        modal.classList.add("hidden")
+        delete modal.dataset.editingId
+    }
+}
+
+function saveEdit() {
+    const modal = document.getElementById("editModal")
+    if (!modal || !modal.dataset.editingId) return
+
+    const companies = getCompanies()
+    const id = modal.dataset.editingId
+    const idx = companies.findIndex(c => String(c.id) === String(id))
+    if (idx === -1) return
+
+    const companyName = document.getElementById("editCompanyName")?.value?.trim() || ''
+    const physicalAddress = document.getElementById("editPhysicalAddress")?.value?.trim() || ''
+    const email = document.getElementById("editEmail")?.value?.trim() || ''
+    const website = document.getElementById("editWebsite")?.value?.trim() || ''
+
+    // Basic email check
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert('Please enter a valid email address')
+        return
+    }
+
+    companies[idx] = {
+        ...companies[idx],
+        companyName,
+        physicalAddress,
+        email,
+        website
+    }
+
+    saveCompanies(companies)
+    renderTable()
+    closeEditModal()
 }
 
 // ============= EXCEL OPERATIONS =============
@@ -389,7 +470,7 @@ function renderFilesList() {
                     <p class="text-sm text-gray-600">${file.type} • ${file.uploadDate}</p>
                 </div>
             </div>
-            <button onclick="deleteFile('${file.id}')" class="text-red-600 hover:text-red-700 font-medium text-sm px-3 py-2 hover:bg-red-50 rounded transition">Delete</button>
+            <button class="text-gray-700 font-medium text-sm px-3 py-2 opacity-60 cursor-not-allowed" title="Edit access only">Edit</button>
         </div>
     `,
         )

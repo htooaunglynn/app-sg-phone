@@ -141,6 +141,56 @@
         </div>
     </div>
 
+    <!-- Edit Company Modal -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-lg w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Edit Company</h2>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">ID</label>
+                    <input id="editId" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50"
+                        readonly>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Phone</label>
+                    <input id="editPhone" type="text"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50" readonly>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Company Name</label>
+                    <input id="editCompanyName" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                        placeholder="Company Name">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Physical Address</label>
+                    <input id="editPhysicalAddress" type="text"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg" placeholder="Physical Address">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Email</label>
+                    <input id="editEmail" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                        placeholder="Email">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Website</label>
+                    <input id="editWebsite" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg"
+                        placeholder="Website">
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeEditModal()"
+                    class="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 font-medium transition">Cancel</button>
+                <button onclick="saveEdit()"
+                    class="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 font-medium transition">Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Optional: add client-side scripts as needed -->
 </body>
 
