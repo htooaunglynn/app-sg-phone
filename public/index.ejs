@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataHub - Business Management</title>
-    <link rel="stylesheet" href="css/output.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="/js/app.js" defer></script>
 </head>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     <a href="/" class="text-gray-600 hover:text-black text-sm font-medium">Home</a>
-                    <a href="/file-management" class="text-gray-600 hover:text-black text-sm font-medium">Files</a>
+                    <!-- <a href="/file-management" class="text-gray-600 hover:text-black text-sm font-medium">Files</a> -->
                     <div class="flex items-center gap-2">
                         <% if (user) { %>
                             <span class="text-sm text-gray-600">Hello, <%= user.name %></span>

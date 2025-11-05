@@ -7,6 +7,9 @@ yarn-error.log*
 # Environment variables
 .env
 
+# Built CSS files (using CDN now)
+public/css/output.css
+
 # Uploads and exports
 uploads/*
 !uploads/.gitkeep

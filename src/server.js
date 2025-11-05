@@ -2,9 +2,11 @@ const express = require('express')
 const multer = require('multer')
 const ExcelJS = require('exceljs')
 const session = require('express-session')
+const pgSession = require('connect-pg-simple')(session)
 const cookieParser = require('cookie-parser')
 const cors = require('cors')
 const path = require('path')
+const { Pool } = require('pg')
 require('dotenv').config()
 
 const authRoutes = require('./routes/auth')
@@ -18,6 +20,11 @@ const upload = multer({ storage: multer.memoryStorage() })
 const excelProcessor = new ExcelProcessor()
 const excelExporter = new ExcelExporter()
 
+// Trust proxy for production (required for secure cookies behind reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1)
+}
+
 // Middleware
 app.use(express.json({ limit: '5mb' }))
 app.use(express.urlencoded({ extended: true }))
@@ -29,17 +36,53 @@ app.use(cors({
     credentials: true
 }))
 
-// Session configuration
+// Create PostgreSQL pool for session store
+const sessionPool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    ssl: process.env.DB_SSL === 'true' ? {
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true'
+    } : false
+})
+
+// Session configuration with PostgreSQL store
 app.use(session({
+    store: new pgSession({
+        pool: sessionPool,
+        tableName: 'session',
+        createTableIfMissing: true
+    }),
     secret: process.env.SESSION_SECRET || 'singapore-phone-detect-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: parseInt(process.env.SESSION_TIMEOUT) || 86400000 // 24 hours
-    }
+        maxAge: parseInt(process.env.SESSION_TIMEOUT) || 86400000, // 24 hours
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax'
+    },
+    proxy: process.env.NODE_ENV === 'production' // Trust proxy in production
 }))
+
+// Debug session middleware (only in production for troubleshooting)
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        console.log('Session Debug:', {
+            path: req.path,
+            method: req.method,
+            sessionID: req.sessionID,
+            hasSession: !!req.session,
+            userId: req.session?.userId,
+            cookies: Object.keys(req.cookies || {}),
+            secure: req.secure,
+            protocol: req.protocol
+        });
+        next();
+    });
+}
 
 // View engine: EJS (.ejs templates) under /public
 app.set('views', path.join(__dirname, '../public'))
@@ -95,12 +138,14 @@ app.get('/api/companies', requireAuth, async (req, res) => {
             }
         })
 
-        // Validate Singapore phone numbers and mark duplicates for current page
-        const singaporePhoneValidator = require('./services/singaporePhoneValidator')
+        // Mark duplicates for current page (Status already indicates if valid Singapore phone)
         const enrichedCompanies = companies.map(company => {
             const phone = company.Phone || company.phone
             const isDuplicate = phone && duplicatePhones.has(phone)
-            const isValidSingaporePhone = phone ? singaporePhoneValidator.validateSingaporePhone(phone) : null
+            // Status: 1/true = valid Singapore phone, 0/false = invalid
+            // Handle both boolean and number types
+            const status = company.Status !== undefined ? company.Status : company.status
+            const isValidSingaporePhone = status === 1 || status === true
 
             return {
                 ...company,
@@ -139,24 +184,30 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
         const filename = req.file.originalname
         console.log(`Processing Excel file: ${filename}`)
 
-        // Process Excel file with full pipeline
-        const result = await excelProcessor.processExcelWithValidation(
+        // Capture count before insert for accurate delta
+        const countBefore = await db.getCheckRecordsCount()
+
+        // Process Excel file - direct to check_table only
+        // Note: backup_table and uploaded_files tables are not used in PostgreSQL schema
+        const result = await excelProcessor.processExcelDirectToCheckTable(
             req.file.buffer,
-            filename,
-            true // Auto-validate
+            filename
         )
+
+        // Capture count after processing
+        const countAfter = await db.getCheckRecordsCount()
+        const insertedDelta = Math.max(0, countAfter - countBefore)
 
         console.log('Processing result:', {
             success: result.success,
             error: result.error,
-            extraction: result.extraction ? {
-                totalRecords: result.extraction.totalRecords
-            } : 'no extraction',
-            storage: result.storage ? {
-                storedRecords: result.storage.storedRecords,
-                duplicatesSkipped: result.storage.duplicatesSkipped,
-                errors: result.storage.errors
-            } : 'no storage'
+            totalRecords: result.totalRecords,
+            storedRecords: result.storedRecords,
+            updatedRecords: result.updatedRecords,
+            insertedDelta,
+            validRecords: result.validRecords,
+            invalidRecords: result.invalidRecords,
+            errorsCount: (result.errors || []).length
         })
 
         if (!result.success) {
@@ -166,14 +217,19 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
             })
         }
 
-        // Return success with summary
+        // Return success with summary, including DB snapshot counts for debugging
         return res.json({
             success: true,
             message: 'Excel file processed successfully',
-            rows: result.extraction.totalRecords,
-            stored: result.storage.storedRecords,
-            duplicates: result.storage.duplicatesSkipped,
-            validated: result.validation?.validationResults?.validatedRecords || 0
+            rows: result.totalRecords,
+            stored: result.storedRecords,
+            updated: result.updatedRecords,
+            insertedDelta,
+            duplicates: 0,
+            validated: result.validRecords,
+            checkTableCountBefore: countBefore,
+            checkTableCountAfter: countAfter,
+            errors: (result.errors || []).slice(0, 5) // surface a few errors if any
         })
     } catch (err) {
         console.error('Upload error:', err)
@@ -250,7 +306,7 @@ app.put('/api/companies/:id', requireAuth, async (req, res) => {
         // Update in check_table only (Id/Phone/Status are immutable here)
         const result = await db.updateCheckRecord(id, payload);
 
-        return res.json({ success: true, updated: result?.affectedRows || 0 });
+        return res.json({ success: true, updated: result?.rowCount || 0 });
     } catch (error) {
         console.error('Error updating company:', error);
         return res.status(500).json({ success: false, error: error.message || 'Failed to update company' });

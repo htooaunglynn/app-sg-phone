@@ -145,14 +145,14 @@ function createBaseStyle(options = {}) {
         font: {
             name: fontName,
             sz: options.fontSize || EXCEL_STYLING_CONFIG.font.sz,  // Use 'sz' for XLSX
-            color: options.fontColor || EXCEL_STYLING_CONFIG.font.color,
+            color: options.fontColor ? { ...options.fontColor } : { rgb: EXCEL_STYLING_CONFIG.font.color.rgb },
             bold: options.bold || false
         },
         alignment: {
             horizontal: options.horizontalAlign || EXCEL_STYLING_CONFIG.alignment.horizontal,
             vertical: options.verticalAlign || EXCEL_STYLING_CONFIG.alignment.vertical
         },
-        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
+        border: options.border ? JSON.parse(JSON.stringify(options.border)) : JSON.parse(JSON.stringify(EXCEL_STYLING_CONFIG.border)) // Deep copy border
     };
 }
 
@@ -176,12 +176,18 @@ function createStatusStyle(status, options = {}) {
         font: {
             name: fontName,
             sz: statusConfig.font.sz,  // Use 'sz' for XLSX
-            color: statusConfig.font.color,
+            color: { rgb: statusConfig.font.color.rgb }, // Create new object
             bold: options.bold || false
         },
-        alignment: statusConfig.alignment,
-        fill: statusConfig.fill,
-        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
+        alignment: {
+            horizontal: statusConfig.alignment.horizontal,
+            vertical: statusConfig.alignment.vertical
+        },
+        fill: {
+            patternType: statusConfig.fill.patternType,
+            fgColor: { rgb: statusConfig.fill.fgColor.rgb } // Create new object
+        },
+        border: options.border ? JSON.parse(JSON.stringify(options.border)) : JSON.parse(JSON.stringify(EXCEL_STYLING_CONFIG.border)) // Deep copy border
     };
 }
 
@@ -194,16 +200,28 @@ function createHeaderStyle(options = {}) {
     const headerConfig = EXCEL_STYLING_CONFIG.header;
     const fontName = getFontWithFallback(headerConfig.font.name);
 
+    // Determine which fill to use
+    let fillConfig = headerConfig.fill;
+    if (!options.preserveExistingFill && options.fill) {
+        fillConfig = options.fill;
+    }
+
     return {
         font: {
             name: fontName,
             sz: headerConfig.font.sz,  // Use 'sz' for XLSX
-            color: headerConfig.font.color,
+            color: { rgb: headerConfig.font.color.rgb }, // Create new object
             bold: headerConfig.font.bold
         },
-        alignment: headerConfig.alignment,
-        fill: options.preserveExistingFill ? headerConfig.fill : (options.fill || headerConfig.fill),
-        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
+        alignment: {
+            horizontal: headerConfig.alignment.horizontal,
+            vertical: headerConfig.alignment.vertical
+        },
+        fill: {
+            patternType: fillConfig.patternType,
+            fgColor: { rgb: fillConfig.fgColor.rgb } // Create new object
+        },
+        border: options.border ? JSON.parse(JSON.stringify(options.border)) : JSON.parse(JSON.stringify(EXCEL_STYLING_CONFIG.border)) // Deep copy border
     };
 }
 
@@ -220,12 +238,18 @@ function createDuplicateStyle(options = {}) {
         font: {
             name: fontName,
             sz: duplicateConfig.font.sz,  // Use 'sz' for XLSX
-            color: duplicateConfig.font.color,
+            color: { rgb: duplicateConfig.font.color.rgb }, // Create new object
             bold: options.bold || false
         },
-        alignment: duplicateConfig.alignment,
-        fill: duplicateConfig.fill,
-        border: options.border || EXCEL_STYLING_CONFIG.border // Apply default border
+        alignment: {
+            horizontal: duplicateConfig.alignment.horizontal,
+            vertical: duplicateConfig.alignment.vertical
+        },
+        fill: {
+            patternType: duplicateConfig.fill.patternType,
+            fgColor: { rgb: duplicateConfig.fill.fgColor.rgb } // Create new object
+        },
+        border: options.border ? JSON.parse(JSON.stringify(options.border)) : JSON.parse(JSON.stringify(EXCEL_STYLING_CONFIG.border)) // Deep copy border
     };
 }
 
@@ -707,7 +731,7 @@ function validateDuplicateStyleStructure(styleObj) {
 
     try {
         const expectedOrangeColor = COLOR_CONFIG.duplicate.backgroundRgb;
-        
+
         // Validate that duplicate styling has orange background
         if (styleObj.fill && styleObj.fill.fgColor && styleObj.fill.fgColor.rgb) {
             const currentColor = styleObj.fill.fgColor.rgb.toUpperCase().replace('#', '');
@@ -1018,7 +1042,7 @@ function buildDuplicatePhoneMap(records) {
 
         if (phoneNumber) {
             const sanitizedPhone = sanitizePhoneNumber(phoneNumber);
-            
+
             if (sanitizedPhone) {
                 if (!phoneMap.has(sanitizedPhone)) {
                     phoneMap.set(sanitizedPhone, []);
@@ -1043,7 +1067,7 @@ function extractPhoneNumber(record) {
 
     // Check various possible phone number field names
     const phoneFields = ['phoneNumber', 'Phone', 'phone', 'PhoneNumber', 'PHONE'];
-    
+
     for (const field of phoneFields) {
         if (record[field] != null) {
             return String(record[field]).trim();
@@ -1065,7 +1089,7 @@ function sanitizePhoneNumber(phoneNumber) {
 
     // Remove all non-digit characters except + at the beginning
     let sanitized = phoneNumber.trim();
-    
+
     // Handle international format with +
     if (sanitized.startsWith('+')) {
         sanitized = '+' + sanitized.slice(1).replace(/\D/g, '');
@@ -1144,13 +1168,13 @@ function validatePhoneNumber(phoneNumber) {
  */
 function getDuplicatePhoneStatistics(records) {
     const duplicateInfo = identifyDuplicatePhoneNumbers(records);
-    
+
     return {
         totalRecords: duplicateInfo.totalRecords,
         uniquePhoneNumbers: duplicateInfo.uniquePhoneCount,
         duplicatePhoneNumbers: duplicateInfo.duplicatePhoneNumbers.size,
         recordsWithDuplicatePhones: duplicateInfo.duplicateCount,
-        duplicateRate: duplicateInfo.totalRecords > 0 ? 
+        duplicateRate: duplicateInfo.totalRecords > 0 ?
             (duplicateInfo.duplicateCount / duplicateInfo.totalRecords) * 100 : 0,
         phoneNumberFrequency: Array.from(duplicateInfo.phoneNumberMap.entries())
             .filter(([phone, indices]) => indices.length > 1)

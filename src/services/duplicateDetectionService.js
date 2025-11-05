@@ -1,7 +1,7 @@
 const databaseManager = require('../utils/database');
 
 /**
- * Service for detecting duplicate entries in backup_table before insertion
+ * Service for detecting duplicate entries in check_table before insertion
  * Implements efficient batch duplicate checking using SQL IN queries
  * Enhanced with comprehensive error handling and logging
  */
@@ -9,12 +9,12 @@ class DuplicateDetectionService {
     constructor() {
         // Batch size for efficient duplicate checking
         this.batchSize = 1000;
-        
+
         // Query result caching for frequently checked IDs
         this.queryCache = new Map();
         this.cacheTimeout = 300000; // 5 minutes
         this.maxCacheSize = 10000; // Maximum cached entries
-        
+
         // Query optimization settings
         this.queryOptimization = {
             useIndexedLookups: true,
@@ -23,7 +23,7 @@ class DuplicateDetectionService {
             usePreparedStatements: true,
             enableQueryHints: true
         };
-        
+
         // Memory optimization settings
         this.memoryOptimization = {
             enableStreamingProcessing: true,
@@ -32,7 +32,7 @@ class DuplicateDetectionService {
             enableGarbageCollection: true,
             optimizeDataStructures: true
         };
-        
+
         // Memory usage tracking
         this.memoryMetrics = {
             peakMemoryUsage: 0,
@@ -41,7 +41,7 @@ class DuplicateDetectionService {
             streamingOperations: 0,
             gcCollections: 0
         };
-        
+
         // Performance metrics
         this.metrics = {
             totalChecks: 0,
@@ -87,7 +87,7 @@ class DuplicateDetectionService {
     async checkForDuplicates(records) {
         const startTime = Date.now();
         const operationId = this.generateOperationId();
-        
+
         this.logOperation('duplicate_detection_start', {
             operationId,
             recordCount: records?.length || 0,
@@ -130,10 +130,10 @@ class DuplicateDetectionService {
     async checkForDuplicatesStandard(records, operationId, startTime) {
         // Track memory usage
         const initialMemory = this.getCurrentMemoryUsage();
-        
+
         // Extract IDs from records with validation
         const recordIds = this.extractAndValidateIds(records);
-        
+
         // Check for existing IDs with error handling and fallbacks
         const existingIds = await this.batchCheckExistingIdsWithErrorHandling(recordIds, operationId);
         const existingIdSet = new Set(existingIds.duplicateIds);
@@ -211,10 +211,10 @@ class DuplicateDetectionService {
             try {
                 // Process chunk with memory optimization
                 const chunkResult = await this.processChunkOptimized(chunk, operationId, chunkNumber);
-                
+
                 // Merge results using memory-efficient approach
                 this.mergeChunkResults(result, chunkResult);
-                
+
                 const chunkTime = Date.now() - chunkStartTime;
                 totalChunkTime += chunkTime;
                 result.streamingMetrics.chunksProcessed++;
@@ -250,7 +250,7 @@ class DuplicateDetectionService {
                     chunkNumber,
                     error: chunkError.message
                 });
-                
+
                 // Continue with next chunk but log the error
                 result.errorHandling.errors = result.errorHandling.errors || [];
                 result.errorHandling.errors.push(`Chunk ${chunkNumber}: ${chunkError.message}`);
@@ -260,7 +260,7 @@ class DuplicateDetectionService {
         // Finalize results
         result.checkTime = Date.now() - startTime;
         result.streamingMetrics.averageChunkTime = totalChunks > 0 ? totalChunkTime / totalChunks : 0;
-        
+
         // Update metrics
         this.updateMetrics(records.length, result.duplicateCount, result.checkTime);
         this.memoryMetrics.streamingOperations++;
@@ -290,7 +290,7 @@ class DuplicateDetectionService {
     async processChunkOptimized(chunk, operationId, chunkNumber) {
         // Extract IDs efficiently
         const recordIds = this.extractAndValidateIds(chunk);
-        
+
         // Check for existing IDs
         const existingIds = await this.batchCheckExistingIdsWithErrorHandling(recordIds, `${operationId}_chunk_${chunkNumber}`);
         const existingIdSet = new Set(existingIds.duplicateIds);
@@ -334,7 +334,7 @@ class DuplicateDetectionService {
         // Process records efficiently
         for (const record of records) {
             const recordId = record.id || record.Id;
-            
+
             if (existingIdSet.has(recordId)) {
                 if (this.memoryOptimization.optimizeDataStructures) {
                     result.duplicates[duplicateIndex] = record;
@@ -380,11 +380,11 @@ class DuplicateDetectionService {
         mainResult.newRecords.push(...chunkResult.newRecords);
         mainResult.duplicateIds.push(...chunkResult.duplicateIds);
         mainResult.newRecordIds.push(...chunkResult.newRecordIds);
-        
+
         // Update counts
         mainResult.duplicateCount += chunkResult.duplicateCount;
         mainResult.newRecordCount += chunkResult.newRecordCount;
-        
+
         // Merge error handling if present
         if (chunkResult.errorHandling && chunkResult.errorHandling.errors) {
             mainResult.errorHandling.errors = mainResult.errorHandling.errors || [];
@@ -405,7 +405,7 @@ class DuplicateDetectionService {
         // Use streaming for large datasets or when memory usage is high
         const currentMemory = this.getCurrentMemoryUsage();
         const memoryThreshold = this.memoryOptimization.maxMemoryUsage * 0.7; // 70% of max memory
-        
+
         return recordCount > 5000 || currentMemory > memoryThreshold;
     }
 
@@ -427,7 +427,7 @@ class DuplicateDetectionService {
      */
     updateMemoryMetrics(memoryUsed) {
         this.memoryMetrics.currentMemoryUsage = this.getCurrentMemoryUsage();
-        
+
         if (this.memoryMetrics.currentMemoryUsage > this.memoryMetrics.peakMemoryUsage) {
             this.memoryMetrics.peakMemoryUsage = this.memoryMetrics.currentMemoryUsage;
         }
@@ -441,7 +441,7 @@ class DuplicateDetectionService {
             try {
                 global.gc();
                 this.memoryMetrics.gcCollections++;
-                
+
                 this.logOperation('garbage_collection_triggered', {
                     memoryBefore: this.memoryMetrics.currentMemoryUsage,
                     memoryAfter: this.getCurrentMemoryUsage(),
@@ -504,7 +504,7 @@ class DuplicateDetectionService {
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
-            
+
             // Wait if we've reached the concurrent chunk limit
             while (activeChunks >= processingOptions.maxConcurrentChunks) {
                 await Promise.race(chunkPromises);
@@ -516,12 +516,12 @@ class DuplicateDetectionService {
                 .then(chunkResult => {
                     this.mergeChunkResults(result, chunkResult);
                     result.processingMetrics.chunksProcessed++;
-                    
+
                     // Update duplicate rate tracking
-                    const chunkDuplicateRate = chunkResult.totalRecords > 0 ? 
+                    const chunkDuplicateRate = chunkResult.totalRecords > 0 ?
                         chunkResult.duplicateCount / chunkResult.totalRecords : 0;
-                    result.processingMetrics.averageDuplicateRate = 
-                        (result.processingMetrics.averageDuplicateRate * (result.processingMetrics.chunksProcessed - 1) + chunkDuplicateRate) / 
+                    result.processingMetrics.averageDuplicateRate =
+                        (result.processingMetrics.averageDuplicateRate * (result.processingMetrics.chunksProcessed - 1) + chunkDuplicateRate) /
                         result.processingMetrics.chunksProcessed;
 
                     return chunkResult;
@@ -544,7 +544,7 @@ class DuplicateDetectionService {
                 if (currentMemory > processingOptions.memoryLimit) {
                     this.triggerGarbageCollection();
                     result.processingMetrics.memoryOptimizations++;
-                    
+
                     // Small delay to allow memory cleanup
                     await this.delay(100);
                 }
@@ -585,19 +585,19 @@ class DuplicateDetectionService {
         try {
             // Use memory-efficient ID extraction
             const recordIds = this.extractAndValidateIds(chunk);
-            
+
             // Batch check with smaller sub-batches for memory efficiency
             const subBatchSize = Math.min(100, recordIds.length);
             const existingIds = [];
-            
+
             for (let i = 0; i < recordIds.length; i += subBatchSize) {
                 const subBatch = recordIds.slice(i, i + subBatchSize);
                 const subBatchExisting = await this.batchCheckExistingIdsWithErrorHandling(
-                    subBatch, 
+                    subBatch,
                     `${operationId}_chunk_${chunkNumber}_sub_${Math.floor(i / subBatchSize) + 1}`
                 );
                 existingIds.push(...subBatchExisting.duplicateIds);
-                
+
                 // Small delay between sub-batches to prevent overwhelming the database
                 if (i + subBatchSize < recordIds.length) {
                     await this.delay(10);
@@ -606,10 +606,10 @@ class DuplicateDetectionService {
 
             const existingIdSet = new Set(existingIds);
             const chunkResult = this.createOptimizedResult(chunk, existingIdSet, `${operationId}_chunk_${chunkNumber}`);
-            
+
             const chunkTime = Date.now() - chunkStartTime;
             const finalMemory = this.getCurrentMemoryUsage();
-            
+
             this.logOperation('high_duplicate_chunk_processed', {
                 operationId,
                 chunkNumber,
@@ -641,7 +641,7 @@ class DuplicateDetectionService {
      */
     createOptimizedChunks(records, chunkSize) {
         const chunks = [];
-        
+
         for (let i = 0; i < records.length; i += chunkSize) {
             chunks.push(records.slice(i, i + chunkSize));
         }
@@ -669,12 +669,12 @@ class DuplicateDetectionService {
             // Create memory-efficient ID lookup structure
             const idMap = new Map();
             const phoneMap = new Map();
-            
+
             for (let i = 0; i < records.length; i++) {
                 const record = records[i];
                 const id = record.id || record.Id;
                 const phone = record.phoneNumber || record.Phone;
-                
+
                 if (id) {
                     idMap.set(id, i); // Store index instead of full record
                 }
@@ -720,7 +720,7 @@ class DuplicateDetectionService {
      */
     configureMemoryOptimization(memoryConfig) {
         const previousConfig = { ...this.memoryOptimization };
-        
+
         this.memoryOptimization = {
             ...this.memoryOptimization,
             ...memoryConfig
@@ -759,13 +759,13 @@ class DuplicateDetectionService {
     }
 
     /**
-     * Check if a single ID is duplicate in backup_table with optimized caching and indexed lookups
+     * Check if a single ID is duplicate in check_table with optimized caching and indexed lookups
      * @param {string} id - The ID to check
-     * @returns {Promise<boolean>} True if ID exists in backup_table
+     * @returns {Promise<boolean>} True if ID exists in check_table
      */
     async isDuplicateId(id) {
         const operationId = this.generateOperationId();
-        
+
         try {
             if (!id) {
                 this.logOperation('single_id_check_empty_input', { operationId });
@@ -778,7 +778,7 @@ class DuplicateDetectionService {
             if (this.queryOptimization.enableQueryCaching) {
                 const cached = this.queryCache.get(id);
                 const now = Date.now();
-                
+
                 if (cached && (now - cached.timestamp) < this.cacheTimeout) {
                     this.metrics.cacheHits++;
                     this.logOperation('single_id_check_cache_hit', { operationId, id, isDuplicate: cached.isDuplicate });
@@ -787,31 +787,27 @@ class DuplicateDetectionService {
             }
 
             // Use optimized indexed lookup with prepared statement
-            const sql = this.queryOptimization.useIndexedLookups ? 
-                'SELECT /*+ USE_INDEX(backup_table, PRIMARY) */ 1 FROM backup_table WHERE Id = ? LIMIT 1' :
-                'SELECT 1 FROM backup_table WHERE Id = ? LIMIT 1';
-            
-            const result = this.queryOptimization.usePreparedStatements ?
-                await databaseManager.preparedQuery(sql, [id], true) :
-                await databaseManager.query(sql, [id]);
-            
+            const sql = 'SELECT 1 FROM check_table WHERE id = $1 LIMIT 1';
+
+            const result = await databaseManager.preparedQuery(sql, [id], true);
+
             const isDuplicate = result.length > 0;
-            
+
             // Cache the result
             if (this.queryOptimization.enableQueryCaching) {
                 this.cacheQueryResults([id], isDuplicate ? [id] : []);
                 this.metrics.cacheMisses++;
             }
-            
+
             // Update metrics
             this.metrics.totalChecks++;
             if (isDuplicate) {
                 this.metrics.duplicatesFound++;
             }
 
-            this.logOperation('single_id_check_success', { 
-                operationId, 
-                id, 
+            this.logOperation('single_id_check_success', {
+                operationId,
+                id,
                 isDuplicate,
                 usedCache: false
             });
@@ -820,7 +816,7 @@ class DuplicateDetectionService {
 
         } catch (error) {
             this.updateErrorStats('single_id_check_error', error);
-            
+
             this.logOperation('single_id_check_error', {
                 operationId,
                 id,
@@ -834,7 +830,7 @@ class DuplicateDetectionService {
                     id,
                     assumeNotDuplicate: true
                 });
-                
+
                 return false; // Assume not duplicate if we can't check
             }
 
@@ -850,7 +846,7 @@ class DuplicateDetectionService {
      */
     async filterNewRecords(records) {
         const operationId = this.generateOperationId();
-        
+
         try {
             this.logOperation('filter_new_records_start', {
                 operationId,
@@ -858,7 +854,7 @@ class DuplicateDetectionService {
             });
 
             const duplicateCheck = await this.checkForDuplicates(records);
-            
+
             this.logOperation('filter_new_records_success', {
                 operationId,
                 totalRecords: duplicateCheck.totalRecords,
@@ -870,7 +866,7 @@ class DuplicateDetectionService {
 
         } catch (error) {
             this.updateErrorStats('filter_records_error', error);
-            
+
             this.logOperation('filter_new_records_error', {
                 operationId,
                 error: error.message,
@@ -882,7 +878,7 @@ class DuplicateDetectionService {
                     operationId,
                     message: 'Returning all records as new due to filtering error'
                 });
-                
+
                 return records || [];
             }
 
@@ -892,14 +888,14 @@ class DuplicateDetectionService {
     }
 
     /**
-     * Batch check for existing IDs in backup_table using SQL IN query with error handling
+     * Batch check for existing IDs in check_table using SQL IN query with error handling
      * @param {Array} ids - Array of IDs to check
      * @returns {Promise<Array>} Array of existing IDs
      */
     async batchCheckExistingIds(ids) {
         const operationId = this.generateOperationId();
         const startTime = Date.now();
-        
+
         try {
             if (!Array.isArray(ids) || ids.length === 0) {
                 this.logOperation('batch_check_empty_input', { operationId });
@@ -908,11 +904,11 @@ class DuplicateDetectionService {
 
             // Remove null/undefined IDs and ensure uniqueness
             const validIds = [...new Set(ids.filter(id => id != null))];
-            
+
             if (validIds.length === 0) {
-                this.logOperation('batch_check_no_valid_ids', { 
-                    operationId, 
-                    originalCount: ids.length 
+                this.logOperation('batch_check_no_valid_ids', {
+                    operationId,
+                    originalCount: ids.length
                 });
                 return [];
             }
@@ -926,22 +922,22 @@ class DuplicateDetectionService {
             // Process in batches for large datasets
             const allExistingIds = [];
             const batchCount = Math.ceil(validIds.length / this.batchSize);
-            
+
             for (let i = 0; i < validIds.length; i += this.batchSize) {
                 const batchNumber = Math.floor(i / this.batchSize) + 1;
                 const batch = validIds.slice(i, i + this.batchSize);
-                
+
                 try {
                     const batchExistingIds = await this.checkBatchIds(batch);
                     allExistingIds.push(...batchExistingIds);
-                    
+
                     this.logOperation('batch_check_batch_success', {
                         operationId,
                         batchNumber,
                         batchSize: batch.length,
                         duplicatesFound: batchExistingIds.length
                     });
-                    
+
                 } catch (batchError) {
                     this.logOperation('batch_check_batch_error', {
                         operationId,
@@ -949,7 +945,7 @@ class DuplicateDetectionService {
                         batchSize: batch.length,
                         error: batchError.message
                     });
-                    
+
                     // Continue with other batches, but log the error
                     this.updateErrorStats('batch_error', batchError);
                 }
@@ -957,7 +953,7 @@ class DuplicateDetectionService {
 
             const checkTime = Date.now() - startTime;
             this.metrics.batchChecks++;
-            
+
             this.logOperation('batch_check_success', {
                 operationId,
                 totalIds: validIds.length,
@@ -980,7 +976,7 @@ class DuplicateDetectionService {
         } catch (error) {
             const checkTime = Date.now() - startTime;
             this.updateErrorStats('batch_check_error', error);
-            
+
             this.logOperation('batch_check_error', {
                 operationId,
                 error: error.message,
@@ -994,14 +990,14 @@ class DuplicateDetectionService {
     }
 
     /**
-     * Check a single batch of IDs against backup_table with optimized queries and caching
+     * Check a single batch of IDs against check_table with optimized queries and caching
      * @param {Array} idBatch - Batch of IDs to check
      * @returns {Promise<Array>} Array of existing IDs from this batch
      */
     async checkBatchIds(idBatch) {
         const operationId = this.generateOperationId();
         const startTime = Date.now();
-        
+
         try {
             if (!Array.isArray(idBatch) || idBatch.length === 0) {
                 return [];
@@ -1020,7 +1016,7 @@ class DuplicateDetectionService {
             if (uncachedIds.length > 0) {
                 const dbExistingIds = await this.executeOptimizedBatchQuery(uncachedIds, operationId);
                 existingIds.push(...dbExistingIds);
-                
+
                 // Cache the results
                 this.cacheQueryResults(uncachedIds, dbExistingIds);
             }
@@ -1045,7 +1041,7 @@ class DuplicateDetectionService {
         } catch (error) {
             const queryTime = Date.now() - startTime;
             this.updateErrorStats('batch_query_error', error);
-            
+
             this.logOperation('check_batch_ids_error', {
                 operationId,
                 batchSize: idBatch.length,
@@ -1074,17 +1070,17 @@ class DuplicateDetectionService {
         // Process in optimized batches
         for (let i = 0; i < ids.length; i += optimizedBatchSize) {
             const batch = ids.slice(i, i + optimizedBatchSize);
-            
+
             // Create optimized SQL query with hints for large datasets
             const sql = this.buildOptimizedQuery(batch.length);
-            
+
             try {
                 const result = await databaseManager.preparedQuery(sql, batch, true);
-                const batchExistingIds = result.map(row => row.Id);
+                const batchExistingIds = result.map(row => row.id);
                 existingIds.push(...batchExistingIds);
-                
+
                 this.metrics.queryOptimizations++;
-                
+
             } catch (batchError) {
                 this.logOperation('optimized_batch_query_error', {
                     operationId,
@@ -1104,14 +1100,8 @@ class DuplicateDetectionService {
      * @returns {string} Optimized SQL query
      */
     buildOptimizedQuery(batchSize) {
-        const placeholders = Array(batchSize).fill('?').join(',');
-        
-        if (this.queryOptimization.enableQueryHints) {
-            // Add MySQL query hints for better performance on large datasets
-            return `SELECT /*+ USE_INDEX(backup_table, PRIMARY) */ Id FROM backup_table WHERE Id IN (${placeholders})`;
-        } else {
-            return `SELECT Id FROM backup_table WHERE Id IN (${placeholders})`;
-        }
+        const placeholders = Array.from({ length: batchSize }, (_, i) => `$${i + 1}`).join(',');
+        return `SELECT id FROM check_table WHERE id IN (${placeholders})`;
     }
 
     /**
@@ -1126,13 +1116,13 @@ class DuplicateDetectionService {
 
         // Adjust batch size based on average query time and dataset size
         const avgQueryTime = this.metrics.averageCheckTime;
-        
+
         if (avgQueryTime > 5000) { // If queries are slow (>5s), use smaller batches
             return Math.min(500, this.batchSize);
         } else if (avgQueryTime < 1000 && totalIds > 5000) { // If queries are fast and dataset is large, use larger batches
             return Math.min(2000, this.batchSize * 2);
         }
-        
+
         return this.batchSize;
     }
 
@@ -1152,7 +1142,7 @@ class DuplicateDetectionService {
 
         for (const id of ids) {
             const cached = this.queryCache.get(id);
-            
+
             if (cached && (now - cached.timestamp) < this.cacheTimeout) {
                 if (cached.isDuplicate) {
                     cachedIds.push(id);
@@ -1234,7 +1224,7 @@ class DuplicateDetectionService {
 
             // Get existing record details in batches
             const allDetails = [];
-            
+
             for (let i = 0; i < validIds.length; i += this.batchSize) {
                 const batch = validIds.slice(i, i + this.batchSize);
                 const batchDetails = await this.getBatchRecordDetails(batch);
@@ -1260,22 +1250,18 @@ class DuplicateDetectionService {
                 return [];
             }
 
-            const placeholders = idBatch.map(() => '?').join(',');
+            const placeholders = idBatch.map((_, i) => `$${i + 1}`).join(',');
             const sql = `
-                SELECT Id, Phone, source_file, extracted_metadata, created_at 
-                FROM backup_table 
-                WHERE Id IN (${placeholders})
+                SELECT id, phone, created_at
+                FROM check_table
+                WHERE id IN (${placeholders})
             `;
-            
+
             const result = await databaseManager.query(sql, idBatch);
-            
-            // Parse metadata if it exists
+
             return result.map(row => ({
-                id: row.Id,
-                phone: row.Phone,
-                sourceFile: row.source_file,
-                extractedMetadata: row.extracted_metadata ? 
-                    this.safeParseJSON(row.extracted_metadata) : null,
+                id: row.id,
+                phone: row.phone,
                 createdAt: row.created_at
             }));
 
@@ -1307,10 +1293,10 @@ class DuplicateDetectionService {
      */
     updateMetrics(totalRecords, duplicatesFound, checkTime) {
         const previousMetrics = { ...this.metrics };
-        
+
         this.metrics.totalChecks += totalRecords;
         this.metrics.duplicatesFound += duplicatesFound;
-        
+
         // Update average check time
         const totalTime = this.metrics.averageCheckTime * (this.metrics.batchChecks || 1) + checkTime;
         this.metrics.batchChecks = (this.metrics.batchChecks || 0) + 1;
@@ -1370,10 +1356,10 @@ class DuplicateDetectionService {
     getMetrics() {
         const totalCacheRequests = this.metrics.cacheHits + this.metrics.cacheMisses;
         const cacheHitRate = totalCacheRequests > 0 ? (this.metrics.cacheHits / totalCacheRequests) * 100 : 0;
-        
+
         return {
             ...this.metrics,
-            duplicateRate: this.metrics.totalChecks > 0 ? 
+            duplicateRate: this.metrics.totalChecks > 0 ?
                 (this.metrics.duplicatesFound / this.metrics.totalChecks) * 100 : 0,
             averageCheckTimeMs: Math.round(this.metrics.averageCheckTime * 100) / 100,
             cacheHitRate: Math.round(cacheHitRate * 100) / 100,
@@ -1383,8 +1369,8 @@ class DuplicateDetectionService {
     }
 
     /**
-     * Optimize duplicate detection queries for large backup_table datasets
-     * @param {number} estimatedTableSize - Estimated size of backup_table
+     * Optimize duplicate detection queries for large check_table datasets
+     * @param {number} estimatedTableSize - Estimated size of check_table
      * @returns {Promise<Object>} Optimization results
      */
     async optimizeForLargeDataset(estimatedTableSize = null) {
@@ -1398,12 +1384,8 @@ class DuplicateDetectionService {
         try {
             // Get actual table size if not provided
             if (!estimatedTableSize) {
-                const tableStats = await databaseManager.query(`
-                    SELECT table_rows as row_count
-                    FROM information_schema.tables 
-                    WHERE table_schema = DATABASE() AND table_name = 'backup_table'
-                `);
-                estimatedTableSize = tableStats[0]?.row_count || 0;
+                const tableStats = await databaseManager.getCheckRecordsCount();
+                estimatedTableSize = tableStats;
                 optimization.estimatedTableSize = estimatedTableSize;
             }
 
@@ -1414,38 +1396,31 @@ class DuplicateDetectionService {
                 this.queryOptimization.enableQueryCaching = true;
                 this.queryOptimization.optimizeBatchSize = true;
                 this.queryOptimization.usePreparedStatements = true;
-                this.queryOptimization.enableQueryHints = true;
-                
+
                 // Increase cache size for large datasets
                 this.maxCacheSize = 50000;
                 this.cacheTimeout = 600000; // 10 minutes for large datasets
-                
+
                 // Optimize batch size for large datasets
                 this.batchSize = 500; // Smaller batches for better performance
-                
+
                 optimization.applied.push('large_dataset_optimizations');
                 optimization.recommendations.push('Consider creating additional indexes on frequently queried columns');
-                
+
             } else if (estimatedTableSize > 100000) { // Medium dataset (>100K records)
                 this.queryOptimization.enableQueryCaching = true;
                 this.queryOptimization.optimizeBatchSize = true;
                 this.queryOptimization.usePreparedStatements = true;
-                
+
                 this.maxCacheSize = 20000;
                 this.batchSize = 1000;
-                
+
                 optimization.applied.push('medium_dataset_optimizations');
-                
+
             } else { // Small dataset (<100K records)
                 // Minimal optimizations for small datasets
                 this.queryOptimization.usePreparedStatements = true;
                 optimization.applied.push('small_dataset_optimizations');
-            }
-
-            // Create optimized indexes if needed
-            const indexResult = await this.createOptimizedIndexes();
-            if (indexResult.created > 0) {
-                optimization.applied.push(`created_${indexResult.created}_indexes`);
             }
 
             this.logOperation('duplicate_detection_optimized', {
@@ -1464,54 +1439,6 @@ class DuplicateDetectionService {
         }
 
         return optimization;
-    }
-
-    /**
-     * Create optimized indexes for duplicate detection performance
-     * @returns {Promise<Object>} Index creation results
-     */
-    async createOptimizedIndexes() {
-        const result = { created: 0, existing: 0, failed: 0, details: [] };
-
-        const indexes = [
-            {
-                name: 'idx_backup_id_optimized',
-                sql: 'CREATE INDEX IF NOT EXISTS idx_backup_id_optimized ON backup_table (Id) USING BTREE'
-            },
-            {
-                name: 'idx_backup_id_phone_composite',
-                sql: 'CREATE INDEX IF NOT EXISTS idx_backup_id_phone_composite ON backup_table (Id, Phone) USING BTREE'
-            }
-        ];
-
-        for (const index of indexes) {
-            try {
-                await databaseManager.query(index.sql);
-                result.created++;
-                result.details.push({ name: index.name, status: 'created' });
-                
-                this.logOperation('index_created', {
-                    indexName: index.name,
-                    table: 'backup_table'
-                });
-                
-            } catch (error) {
-                if (error.code === 'ER_DUP_KEYNAME') {
-                    result.existing++;
-                    result.details.push({ name: index.name, status: 'exists' });
-                } else {
-                    result.failed++;
-                    result.details.push({ name: index.name, status: 'failed', error: error.message });
-                    
-                    this.logOperation('index_creation_failed', {
-                        indexName: index.name,
-                        error: error.message
-                    });
-                }
-            }
-        }
-
-        return result;
     }
 
     /**
@@ -1539,13 +1466,13 @@ class DuplicateDetectionService {
                 const existingIds = await this.executeOptimizedBatchQuery(frequentIds, 'cache_preload');
                 this.cacheQueryResults(frequentIds, existingIds);
                 caching.preloadedIds = frequentIds.length;
-                
+
                 this.logOperation('cache_preloaded', {
                     preloadedIds: frequentIds.length,
                     existingIds: existingIds.length,
                     cacheSize: this.queryCache.size
                 });
-                
+
             } catch (error) {
                 caching.error = `Failed to preload cache: ${error.message}`;
                 this.logOperation('cache_preload_error', {
@@ -1564,7 +1491,7 @@ class DuplicateDetectionService {
     clearQueryCache() {
         const previousSize = this.queryCache.size;
         this.queryCache.clear();
-        
+
         this.logOperation('query_cache_cleared', {
             previousSize,
             newSize: this.queryCache.size
@@ -1577,7 +1504,7 @@ class DuplicateDetectionService {
      */
     configureQueryOptimization(optimizationConfig) {
         const previousConfig = { ...this.queryOptimization };
-        
+
         this.queryOptimization = {
             ...this.queryOptimization,
             ...optimizationConfig
@@ -1613,7 +1540,7 @@ class DuplicateDetectionService {
 
         // Check for required ID field (either 'id' or 'Id')
         const hasId = record.id != null || record.Id != null;
-        
+
         // Check for phone number field
         const hasPhone = record.phoneNumber != null || record.Phone != null;
 
@@ -1640,7 +1567,7 @@ class DuplicateDetectionService {
 
         for (let i = 0; i < records.length; i++) {
             const record = records[i];
-            
+
             if (this.validateRecordStructure(record)) {
                 valid.push(record);
             } else {
@@ -1661,7 +1588,7 @@ class DuplicateDetectionService {
     async generateDuplicateReport(duplicates, sourceFile = null, existingRecordDetails = null) {
         const operationId = this.generateOperationId();
         const startTime = Date.now();
-        
+
         try {
             this.logOperation('duplicate_report_generation_start', {
                 operationId,
@@ -1671,7 +1598,7 @@ class DuplicateDetectionService {
             });
 
             const timestamp = new Date().toISOString();
-            
+
             // Get existing record details if not provided
             let existingDetails = existingRecordDetails;
             if (!existingDetails && duplicates.length > 0) {
@@ -1682,7 +1609,7 @@ class DuplicateDetectionService {
 
                 const duplicateIds = duplicates.map(d => d.id || d.Id);
                 existingDetails = await this.getExistingRecordDetails(duplicateIds);
-                
+
                 this.logOperation('duplicate_report_existing_details_fetched', {
                     operationId,
                     existingDetailsCount: existingDetails?.length || 0
@@ -1701,17 +1628,16 @@ class DuplicateDetectionService {
             const duplicateEntries = duplicates.map(duplicate => {
                 const duplicateId = duplicate.id || duplicate.Id;
                 const existingRecord = existingDetailsMap.get(duplicateId);
-                
+
                 // Create audit trail for each duplicate decision
                 this.createAuditTrail({
                     type: 'duplicate_detected',
                     recordId: duplicateId,
                     sourceFile: sourceFile,
                     action: 'skip_duplicate',
-                    reason: 'record_already_exists_in_backup_table',
+                    reason: 'record_already_exists_in_check_table',
                     metadata: {
                         phone: duplicate.phoneNumber || duplicate.Phone,
-                        existingSourceFile: existingRecord?.sourceFile,
                         existingCreatedAt: existingRecord?.createdAt
                     }
                 });
@@ -1722,9 +1648,7 @@ class DuplicateDetectionService {
                     sourceFile: sourceFile,
                     attemptedTimestamp: timestamp,
                     existingRecord: existingRecord ? {
-                        sourceFile: existingRecord.sourceFile,
-                        createdAt: existingRecord.createdAt,
-                        extractedMetadata: existingRecord.extractedMetadata
+                        createdAt: existingRecord.createdAt
                     } : null,
                     metadata: duplicate.metadata || null
                 };
@@ -1732,7 +1656,6 @@ class DuplicateDetectionService {
 
             // Calculate statistics
             const totalDuplicates = duplicates.length;
-            const duplicatesBySourceFile = this.groupDuplicatesBySourceFile(duplicateEntries);
             const phoneNumberFrequency = this.calculatePhoneFrequency(duplicateEntries);
 
             const report = {
@@ -1742,8 +1665,6 @@ class DuplicateDetectionService {
                 summary: {
                     totalDuplicates,
                     uniquePhoneNumbers: new Set(duplicateEntries.map(d => d.phone)).size,
-                    duplicatesBySourceFile,
-                    averageDuplicatesPerFile: this.calculateAverageDuplicatesPerFile(duplicatesBySourceFile)
                 },
                 duplicateEntries,
                 phoneNumberFrequency,
@@ -1766,7 +1687,6 @@ class DuplicateDetectionService {
                 sourceFile,
                 duplicateCount: totalDuplicates,
                 uniquePhoneNumbers: report.summary.uniquePhoneNumbers,
-                sourceFilesInvolved: Object.keys(duplicatesBySourceFile).length,
                 generationTime: report.processingMetadata.generationTime
             });
 
@@ -1775,7 +1695,7 @@ class DuplicateDetectionService {
         } catch (error) {
             const generationTime = Date.now() - startTime;
             this.updateErrorStats('report_generation_error', error);
-            
+
             this.logOperation('duplicate_report_generation_error', {
                 operationId,
                 error: error.message,
@@ -1797,7 +1717,7 @@ class DuplicateDetectionService {
      */
     logDuplicateEntry(duplicateRecord, sourceFile = null, existingRecord = null) {
         const operationId = this.generateOperationId();
-        
+
         try {
             const timestamp = new Date().toISOString();
             const duplicateId = duplicateRecord.id || duplicateRecord.Id;
@@ -1813,9 +1733,7 @@ class DuplicateDetectionService {
                 phone,
                 sourceFile,
                 existingRecord: existingRecord ? {
-                    sourceFile: existingRecord.sourceFile,
-                    createdAt: existingRecord.createdAt,
-                    extractedMetadata: existingRecord.extractedMetadata
+                    createdAt: existingRecord.createdAt
                 } : null,
                 metadata: duplicateRecord.metadata || null,
                 processingContext: {
@@ -1831,9 +1749,8 @@ class DuplicateDetectionService {
                 duplicateId,
                 phone,
                 sourceFile,
-                existingSourceFile: existingRecord?.sourceFile,
                 existingCreatedAt: existingRecord?.createdAt,
-                hasMetadata: !!(duplicateRecord.metadata || existingRecord?.extractedMetadata)
+                hasMetadata: !!(duplicateRecord.metadata)
             });
 
             // Create detailed audit trail
@@ -1846,7 +1763,6 @@ class DuplicateDetectionService {
                 metadata: {
                     phone,
                     existingRecord: existingRecord ? {
-                        sourceFile: existingRecord.sourceFile,
                         createdAt: existingRecord.createdAt
                     } : null,
                     recordMetadata: duplicateRecord.metadata
@@ -1855,11 +1771,11 @@ class DuplicateDetectionService {
 
             // Enhanced console logging with more context
             console.log(`[DUPLICATE_ENTRY] ${timestamp} - ID: ${duplicateId}, Phone: ${phone}, Source: ${sourceFile || 'unknown'}`);
-            
+
             if (existingRecord) {
                 console.log(`  - Originally from: ${existingRecord.sourceFile || 'unknown'} at ${existingRecord.createdAt || 'unknown time'}`);
             }
-            
+
             if (duplicateRecord.metadata) {
                 console.log(`  - Record metadata: ${JSON.stringify(duplicateRecord.metadata)}`);
             }
@@ -1880,7 +1796,7 @@ class DuplicateDetectionService {
 
         } catch (error) {
             this.updateErrorStats('duplicate_entry_logging_error', error);
-            
+
             this.logOperation('duplicate_entry_logging_error', {
                 operationId,
                 error: error.message,
@@ -1966,40 +1882,13 @@ class DuplicateDetectionService {
     }
 
     /**
-     * Group duplicates by source file for analysis
-     * @param {Array} duplicateEntries - Array of duplicate entries
-     * @returns {Object} Duplicates grouped by source file
-     */
-    groupDuplicatesBySourceFile(duplicateEntries) {
-        const grouped = {};
-        
-        for (const entry of duplicateEntries) {
-            const sourceFile = entry.existingRecord?.sourceFile || 'unknown';
-            
-            if (!grouped[sourceFile]) {
-                grouped[sourceFile] = {
-                    count: 0,
-                    duplicateIds: [],
-                    phoneNumbers: []
-                };
-            }
-            
-            grouped[sourceFile].count++;
-            grouped[sourceFile].duplicateIds.push(entry.id);
-            grouped[sourceFile].phoneNumbers.push(entry.phone);
-        }
-
-        return grouped;
-    }
-
-    /**
      * Calculate phone number frequency in duplicates
      * @param {Array} duplicateEntries - Array of duplicate entries
      * @returns {Object} Phone number frequency map
      */
     calculatePhoneFrequency(duplicateEntries) {
         const frequency = {};
-        
+
         for (const entry of duplicateEntries) {
             const phone = entry.phone;
             frequency[phone] = (frequency[phone] || 0) + 1;
@@ -2007,7 +1896,7 @@ class DuplicateDetectionService {
 
         // Sort by frequency (descending)
         const sortedFrequency = Object.entries(frequency)
-            .sort(([,a], [,b]) => b - a)
+            .sort(([, a], [, b]) => b - a)
             .reduce((obj, [phone, count]) => {
                 obj[phone] = count;
                 return obj;
@@ -2023,7 +1912,7 @@ class DuplicateDetectionService {
      */
     calculateAverageDuplicatesPerFile(duplicatesBySourceFile) {
         const sourceFiles = Object.keys(duplicatesBySourceFile);
-        
+
         if (sourceFiles.length === 0) {
             return 0;
         }
@@ -2042,7 +1931,7 @@ class DuplicateDetectionService {
      */
     generateRecommendations(duplicateEntries) {
         const recommendations = [];
-        
+
         if (duplicateEntries.length === 0) {
             recommendations.push('No duplicates found. All records are new.');
             return recommendations;
@@ -2084,7 +1973,7 @@ class DuplicateDetectionService {
     storeDuplicateLogEntry(logEntry) {
         // This method can be extended to integrate with external logging systems
         // For now, we'll store in memory for potential retrieval
-        
+
         if (!this.duplicateLogEntries) {
             this.duplicateLogEntries = [];
         }
@@ -2106,7 +1995,7 @@ class DuplicateDetectionService {
         try {
             const summary = report.summary;
             const metadata = report.processingMetadata;
-            
+
             // Main report log
             this.logOperation('duplicate_report_generated', {
                 operationId,
@@ -2146,14 +2035,14 @@ class DuplicateDetectionService {
                     operationId,
                     sourceFile: report.sourceFile,
                     duplicateCount: summary.totalDuplicates,
-                    duplicatePercentage: report.duplicateEntries.length > 0 ? 
+                    duplicatePercentage: report.duplicateEntries.length > 0 ?
                         (summary.totalDuplicates / report.duplicateEntries.length) * 100 : 0
                 });
             }
 
             // Console logging with enhanced format
             console.log(`[DUPLICATE_REPORT] ${report.timestamp} - Generated for ${report.sourceFile || 'unknown source'}: ${summary.totalDuplicates} duplicates found`);
-            
+
             if (summary.totalDuplicates > 0) {
                 console.log(`  - Unique phone numbers: ${summary.uniquePhoneNumbers}`);
                 console.log(`  - Source files involved: ${Object.keys(summary.duplicatesBySourceFile).length}`);
@@ -2222,7 +2111,7 @@ class DuplicateDetectionService {
         for (let i = 0; i < records.length; i++) {
             const record = records[i];
             const recordId = record.id || record.Id;
-            
+
             if (recordId && typeof recordId === 'string' && recordId.trim().length > 0) {
                 validIds.push(recordId.trim());
             } else {
@@ -2316,7 +2205,7 @@ class DuplicateDetectionService {
         if (this.errorHandling.fallbackEnabled) {
             try {
                 this.logOperation('duplicate_detection_fallback_start', { operationId });
-                
+
                 const fallbackResult = await this.fallbackDuplicateDetection(recordIds, operationId);
                 result.duplicateIds = fallbackResult.duplicateIds;
                 result.errorHandling.fallbackUsed = true;
@@ -2337,7 +2226,7 @@ class DuplicateDetectionService {
                     operationId,
                     error: fallbackError.message
                 });
-                
+
                 result.errorHandling.errors.push({
                     type: 'fallback_failure',
                     error: fallbackError.message,
@@ -2355,9 +2244,9 @@ class DuplicateDetectionService {
 
             result.errorHandling.gracefulDegradation = true;
             result.duplicateIds = [];
-            
+
             this.updateErrorStats('graceful_degradation', lastError);
-            
+
             return result;
         }
 
@@ -2381,13 +2270,13 @@ class DuplicateDetectionService {
         // Fallback 1: Individual ID checking
         try {
             this.logOperation('fallback_individual_queries', { operationId });
-            
+
             const duplicates = [];
             const batchSize = 10; // Smaller batches for fallback
-            
+
             for (let i = 0; i < recordIds.length; i += batchSize) {
                 const batch = recordIds.slice(i, i + batchSize);
-                
+
                 for (const id of batch) {
                     try {
                         const isDuplicate = await this.isDuplicateId(id);
@@ -2402,13 +2291,13 @@ class DuplicateDetectionService {
                         });
                     }
                 }
-                
+
                 // Small delay between batches to avoid overwhelming the database
                 if (i + batchSize < recordIds.length) {
                     await this.delay(100);
                 }
             }
-            
+
             fallbackResult.duplicateIds = duplicates;
             fallbackResult.method = 'individual_queries';
             return fallbackResult;
@@ -2423,21 +2312,21 @@ class DuplicateDetectionService {
         // Fallback 2: Use database manager's fallback method
         try {
             this.logOperation('fallback_database_manager', { operationId });
-            
+
             const dbFallbackResult = await databaseManager.fallbackDuplicateDetection(recordIds, {
                 useIndividualQueries: true,
                 useCachedResults: true,
                 maxRetries: 2,
                 retryDelay: 500
             });
-            
+
             fallbackResult.duplicateIds = dbFallbackResult.duplicateIds;
             fallbackResult.method = dbFallbackResult.method;
             fallbackResult.errors.push(...dbFallbackResult.errors.map(err => ({
                 type: 'database_manager_fallback',
                 error: err
             })));
-            
+
             return fallbackResult;
 
         } catch (dbFallbackError) {
@@ -2515,27 +2404,29 @@ class DuplicateDetectionService {
      */
     createDuplicateErrorMessage(error, recordCount) {
         const baseMessage = `Duplicate detection failed for ${recordCount} records`;
-        
+
         if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
             return `${baseMessage}: Database connection unavailable. Please check database connectivity.`;
         }
-        
-        if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+
+        // PostgreSQL error codes (removed MySQL-specific codes)
+        if (error.code === '28000' || error.code === '28P01') {
             return `${baseMessage}: Database access denied. Please check database permissions.`;
         }
-        
-        if (error.code === 'ETIMEDOUT' || error.code === 'ER_LOCK_WAIT_TIMEOUT') {
+
+        if (error.code === 'ETIMEDOUT' || error.code === '57014') {
             return `${baseMessage}: Database operation timed out. The system may be under heavy load.`;
         }
-        
-        if (error.message.includes('backup_table')) {
-            return `${baseMessage}: Unable to access backup table for duplicate checking.`;
+
+        // Note: backup_table is not used in PostgreSQL schema
+        if (error.message.includes('check_table')) {
+            return `${baseMessage}: Unable to access check table for duplicate checking.`;
         }
-        
+
         if (error.message.includes('memory') || error.message.includes('Memory')) {
             return `${baseMessage}: Insufficient memory for duplicate detection. Consider processing smaller batches.`;
         }
-        
+
         return `${baseMessage}: ${error.message}`;
     }
 
@@ -2546,7 +2437,7 @@ class DuplicateDetectionService {
      */
     updateErrorStats(errorType, error) {
         this.errorStats.lastErrorTimestamp = new Date().toISOString();
-        
+
         switch (errorType) {
             case 'query_failure':
                 this.errorStats.queryFailures++;
@@ -2558,7 +2449,7 @@ class DuplicateDetectionService {
                 this.errorStats.gracefulDegradations++;
                 break;
         }
-        
+
         const errorKey = error.code || error.constructor.name || 'unknown';
         this.errorStats.errorTypes[errorKey] = (this.errorStats.errorTypes[errorKey] || 0) + 1;
     }
@@ -2579,9 +2470,9 @@ class DuplicateDetectionService {
     getErrorStats() {
         return {
             ...this.errorStats,
-            errorRate: this.metrics.batchChecks > 0 ? 
+            errorRate: this.metrics.batchChecks > 0 ?
                 (this.errorStats.queryFailures / this.metrics.batchChecks) * 100 : 0,
-            fallbackRate: this.metrics.batchChecks > 0 ? 
+            fallbackRate: this.metrics.batchChecks > 0 ?
                 (this.errorStats.fallbacksUsed / this.metrics.batchChecks) * 100 : 0
         };
     }
@@ -2656,13 +2547,13 @@ class DuplicateDetectionService {
             'duplicate_query_error',
             'duplicate_detection_fallback_failed'
         ];
-        
+
         const warnOperations = [
             'invalid_records_detected',
             'duplicate_detection_fallback_start',
             'duplicate_detection_graceful_degradation'
         ];
-        
+
         const debugOperations = [
             'duplicate_detection_start',
             'duplicate_query_attempt',
@@ -2890,7 +2781,7 @@ class DuplicateDetectionService {
     generateMonitoringReport() {
         const timestamp = new Date().toISOString();
         const operationId = this.generateOperationId();
-        
+
         const report = {
             timestamp,
             operationId,
@@ -2929,7 +2820,7 @@ class DuplicateDetectionService {
     assessHealthStatus() {
         const metrics = this.getMetrics();
         const errorStats = this.getErrorStats();
-        
+
         const health = {
             overall: 'healthy',
             performance: 'good',
@@ -3045,7 +2936,7 @@ class DuplicateDetectionService {
     logDuplicateTrends(customStats = {}) {
         const operationId = this.generateOperationId();
         const timestamp = new Date().toISOString();
-        
+
         const trendData = {
             timestamp,
             operationId,
@@ -3054,7 +2945,7 @@ class DuplicateDetectionService {
             healthStatus: this.assessHealthStatus(),
             customStatistics: customStats,
             trends: {
-                duplicateRate: this.metrics.totalChecks > 0 ? 
+                duplicateRate: this.metrics.totalChecks > 0 ?
                     (this.metrics.duplicatesFound / this.metrics.totalChecks) * 100 : 0,
                 averageProcessingTime: this.metrics.averageCheckTimeMs,
                 errorTrend: this.errorStats.errorRate,
@@ -3078,11 +2969,11 @@ class DuplicateDetectionService {
         console.log(`  - Average Processing Time: ${trendData.trends.averageProcessingTime}ms`);
         console.log(`  - Error Rate: ${trendData.trends.errorTrend.toFixed(2)}%`);
         console.log(`  - Health Status: ${trendData.healthStatus.overall}`);
-        
+
         if (trendData.healthStatus.issues.length > 0) {
             console.warn(`  - Issues: ${trendData.healthStatus.issues.join(', ')}`);
         }
-        
+
         if (trendData.healthStatus.warnings.length > 0) {
             console.warn(`  - Warnings: ${trendData.healthStatus.warnings.join(', ')}`);
         }

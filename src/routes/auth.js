@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => {
 
     try {
         // Check if user already exists
-        const existingUsers = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+        const existingUsers = await db.query('SELECT id FROM users WHERE email = $1', [email]);
 
         if (existingUsers.length > 0) {
             return res.status(400).render('html/register', { error: 'Email already registered' });
@@ -44,18 +44,27 @@ router.post('/register', async (req, res) => {
         const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Insert user
+        // Insert user (PostgreSQL RETURNING clause)
         const result = await db.query(
-            'INSERT INTO users (name, email, password, status) VALUES (?, ?, ?, ?)',
+            'INSERT INTO users (name, email, password, status) VALUES ($1, $2, $3, $4) RETURNING id',
             [name, email, hashedPassword, 'active']
         );
 
         // Create session
-        req.session.userId = result.insertId;
+        req.session.userId = result[0].id;
         req.session.userEmail = email;
         req.session.userName = name;
 
-        return res.redirect('/');
+        // Save session explicitly and wait for it
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error during registration:', err);
+                return res.status(500).render('html/register', { error: 'Registration successful but login failed. Please try logging in.' });
+            }
+
+            console.log('User registered successfully:', { userId: result[0].id, email, sessionID: req.sessionID });
+            return res.redirect('/');
+        });
     } catch (error) {
         console.error('Registration error:', error);
         return res.status(500).render('html/register', { error: 'Registration failed. Please try again.' });
@@ -80,7 +89,7 @@ router.post('/login', async (req, res) => {
     try {
         // Get user from database
         const users = await db.query(
-            'SELECT id, name, email, password, status FROM users WHERE email = ?',
+            'SELECT id, name, email, password, status FROM users WHERE email = $1',
             [email]
         );
 
@@ -101,7 +110,7 @@ router.post('/login', async (req, res) => {
         if (!passwordMatch) {
             // Log failed login attempt
             await db.query(
-                'INSERT INTO user_logins (user_id, ip_address, device, result) VALUES (?, ?, ?, ?)',
+                'INSERT INTO user_logins (user_id, ip_address, device, result) VALUES ($1, $2, $3, $4)',
                 [user.id, req.ip, req.headers['user-agent'] || 'Unknown', 'failed']
             );
 
@@ -115,17 +124,26 @@ router.post('/login', async (req, res) => {
 
         // Update last seen
         await db.query(
-            'UPDATE users SET last_seen = NOW(), ip_address = ?, device = ? WHERE id = ?',
+            'UPDATE users SET last_seen = NOW(), ip_address = $1, device = $2 WHERE id = $3',
             [req.ip, req.headers['user-agent'] || 'Unknown', user.id]
         );
 
         // Log successful login
         await db.query(
-            'INSERT INTO user_logins (user_id, ip_address, device, result) VALUES (?, ?, ?, ?)',
+            'INSERT INTO user_logins (user_id, ip_address, device, result) VALUES ($1, $2, $3, $4)',
             [user.id, req.ip, req.headers['user-agent'] || 'Unknown', 'success']
         );
 
-        return res.redirect('/');
+        // Save session explicitly and wait for it
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error during login:', err);
+                return res.status(500).render('html/login', { error: 'Login successful but session failed. Please try again.' });
+            }
+
+            console.log('User logged in successfully:', { userId: user.id, email: user.email, sessionID: req.sessionID });
+            return res.redirect('/');
+        });
     } catch (error) {
         console.error('Login error:', error);
         return res.status(500).render('html/login', { error: 'Login failed. Please try again.' });
