@@ -18,6 +18,11 @@ const upload = multer({ storage: multer.memoryStorage() })
 const excelProcessor = new ExcelProcessor()
 const excelExporter = new ExcelExporter()
 
+// Trust proxy for production (required for secure cookies behind reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1)
+}
+
 // Middleware
 app.use(express.json({ limit: '5mb' }))
 app.use(express.urlencoded({ extended: true }))
@@ -37,9 +42,28 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        maxAge: parseInt(process.env.SESSION_TIMEOUT) || 86400000 // 24 hours
-    }
+        maxAge: parseInt(process.env.SESSION_TIMEOUT) || 86400000, // 24 hours
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax'
+    },
+    proxy: process.env.NODE_ENV === 'production' // Trust proxy in production
 }))
+
+// Debug session middleware (only in production for troubleshooting)
+if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+        console.log('Session Debug:', {
+            path: req.path,
+            method: req.method,
+            sessionID: req.sessionID,
+            hasSession: !!req.session,
+            userId: req.session?.userId,
+            cookies: Object.keys(req.cookies || {}),
+            secure: req.secure,
+            protocol: req.protocol
+        });
+        next();
+    });
+}
 
 // View engine: EJS (.ejs templates) under /public
 app.set('views', path.join(__dirname, '../public'))

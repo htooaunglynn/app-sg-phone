@@ -55,7 +55,16 @@ router.post('/register', async (req, res) => {
         req.session.userEmail = email;
         req.session.userName = name;
 
-        return res.redirect('/');
+        // Save session explicitly and wait for it
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error during registration:', err);
+                return res.status(500).render('html/register', { error: 'Registration successful but login failed. Please try logging in.' });
+            }
+
+            console.log('User registered successfully:', { userId: result[0].id, email, sessionID: req.sessionID });
+            return res.redirect('/');
+        });
     } catch (error) {
         console.error('Registration error:', error);
         return res.status(500).render('html/register', { error: 'Registration failed. Please try again.' });
@@ -125,7 +134,16 @@ router.post('/login', async (req, res) => {
             [user.id, req.ip, req.headers['user-agent'] || 'Unknown', 'success']
         );
 
-        return res.redirect('/');
+        // Save session explicitly and wait for it
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error during login:', err);
+                return res.status(500).render('html/login', { error: 'Login successful but session failed. Please try again.' });
+            }
+
+            console.log('User logged in successfully:', { userId: user.id, email: user.email, sessionID: req.sessionID });
+            return res.redirect('/');
+        });
     } catch (error) {
         console.error('Login error:', error);
         return res.status(500).render('html/login', { error: 'Login failed. Please try again.' });
