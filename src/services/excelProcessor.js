@@ -647,290 +647,6 @@ class ExcelProcessor {
     }
 
     /**
-     * Store extracted phone records to backup table with Excel-specific metadata and duplicate handling
-     * @param {Array} phoneRecords - Extracted and validated phone records
-     * @param {string} sourceFile - Original Excel filename
-     * @returns {Promise<Object>} Storage result with statistics including duplicate information
-     */
-    async storeToBackupTable(phoneRecords, sourceFile = null) {
-        const storageResult = {
-            success: false,
-            totalRecords: phoneRecords.length,
-            storedRecords: 0,
-            skippedRecords: 0,
-            duplicatesSkipped: 0,
-            updatedRecords: 0,
-            storedRecordIds: [],
-            duplicateIds: [],
-            updatedRecordIds: [],
-            errors: [],
-            batchResults: [],
-            duplicateReport: null
-        };
-
-        try {
-            if (!Array.isArray(phoneRecords) || phoneRecords.length === 0) {
-                throw new Error('No phone records provided for storage');
-            }
-
-            console.log(`Processing ${phoneRecords.length} records with duplicate detection enabled`);
-
-            // Step 1: Check for duplicates before processing batches
-            const duplicateCheckResult = await this.duplicateDetectionService.checkForDuplicates(phoneRecords);
-
-            console.log(`Duplicate detection completed: ${duplicateCheckResult.duplicateCount} duplicates found, ${duplicateCheckResult.newRecordCount} new records`);
-
-            // Step 2: Generate duplicate report if duplicates found
-            if (duplicateCheckResult.duplicates.length > 0) {
-                storageResult.duplicateReport = await this.duplicateDetectionService.generateDuplicateReport(
-                    duplicateCheckResult.duplicates,
-                    sourceFile
-                );
-
-                // Log each duplicate entry
-                for (const duplicate of duplicateCheckResult.duplicates) {
-                    this.duplicateDetectionService.logDuplicateEntry(duplicate, sourceFile);
-                }
-            }
-
-            // Step 3: Update company data for duplicate records
-            const duplicates = duplicateCheckResult.duplicates;
-            let updateResult = null;
-
-            if (duplicates.length > 0) {
-                console.log(`Updating company data for ${duplicates.length} existing records`);
-                updateResult = await this.updateCompanyDataForDuplicates(duplicates, sourceFile);
-
-                // Add update results to storage result
-                storageResult.updatedRecords = updateResult.updatedRecords;
-                storageResult.updatedRecordIds = updateResult.updatedRecordIds;
-
-                if (updateResult.errors.length > 0) {
-                    storageResult.errors.push(...updateResult.errors);
-                }
-            }
-
-            // Step 4: Process only new records in batches
-            const newRecords = duplicateCheckResult.newRecords;
-            storageResult.duplicatesSkipped = duplicateCheckResult.duplicateCount;
-            storageResult.duplicateIds = duplicateCheckResult.duplicateIds;
-
-            if (newRecords.length > 0) {
-                console.log(`Storing ${newRecords.length} new records to backup table`);
-
-                // Use enhanced transaction handling for better reliability
-                const transactionResult = await databaseManager.insertWithRollbackProtection(
-                    newRecords,
-                    sourceFile,
-                    Math.min(this.batchSize, 100) // Use smaller batches for better rollback protection
-                );
-
-                storageResult.batchResults = transactionResult.batchResults;
-                storageResult.storedRecords = transactionResult.storedRecords;
-                storageResult.skippedRecords += transactionResult.duplicatesSkipped; // Additional duplicates caught at DB level
-                storageResult.updatedRecords += transactionResult.updatedRecords || 0; // Company data updates
-                storageResult.storedRecordIds = transactionResult.storedRecordIds;
-                storageResult.updatedRecordIds.push(...(transactionResult.updatedRecordIds || []));
-
-                // Handle any additional duplicates found during insertion
-                if (transactionResult.duplicateIds.length > 0) {
-                    storageResult.duplicatesSkipped += transactionResult.duplicatesSkipped;
-                    storageResult.duplicateIds.push(...transactionResult.duplicateIds);
-
-                    console.warn(`Additional ${transactionResult.duplicatesSkipped} duplicates found during database insertion`);
-                }
-
-                if (transactionResult.errors.length > 0) {
-                    storageResult.errors.push(...transactionResult.errors);
-                }
-            } else {
-                console.log('No new records to store - all records were duplicates');
-            }
-
-            // Update total skipped records to include duplicates
-            storageResult.skippedRecords += storageResult.duplicatesSkipped;
-
-            // Success if we processed records (even if all were duplicates)
-            storageResult.success = (storageResult.storedRecords + storageResult.skippedRecords) > 0;
-
-            // Update total updated records count
-            storageResult.updatedRecords = (updateResult ? updateResult.updatedRecords : 0) + (storageResult.updatedRecords || 0);
-
-            const updatedCount = storageResult.updatedRecords;
-            console.log(`Backup table storage completed: ${storageResult.storedRecords} stored, ${storageResult.duplicatesSkipped} duplicates skipped (${updatedCount} company data updated), ${storageResult.skippedRecords - storageResult.duplicatesSkipped} other skipped`);
-
-        } catch (error) {
-            console.error('Error storing to backup table with duplicate handling:', error.message);
-            storageResult.errors.push(`Storage error: ${error.message}`);
-        }
-
-        return storageResult;
-    }
-
-    /**
-     * Update company data for existing records (duplicates)
-     * @param {Array} duplicateRecords - Array of duplicate records with company data
-     * @param {string} sourceFile - Source Excel filename
-     * @returns {Promise<Object>} Update results
-     */
-    async updateCompanyDataForDuplicates(duplicateRecords, sourceFile = null) {
-        const updateResult = {
-            success: false,
-            totalRecords: duplicateRecords.length,
-            updatedRecords: 0,
-            skippedRecords: 0,
-            updatedRecordIds: [],
-            errors: []
-        };
-
-        try {
-            if (!Array.isArray(duplicateRecords) || duplicateRecords.length === 0) {
-                updateResult.success = true;
-                return updateResult;
-            }
-
-            console.log(`Updating company data for ${duplicateRecords.length} existing records`);
-
-            for (const record of duplicateRecords) {
-                try {
-                    // Check if the record has any company data to update
-                    const hasCompanyData = record.companyName || record.physicalAddress || record.email || record.website;
-
-                    if (!hasCompanyData) {
-                        updateResult.skippedRecords++;
-                        continue;
-                    }
-
-                    // Update only the company data fields, not Id or Phone
-                    await databaseManager.query(
-                        `UPDATE backup_table
-                         SET CompanyName = COALESCE(?, CompanyName),
-                             PhysicalAddress = COALESCE(?, PhysicalAddress),
-                             Email = COALESCE(?, Email),
-                             Website = COALESCE(?, Website),
-                             updated_at = CURRENT_TIMESTAMP
-                         WHERE Id = ?`,
-                        [
-                            record.companyName || null,
-                            record.physicalAddress || null,
-                            record.email || null,
-                            record.website || null,
-                            record.id
-                        ]
-                    );
-
-                    updateResult.updatedRecords++;
-                    updateResult.updatedRecordIds.push(record.id);
-
-                    console.log(`Updated company data for record ${record.id}: Company=${record.companyName || 'unchanged'}, Email=${record.email || 'unchanged'}`);
-
-                } catch (error) {
-                    console.error(`Error updating company data for record ${record.id}:`, error.message);
-                    updateResult.errors.push(`Update error for ${record.id}: ${error.message}`);
-                }
-            }
-
-            updateResult.success = true;
-            console.log(`Company data update completed: ${updateResult.updatedRecords} updated, ${updateResult.skippedRecords} skipped (no company data)`);
-
-        } catch (error) {
-            console.error('Error updating company data for duplicates:', error.message);
-            updateResult.errors.push(`Update error: ${error.message}`);
-        }
-
-        return updateResult;
-    }
-
-    /**
-     * Store a batch of records to backup table with enhanced duplicate handling
-     * @param {Array} batch - Batch of phone records (should be pre-filtered for duplicates)
-     * @param {string} sourceFile - Source Excel filename
-     * @param {number} batchNumber - Batch number for logging
-     * @returns {Promise<Object>} Batch storage result
-     */
-    async storeBatchToBackupTableWithDuplicateHandling(batch, sourceFile, batchNumber) {
-        const batchResult = {
-            batchNumber: batchNumber,
-            totalRecords: batch.length,
-            storedCount: 0,
-            skippedCount: 0,
-            duplicatesEncountered: 0,
-            storedRecordIds: [],
-            skippedRecordIds: [],
-            errors: []
-        };
-
-        try {
-            for (const record of batch) {
-                try {
-                    // Prepare Excel-specific metadata
-                    const excelMetadata = this.prepareExcelMetadata(record, sourceFile);
-
-                    // Store to backup table with company data and metadata
-                    const result = await databaseManager.insertBackupRecordWithCompany(
-                        record.id,
-                        record.phoneNumber,
-                        record.companyName,
-                        record.physicalAddress,
-                        record.email,
-                        record.website,
-                        sourceFile,
-                        JSON.stringify(excelMetadata)
-                    );
-
-                    if (result) {
-                        batchResult.storedCount++;
-                        batchResult.storedRecordIds.push(record.id);
-                    } else {
-                        // Record was skipped (likely duplicate caught by database constraint)
-                        batchResult.skippedCount++;
-                        batchResult.duplicatesEncountered++;
-                        batchResult.skippedRecordIds.push(record.id);
-
-                        // Log unexpected duplicate (should have been caught earlier)
-                        console.warn(`Unexpected duplicate encountered during batch insertion: ${record.id}`);
-                    }
-
-                } catch (recordError) {
-                    // Handle database constraint violations as duplicates
-                    if (recordError.code === 'ER_DUP_ENTRY') {
-                        batchResult.skippedCount++;
-                        batchResult.duplicatesEncountered++;
-                        batchResult.skippedRecordIds.push(record.id);
-
-                        // Log duplicate entry with context
-                        this.duplicateDetectionService.logDuplicateEntry(record, sourceFile);
-                        console.warn(`Database constraint duplicate for record ${record.id}: ${recordError.message}`);
-                    } else {
-                        batchResult.errors.push(`Record ${record.id}: ${recordError.message}`);
-                        batchResult.skippedCount++;
-                        batchResult.skippedRecordIds.push(record.id);
-                    }
-                }
-            }
-
-            console.log(`Batch ${batchNumber} completed: ${batchResult.storedCount} stored, ${batchResult.skippedCount} skipped (${batchResult.duplicatesEncountered} duplicates)`);
-
-        } catch (error) {
-            batchResult.errors.push(`Batch ${batchNumber} error: ${error.message}`);
-        }
-
-        return batchResult;
-    }
-
-    /**
-     * Store a batch of records to backup table (legacy method for backward compatibility)
-     * @param {Array} batch - Batch of phone records
-     * @param {string} sourceFile - Source Excel filename
-     * @param {number} batchNumber - Batch number for logging
-     * @returns {Promise<Object>} Batch storage result
-     */
-    async storeBatchToBackupTable(batch, sourceFile, batchNumber) {
-        // Redirect to enhanced method for consistency
-        return await this.storeBatchToBackupTableWithDuplicateHandling(batch, sourceFile, batchNumber);
-    }
-
-    /**
      * Process mixed batch containing both new and potentially duplicate records
      * @param {Array} mixedBatch - Batch that may contain duplicates
      * @param {string} sourceFile - Source Excel filename
@@ -1288,7 +1004,7 @@ class ExcelProcessor {
                 validationResults = await phoneValidationProcessor.processSpecificRecords(recordIds);
                 console.log(`Excel-specific validation completed for ${recordIds.length} records:`, validationResults);
             } else {
-                // Process all pending records in backup_table
+                // Process all records in check_table (backup_table not used in PostgreSQL)
                 validationResults = await phoneValidationProcessor.processBackupRecords();
                 console.log('Batch validation completed for all Excel records:', validationResults);
             }
@@ -1387,20 +1103,17 @@ class ExcelProcessor {
             // Get Excel-specific statistics if record IDs provided
             let excelSpecificStats = null;
             if (recordIds && Array.isArray(recordIds) && recordIds.length > 0) {
-                const backupRecords = await databaseManager.query(
-                    'SELECT Id, Phone, source_file, extracted_metadata FROM backup_table WHERE Id IN (?)',
-                    [recordIds]
-                );
 
+                const placeholders = recordIds.map((_, i) => `$${i + 1}`).join(',');
                 const checkRecords = await databaseManager.query(
-                    'SELECT Id, Phone, Status FROM check_table WHERE Id IN (?)',
-                    [recordIds]
+                    `SELECT id, phone, status FROM check_table WHERE id IN (${placeholders})`,
+                    recordIds
                 );
 
                 excelSpecificStats = {
-                    totalExcelRecords: backupRecords.length,
+                    totalExcelRecords: checkRecords.length,
                     validatedExcelRecords: checkRecords.length,
-                    pendingValidation: backupRecords.length - checkRecords.length,
+                    pendingValidation: 0,
                     validSingaporeNumbers: checkRecords.filter(r => r.Status === 1).length,
                     invalidNumbers: checkRecords.filter(r => r.Status === 0).length
                 };
@@ -1743,7 +1456,8 @@ class ExcelProcessor {
     }
 
     /**
-     * Process Excel file and save directly to check_table only (no backup_table)
+     * Process Excel file and save directly to check_table only
+     * Note: backup_table and uploaded_files are not used in PostgreSQL schema
      * Simplified: Store ALL data without validation, update duplicates by ID+Phone
      * @param {Buffer} excelBuffer - Excel file buffer
      * @param {string} sourceFile - Original filename
@@ -1953,7 +1667,7 @@ class ExcelProcessor {
      */
     async checkExistingRecordByIdAndPhone(id, phone) {
         try {
-            const sql = `SELECT COUNT(*) as count FROM check_table WHERE id = ? AND phone = ?`;
+            const sql = `SELECT COUNT(*) as count FROM check_table WHERE id = $1 AND phone = $2`;
             const results = await databaseManager.query(sql, [id, phone]);
             return results[0].count > 0;
         } catch (error) {
@@ -1973,13 +1687,13 @@ class ExcelProcessor {
         try {
             const sql = `
                 UPDATE check_table
-                SET company_name = COALESCE(?, company_name),
-                    physical_address = COALESCE(?, physical_address),
-                    email = COALESCE(?, email),
-                    website = COALESCE(?, website),
-                    status = ?,
+                SET company_name = COALESCE($1, company_name),
+                    physical_address = COALESCE($2, physical_address),
+                    email = COALESCE($3, email),
+                    website = COALESCE($4, website),
+                    status = $5,
                     updated_at = CURRENT_TIMESTAMP
-                WHERE id = ? AND phone = ?
+                WHERE id = $6 AND phone = $7
             `;
 
             await databaseManager.query(sql, [

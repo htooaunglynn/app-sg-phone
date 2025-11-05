@@ -188,266 +188,16 @@ class PostgresDatabaseManager {
         return await databaseInitializer.initialize();
     }
 
-    // Reuse all the business logic methods from the MySQL version
-    // but adapt the SQL syntax where needed
-
-    /**
-     * Insert record into backup_table
-     */
-    async insertBackupRecord(id, phone) {
-        const sql = 'INSERT INTO backup_table ("Id", "Phone") VALUES ($1, $2) ON CONFLICT ("Id") DO NOTHING';
-        try {
-            const result = await this.query(sql, [id, phone]);
-            return result;
-        } catch (error) {
-            console.warn(`Error inserting into backup_table: ${id}`, error.message);
-            return null;
-        }
-    }
-
-    /**
-     * Insert record into backup_table with metadata
-     */
-    async insertBackupRecordWithMetadata(id, phone, sourceFile = null, extractedMetadata = null) {
-        const sql = `INSERT INTO backup_table ("Id", "Phone", source_file, extracted_metadata)
-                     VALUES ($1, $2, $3, $4)
-                     ON CONFLICT ("Id") DO NOTHING`;
-        try {
-            const result = await this.query(sql, [id, phone, sourceFile, extractedMetadata]);
-            return result;
-        } catch (error) {
-            console.warn(`Error inserting into backup_table: ${id}`, error.message);
-            return null;
-        }
-    }
-
-    /**
-     * Insert record into backup_table with company information
-     */
-    async insertBackupRecordWithCompany(id, phone, companyName = null, physicalAddress = null, email = null, website = null, sourceFile = null, extractedMetadata = null) {
-        const sql = `INSERT INTO backup_table
-                     ("Id", "Phone", "CompanyName", "PhysicalAddress", "Email", "Website", source_file, extracted_metadata)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                     ON CONFLICT ("Id") DO NOTHING`;
-        try {
-            const result = await this.query(sql, [id, phone, companyName, physicalAddress, email, website, sourceFile, extractedMetadata]);
-            return result;
-        } catch (error) {
-            console.warn(`Error inserting into backup_table: ${id}`, error.message);
-            return null;
-        }
-    }
-
-    /**
-     * Update company information in backup_table
-     */
-    async updateBackupRecordCompanyInfo(id, companyName = null, physicalAddress = null, email = null, website = null) {
-        const sql = `UPDATE backup_table
-                     SET "CompanyName" = $1, "PhysicalAddress" = $2, "Email" = $3, "Website" = $4, updated_at = CURRENT_TIMESTAMP
-                     WHERE "Id" = $5`;
-        try {
-            const result = await this.query(sql, [companyName, physicalAddress, email, website, id]);
-            return result;
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    /**
-     * Batch insert with duplicate handling
-     */
-    async insertBatchWithDuplicateHandling(records, sourceFile = null) {
-        const result = {
-            success: false,
-            totalRecords: records.length,
-            storedRecords: 0,
-            duplicatesSkipped: 0,
-            updatedRecords: 0,
-            errors: [],
-            storedRecordIds: [],
-            duplicateIds: [],
-            updatedRecordIds: []
-        };
-
-        if (!Array.isArray(records) || records.length === 0) {
-            result.success = true;
-            return result;
-        }
-
-        const client = await this.getConnection();
-
-        try {
-            await client.query('BEGIN');
-
-            for (const record of records) {
-                try {
-                    const sql = `INSERT INTO backup_table
-                       ("Id", "Phone", "CompanyName", "PhysicalAddress", "Email", "Website", source_file, extracted_metadata)
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                       ON CONFLICT ("Id") DO UPDATE SET
-                         "CompanyName" = COALESCE(EXCLUDED."CompanyName", backup_table."CompanyName"),
-                         "PhysicalAddress" = COALESCE(EXCLUDED."PhysicalAddress", backup_table."PhysicalAddress"),
-                         "Email" = COALESCE(EXCLUDED."Email", backup_table."Email"),
-                         "Website" = COALESCE(EXCLUDED."Website", backup_table."Website"),
-                         updated_at = CURRENT_TIMESTAMP
-                       RETURNING (xmax = 0) AS inserted`;
-
-                    const params = [
-                        record.id || record.Id,
-                        record.phoneNumber || record.Phone,
-                        record.companyName || record.CompanyName || null,
-                        record.physicalAddress || record.PhysicalAddress || null,
-                        record.email || record.Email || null,
-                        record.website || record.Website || null,
-                        sourceFile,
-                        record.extractedMetadata ? JSON.stringify(record.extractedMetadata) : null
-                    ];
-
-                    const insertResult = await client.query(sql, params);
-
-                    if (insertResult.rows.length > 0 && insertResult.rows[0].inserted) {
-                        result.storedRecords++;
-                        result.storedRecordIds.push(record.id || record.Id);
-                    } else {
-                        result.duplicatesSkipped++;
-                        result.updatedRecords++;
-                        result.duplicateIds.push(record.id || record.Id);
-                        result.updatedRecordIds.push(record.id || record.Id);
-                    }
-
-                } catch (recordError) {
-                    result.errors.push(`Record ${record.id || record.Id}: ${recordError.message}`);
-                    console.error(`Error inserting record ${record.id || record.Id}:`, recordError.message);
-                }
-            }
-
-            await client.query('COMMIT');
-            result.success = true;
-
-            console.log(`Batch transaction completed: ${result.storedRecords} stored, ${result.duplicatesSkipped} duplicates skipped (${result.updatedRecords} company data updated)`);
-
-        } catch (transactionError) {
-            await client.query('ROLLBACK');
-            result.errors.push(`Transaction failed: ${transactionError.message}`);
-            console.error('Batch transaction failed:', transactionError.message);
-        } finally {
-            client.release();
-        }
-
-        return result;
-    }
-
-    /**
-     * Insert with rollback protection
-     */
-    async insertWithRollbackProtection(records, sourceFile = null, batchSize = 100) {
-        const result = {
-            success: false,
-            totalRecords: records.length,
-            storedRecords: 0,
-            duplicatesSkipped: 0,
-            updatedRecords: 0,
-            errors: [],
-            storedRecordIds: [],
-            duplicateIds: [],
-            updatedRecordIds: [],
-            batchResults: []
-        };
-
-        if (!Array.isArray(records) || records.length === 0) {
-            result.success = true;
-            return result;
-        }
-
-        const batches = [];
-        for (let i = 0; i < records.length; i += batchSize) {
-            batches.push(records.slice(i, i + batchSize));
-        }
-
-        for (let i = 0; i < batches.length; i++) {
-            const batch = batches[i];
-
-            try {
-                const batchResult = await this.insertBatchWithDuplicateHandling(batch, sourceFile);
-
-                result.batchResults.push({
-                    batchNumber: i + 1,
-                    ...batchResult
-                });
-
-                result.storedRecords += batchResult.storedRecords;
-                result.duplicatesSkipped += batchResult.duplicatesSkipped;
-                result.updatedRecords += batchResult.updatedRecords || 0;
-                result.storedRecordIds.push(...batchResult.storedRecordIds);
-                result.duplicateIds.push(...batchResult.duplicateIds);
-                result.updatedRecordIds.push(...(batchResult.updatedRecordIds || []));
-                result.errors.push(...batchResult.errors);
-
-            } catch (batchError) {
-                result.errors.push(`Batch ${i + 1} failed: ${batchError.message}`);
-                console.error(`Batch ${i + 1} failed:`, batchError.message);
-                continue;
-            }
-        }
-
-        result.success = result.storedRecords > 0 || result.duplicatesSkipped > 0;
-
-        console.log(`Protected insertion completed: ${result.storedRecords} stored, ${result.updatedRecords} company data updated across ${batches.length} batches`);
-
-        return result;
-    }
-
-    /**
-     * Get backup records
-     */
-    async getBackupRecords(limit = null, offset = 0) {
-        let sql = `SELECT "Id", "Phone", "CompanyName", "PhysicalAddress", "Email", "Website", source_file, extracted_metadata
-                   FROM backup_table ORDER BY created_at`;
-        const params = [];
-
-        if (limit !== null && limit !== undefined && limit > 0) {
-            sql += ` LIMIT $1 OFFSET $2`;
-            return await this.query(sql, [parseInt(limit), parseInt(offset)]);
-        }
-
-        return await this.query(sql, params);
-    }
-
-    /**
-     * Get backup records with pagination
-     */
-    async getBackupRecordsWithPagination(limit = 50, offset = 0) {
-        const sql = `SELECT "Id", "Phone", "CompanyName", "PhysicalAddress", "Email", "Website", source_file, created_at, updated_at
-                     FROM backup_table
-                     ORDER BY created_at DESC
-                     LIMIT $1 OFFSET $2`;
-
-        return await this.query(sql, [parseInt(limit), parseInt(offset)]);
-    }
-
-    /**
-     * Get backup record by ID
-     */
-    async getBackupRecordById(id) {
-        const sql = `SELECT "Id", "Phone", "CompanyName", "PhysicalAddress", "Email", "Website", source_file, extracted_metadata, created_at, updated_at
-                     FROM backup_table
-                     WHERE "Id" = $1`;
-        const result = await this.query(sql, [id]);
-        return result.length > 0 ? result[0] : null;
-    }
-
     /**
      * Get table statistics
      */
     async getTableStats() {
         try {
-            const backupCount = await this.query('SELECT COUNT(*) as count FROM backup_table');
             const checkCount = await this.query('SELECT COUNT(*) as count FROM check_table');
             const validatedCount = await this.query('SELECT COUNT(*) as count FROM check_table WHERE status = true');
             const invalidCount = await this.query('SELECT COUNT(*) as count FROM check_table WHERE status = false');
 
             return {
-                backupTable: parseInt(backupCount[0]?.count || 0),
                 checkTable: parseInt(checkCount[0]?.count || 0),
                 validatedPhones: parseInt(validatedCount[0]?.count || 0),
                 invalidPhones: parseInt(invalidCount[0]?.count || 0)
@@ -455,7 +205,6 @@ class PostgresDatabaseManager {
         } catch (error) {
             console.error('Error getting table stats:', error);
             return {
-                backupTable: 0,
                 checkTable: 0,
                 validatedPhones: 0,
                 invalidPhones: 0
@@ -464,16 +213,7 @@ class PostgresDatabaseManager {
     }
 
     /**
-     * Check if record exists in backup_table
-     */
-    async backupRecordExists(id) {
-        const sql = 'SELECT 1 FROM backup_table WHERE "Id" = $1 LIMIT 1';
-        const result = await this.query(sql, [id]);
-        return result.length > 0;
-    }
-
-    /**
-     * Batch check duplicate IDs
+     * Batch check duplicate IDs in check_table
      */
     async batchCheckDuplicateIds(ids) {
         if (!Array.isArray(ids) || ids.length === 0) {
@@ -487,11 +227,11 @@ class PostgresDatabaseManager {
             const chunk = ids.slice(i, i + chunkSize);
 
             const placeholders = chunk.map((_, idx) => `$${idx + 1}`).join(',');
-            const sql = `SELECT "Id" FROM backup_table WHERE "Id" IN (${placeholders})`;
+            const sql = `SELECT id FROM check_table WHERE id IN (${placeholders})`;
 
             try {
                 const result = await this.query(sql, chunk);
-                const chunkDuplicates = result.map(row => row.Id);
+                const chunkDuplicates = result.map(row => row.id);
                 duplicateIds.push(...chunkDuplicates);
             } catch (error) {
                 console.error('Error in batch duplicate check:', error.message);
@@ -511,6 +251,233 @@ class PostgresDatabaseManager {
             retryAttempts: this.retryAttempts,
             maxRetries: this.maxRetries
         };
+    }
+
+    /**
+     * Extract numeric ID from ID string (for check_table numeric_id column)
+     */
+    extractNumericId(idString) {
+        if (!idString || typeof idString !== 'string') {
+            return null;
+        }
+        const match = idString.match(/(\d+)$/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    /**
+     * Insert record into check_table with validation status
+     */
+    async insertCheckRecord(id, phone, status, companyName = null, physicalAddress = null, email = null, website = null) {
+        const numericId = this.extractNumericId(id);
+
+        const sql = `
+            INSERT INTO check_table (id, numeric_id, phone, status, company_name, physical_address, email, website)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `;
+        try {
+            const result = await this.query(sql, [id, numericId, phone, status, companyName, physicalAddress, email, website]);
+            return result;
+        } catch (error) {
+            if (error.code === '23505') { // unique_violation
+                console.warn(`Duplicate entry for check_table: ${id}`);
+                return null;
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Update company information in check_table
+     */
+    async updateCheckRecord(id, companyData) {
+        const { companyName, physicalAddress, email, website } = companyData;
+        const sql = `
+            UPDATE check_table
+            SET company_name = $1, physical_address = $2, email = $3, website = $4
+            WHERE id = $5
+        `;
+        try {
+            const client = await this.getConnection();
+            try {
+                const result = await client.query(sql, [companyName, physicalAddress, email, website, id]);
+                return result; // Return full result object with rowCount
+            } finally {
+                client.release();
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    /**
+     * Get check_table records by range for export
+     */
+    async getCheckRecordsByRange(start, end) {
+        const limit = parseInt(Math.max(1, end - start + 1));
+        const offset = parseInt(Math.max(0, start - 1));
+
+        const sql = `
+            SELECT id, numeric_id, phone, status,
+                   company_name, physical_address,
+                   email, website, created_at, updated_at
+            FROM check_table
+            ORDER BY numeric_id ASC, id ASC
+            LIMIT $1 OFFSET $2
+        `;
+
+        return await this.query(sql, [limit, offset]);
+    }
+
+    /**
+     * Get check_table records with pagination
+     */
+    async getCheckRecords(limit = 50, offset = 0) {
+        const sql = `
+            SELECT id, numeric_id, phone, status,
+                   company_name, physical_address,
+                   email, website, created_at, updated_at
+            FROM check_table
+            ORDER BY numeric_id ASC, id ASC
+            LIMIT $1 OFFSET $2
+        `;
+
+        return await this.query(sql, [parseInt(limit), parseInt(offset)]);
+    }
+
+    /**
+     * Get total count of check_table records
+     */
+    async getCheckRecordsCount() {
+        const sql = 'SELECT COUNT(*) as count FROM check_table';
+        const result = await this.query(sql);
+        return parseInt(result[0]?.count || 0);
+    }
+
+    /**
+     * Check if record exists in check_table
+     */
+    async checkRecordExists(id) {
+        const sql = 'SELECT 1 FROM check_table WHERE id = $1 LIMIT 1';
+        const result = await this.query(sql, [id]);
+        return result.length > 0;
+    }
+
+    /**
+     * Get total count of records in check_table for range validation
+     */
+    async getCheckTableCount() {
+        return await this.getCheckRecordsCount();
+    }
+
+    /**
+     * Check if a single ID exists in check_table
+     */
+    async isDuplicateId(id) {
+        const sql = 'SELECT 1 FROM check_table WHERE id = $1 LIMIT 1';
+        try {
+            const result = await this.query(sql, [id]);
+            return result.length > 0;
+        } catch (error) {
+            console.error('Error checking for duplicate ID:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * Get existing records from check_table for given IDs
+     */
+    async getExistingRecords(ids) {
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return [];
+        }
+
+        const chunkSize = 1000;
+        const existingRecords = [];
+
+        for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunk = ids.slice(i, i + chunkSize);
+
+            const placeholders = chunk.map((_, idx) => `$${idx + 1}`).join(',');
+            const sql = `
+                SELECT id, phone, company_name, physical_address, email, website, created_at
+                FROM check_table
+                WHERE id IN (${placeholders})
+            `;
+
+            try {
+                const result = await this.query(sql, chunk);
+                existingRecords.push(...result);
+            } catch (error) {
+                console.error('Error retrieving existing records:', error.message);
+                throw error;
+            }
+        }
+
+        return existingRecords;
+    }
+
+    /**
+     * Optimized duplicate detection with indexed lookups on check_table
+     */
+    async optimizedDuplicateDetection(records) {
+        const startTime = Date.now();
+        const result = {
+            totalRecords: records.length,
+            duplicateIds: [],
+            newRecords: [],
+            existingRecords: [],
+            performanceMetrics: {
+                detectionTime: 0,
+                queriesExecuted: 0,
+                recordsPerSecond: 0
+            }
+        };
+
+        if (!Array.isArray(records) || records.length === 0) {
+            result.performanceMetrics.detectionTime = Date.now() - startTime;
+            return result;
+        }
+
+        try {
+            const idsToCheck = records.map(record => record.id || record.Id).filter(id => id);
+
+            const duplicateIds = await this.batchCheckDuplicateIds(idsToCheck);
+            const duplicateIdSet = new Set(duplicateIds);
+
+            if (duplicateIds.length > 0) {
+                result.existingRecords = await this.getExistingRecords(duplicateIds);
+            }
+
+            result.newRecords = records.filter(record => {
+                const recordId = record.id || record.Id;
+                return recordId && !duplicateIdSet.has(recordId);
+            });
+
+            result.duplicateIds = duplicateIds;
+            result.performanceMetrics.queriesExecuted = Math.ceil(idsToCheck.length / 1000) + (duplicateIds.length > 0 ? Math.ceil(duplicateIds.length / 1000) : 0);
+
+        } catch (error) {
+            console.error('Error in optimized duplicate detection:', error.message);
+            throw error;
+        }
+
+        const detectionTime = Date.now() - startTime;
+        result.performanceMetrics.detectionTime = detectionTime;
+        result.performanceMetrics.recordsPerSecond = detectionTime > 0 ? Math.round((records.length / detectionTime) * 1000) : 0;
+
+        if (detectionTime > 5000) {
+            console.warn(`Slow duplicate detection: ${detectionTime}ms for ${records.length} records`);
+        }
+
+        return result;
+    }
+
+    /**
+     * Prepared query for better performance
+     */
+    async preparedQuery(sql, params = [], useCache = false) {
+        // PostgreSQL automatically prepares queries
+        return await this.query(sql, params);
     }
 }
 

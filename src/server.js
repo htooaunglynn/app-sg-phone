@@ -144,7 +144,8 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
         // Capture count before insert for accurate delta
         const countBefore = await db.getCheckRecordsCount()
 
-        // Process Excel file - direct to check_table only (no backup_table)
+        // Process Excel file - direct to check_table only
+        // Note: backup_table and uploaded_files tables are not used in PostgreSQL schema
         const result = await excelProcessor.processExcelDirectToCheckTable(
             req.file.buffer,
             filename
@@ -262,7 +263,7 @@ app.put('/api/companies/:id', requireAuth, async (req, res) => {
         // Update in check_table only (Id/Phone/Status are immutable here)
         const result = await db.updateCheckRecord(id, payload);
 
-        return res.json({ success: true, updated: result?.affectedRows || 0 });
+        return res.json({ success: true, updated: result?.rowCount || 0 });
     } catch (error) {
         console.error('Error updating company:', error);
         return res.status(500).json({ success: false, error: error.message || 'Failed to update company' });

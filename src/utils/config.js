@@ -11,36 +11,20 @@ class Config {
     }
 
     /**
-     * Database configuration
-     * Supports both MySQL (local) and PostgreSQL (production)
+     * Database configuration - PostgreSQL only
      */
     get database() {
-        const dbType = process.env.DB_TYPE || 'mysql';
-
-        // PostgreSQL production configuration (supports DATABASE_URL from Render)
-        if (dbType === 'postgres') {
-            return {
-                type: 'postgres',
-                connectionString: process.env.DATABASE_URL,
-                host: process.env.DB_HOST || 'localhost',
-                port: parseInt(process.env.DB_PORT) || 5432,
-                user: process.env.DB_USER || 'postgres',
-                password: process.env.DB_PASSWORD || '',
-                database: process.env.DB_NAME || 'singapore_phone_db',
-                connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 20,
-                ssl: process.env.DB_SSL === 'true'
-            };
-        }
-
-        // MySQL local development configuration
+        // PostgreSQL configuration (supports DATABASE_URL from cloud providers)
         return {
-            type: 'mysql',
+            type: 'postgres',
+            connectionString: process.env.DATABASE_URL,
             host: process.env.DB_HOST || 'localhost',
-            port: parseInt(process.env.DB_PORT) || 3306,
-            user: process.env.DB_USER || 'root',
+            port: parseInt(process.env.DB_PORT) || 5432,
+            user: process.env.DB_USER || 'postgres',
             password: process.env.DB_PASSWORD || '',
             database: process.env.DB_NAME || 'singapore_phone_db',
-            connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10
+            connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 20,
+            ssl: process.env.DB_SSL === 'true'
         };
     }
 
@@ -95,7 +79,6 @@ class Config {
      */
     get dualTable() {
         return {
-            backupTableName: process.env.BACKUP_TABLE_NAME || 'backup_table',
             checkTableName: process.env.CHECK_TABLE_NAME || 'check_table',
             autoProcessValidation: process.env.AUTO_PROCESS_VALIDATION === 'true',
             validationProcessingDelay: parseInt(process.env.VALIDATION_PROCESSING_DELAY) || 5000
@@ -181,21 +164,17 @@ class Config {
      * Validate required environment variables
      */
     validateEnvironment() {
-        const dbType = process.env.DB_TYPE || 'mysql';
-
         let required = [];
 
-        // PostgreSQL in production (using DATABASE_URL)
-        if (dbType === 'postgres' && process.env.DATABASE_URL) {
+        // PostgreSQL configuration
+        // If DATABASE_URL is provided (production), use it
+        if (process.env.DATABASE_URL) {
             required = ['DATABASE_URL'];
         }
-        // PostgreSQL with individual config (password can be empty for local trust auth)
-        else if (dbType === 'postgres') {
-            required = ['DB_HOST', 'DB_USER', 'DB_NAME'];
-        }
-        // MySQL
+        // Otherwise, require individual config (local development)
+        // Password can be empty for local trust authentication
         else {
-            required = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+            required = ['DB_HOST', 'DB_USER', 'DB_NAME'];
         }
 
         const missing = required.filter(key => !process.env[key]);
@@ -292,13 +271,12 @@ class Config {
         console.log(`App: ${this.app.name} v${this.app.version}`);
         console.log(`Environment: ${this.server.environment}`);
         console.log(`Server: ${this.server.host}:${this.server.port}`);
-        console.log(`Database: ${this.database.host}:${this.database.port}/${this.database.database}`);
+        console.log(`Database: PostgreSQL - ${this.database.host}:${this.database.port}/${this.database.database}`);
         console.log(`Upload Directory: ${this.upload.directory}`);
         console.log(`Export Directory: ${this.export.directory}`);
         console.log(`Max File Size: ${(this.upload.maxFileSize / 1024 / 1024).toFixed(1)}MB`);
         console.log(`Singapore Country Code: ${this.phoneValidation.singaporeCountryCode}`);
         console.log(`Batch Validation Size: ${this.phoneValidation.batchValidationSize}`);
-        console.log(`Backup Table: ${this.dualTable.backupTableName}`);
         console.log(`Check Table: ${this.dualTable.checkTableName}`);
         console.log(`Auto Process Validation: ${this.dualTable.autoProcessValidation}`);
         console.log(`Graceful Shutdown: ${this.shutdown.enableGracefulShutdown}`);

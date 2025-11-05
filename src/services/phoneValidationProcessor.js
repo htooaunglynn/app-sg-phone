@@ -4,7 +4,7 @@ const config = require('../utils/config');
 
 /**
  * Phone Validation Processor Service
- * Handles processing records from backup_table to check_table with Singapore phone validation
+ * Handles validation of phone numbers within the check_table.
  */
 class PhoneValidationProcessor {
     constructor() {
@@ -28,21 +28,21 @@ class PhoneValidationProcessor {
     }
 
     /**
-     * Process all records from backup_table and populate check_table with validation results
+     * Process all records from check_table and update their validation status.
      * @returns {Promise<Object>} - Processing results with statistics
      */
-    async processBackupRecords() {
+    async processAllRecords() {
         try {
             if (this.enableLogging) {
-                console.log('Starting backup_table to check_table processing...');
+                console.log('Starting check_table processing...');
             }
 
-            // Get all records from backup_table
-            const backupRecords = await databaseManager.getBackupRecords();
+            // Get all records from check_table
+            const records = await databaseManager.getCheckRecords();
 
-            if (backupRecords.length === 0) {
+            if (records.length === 0) {
                 if (this.enableLogging) {
-                    console.log('No records found in backup_table to process');
+                    console.log('No records found in check_table to process');
                 }
                 return {
                     processed: 0,
@@ -54,30 +54,30 @@ class PhoneValidationProcessor {
             }
 
             if (this.enableLogging) {
-                console.log(`Found ${backupRecords.length} records in backup_table to process`);
+                console.log(`Found ${records.length} records in check_table to process`);
             }
 
             // Process records in batches
-            const results = await this.processBatchRecords(backupRecords);
+            const results = await this.processBatchRecords(records);
 
             if (this.enableLogging) {
-                console.log('Backup_table to check_table processing completed:', results);
+                console.log('check_table processing completed:', results);
             }
 
             return results;
 
         } catch (error) {
-            console.error('Error processing backup records:', error.message);
+            console.error('Error processing check_table records:', error.message);
             throw error;
         }
     }
 
     /**
      * Process records in batches for better performance
-     * @param {Array} backupRecords - Records from backup_table
+     * @param {Array} records - Records from check_table
      * @returns {Promise<Object>} - Processing statistics
      */
-    async processBatchRecords(backupRecords) {
+    async processBatchRecords(records) {
         let processed = 0;
         let successful = 0;
         let failed = 0;
@@ -85,11 +85,11 @@ class PhoneValidationProcessor {
         let invalidNumbers = 0;
 
         // Process records in chunks
-        for (let i = 0; i < backupRecords.length; i += this.batchSize) {
-            const batch = backupRecords.slice(i, i + this.batchSize);
+        for (let i = 0; i < records.length; i += this.batchSize) {
+            const batch = records.slice(i, i + this.batchSize);
 
             if (this.enableLogging) {
-                console.log(`Processing batch ${Math.floor(i / this.batchSize) + 1}/${Math.ceil(backupRecords.length / this.batchSize)} (${batch.length} records)`);
+                console.log(`Processing batch ${Math.floor(i / this.batchSize) + 1}/${Math.ceil(records.length / this.batchSize)} (${batch.length} records)`);
             }
 
             const batchResults = await this.processBatch(batch);
@@ -101,7 +101,7 @@ class PhoneValidationProcessor {
             invalidNumbers += batchResults.invalidNumbers;
 
             // Small delay between batches to prevent overwhelming the database
-            if (i + this.batchSize < backupRecords.length) {
+            if (i + this.batchSize < records.length) {
                 await new Promise(resolve => setTimeout(resolve, 50));
             }
         }
@@ -131,46 +131,13 @@ class PhoneValidationProcessor {
             try {
                 processed++;
 
-                // Check if record already exists in check_table
-                const exists = await databaseManager.checkRecordExists(record.Id);
-
                 // Validate the phone number
                 const isValidSingaporePhone = singaporePhoneValidator.validateSingaporePhone(record.Phone);
 
-                // Use company information directly from backup_table columns, with metadata as fallback
-                const companyInfo = this.extractCompanyInfo(record);
-
-                if (exists) {
-                    // Update existing record in check_table with latest company data from backup_table
-                    try {
-                        await databaseManager.updateCheckRecord(record.Id, {
-                            companyName: companyInfo.companyName,
-                            physicalAddress: companyInfo.physicalAddress,
-                            email: companyInfo.email,
-                            website: companyInfo.website
-                        });
-
-                        if (this.enableLogging) {
-                            console.log(`Updated existing check_table record ${record.Id} with latest company data`);
-                        }
-                    } catch (updateError) {
-                        console.error(`Failed to update check_table record ${record.Id}:`, updateError.message);
-                        // Continue processing but count as failed
-                        failed++;
-                        continue;
-                    }
-                } else {
-                    // Insert new record into check_table with validation status and company fields
-                    await databaseManager.insertCheckRecord(
-                        record.Id,
-                        record.Phone,
-                        isValidSingaporePhone,
-                        companyInfo.companyName,
-                        companyInfo.physicalAddress,
-                        companyInfo.email,
-                        companyInfo.website
-                    );
-                }
+                // Update the record's status in check_table
+                await databaseManager.updateCheckRecord(record.Id, {
+                    status: isValidSingaporePhone
+                });
 
                 successful++;
 
@@ -181,14 +148,12 @@ class PhoneValidationProcessor {
                 }
 
                 if (this.enableLogging) {
-                    const sourceType = this.getRecordSourceType(record);
-                    console.log(`Processed ${sourceType} record ${record.Id}: ${record.Phone} -> ${isValidSingaporePhone ? 'Valid Singapore' : 'Invalid'}`);
+                    console.log(`Processed record ${record.Id}: ${record.Phone} -> ${isValidSingaporePhone ? 'Valid Singapore' : 'Invalid'}`);
                 }
 
             } catch (error) {
                 failed++;
                 console.error(`Failed to process record ${record.Id}:`, error.message);
-
                 // Continue processing other records even if one fails
                 continue;
             }
@@ -204,7 +169,7 @@ class PhoneValidationProcessor {
     }
 
     /**
-     * Process specific records by ID from backup_table
+     * Process specific records by ID from check_table
      * @param {Array<string>} recordIds - Array of record IDs to process
      * @returns {Promise<Object>} - Processing results
      */
@@ -229,57 +194,21 @@ class PhoneValidationProcessor {
 
             for (const recordId of recordIds) {
                 try {
-                    // Get record from backup_table with company data and metadata
-                    const backupRecord = await databaseManager.query(
-                        'SELECT Id, Phone, CompanyName, PhysicalAddress, Email, Website, source_file, extracted_metadata FROM backup_table WHERE Id = ?',
-                        [recordId]
-                    );
+                    const recordResult = await databaseManager.query('SELECT id, phone FROM check_table WHERE id = $1', [recordId]);
 
-                    if (backupRecord.length === 0) {
+                    if (recordResult.length === 0) {
                         results.notFound.push(recordId);
                         continue;
                     }
 
-                    const record = backupRecord[0];
+                    const record = recordResult[0];
                     results.processed++;
 
-                    // Check if already exists in check_table
-                    const exists = await databaseManager.checkRecordExists(record.Id);
-
-                    // Validate and get company info from backup_table (prioritize direct columns over metadata)
                     const isValidSingaporePhone = singaporePhoneValidator.validateSingaporePhone(record.Phone);
-                    const companyInfo = this.extractCompanyInfo(record); // Use main method that prioritizes direct columns
 
-                    if (exists) {
-                        // Update existing record in check_table with latest company data from backup_table
-                        try {
-                            await databaseManager.updateCheckRecord(record.Id, {
-                                companyName: companyInfo.companyName,
-                                physicalAddress: companyInfo.physicalAddress,
-                                email: companyInfo.email,
-                                website: companyInfo.website
-                            });
-
-                            if (this.enableLogging) {
-                                console.log(`Updated existing check_table record ${record.Id} with latest company data`);
-                            }
-                        } catch (updateError) {
-                            console.error(`Failed to update check_table record ${record.Id}:`, updateError.message);
-                            results.failed++;
-                            continue;
-                        }
-                    } else {
-                        // Insert new record into check_table
-                        await databaseManager.insertCheckRecord(
-                            record.Id,
-                            record.Phone,
-                            isValidSingaporePhone,
-                            companyInfo.companyName,
-                            companyInfo.physicalAddress,
-                            companyInfo.email,
-                            companyInfo.website
-                        );
-                    }
+                    await databaseManager.updateCheckRecord(record.Id, {
+                        status: isValidSingaporePhone
+                    });
 
                     results.successful++;
 
@@ -312,12 +241,9 @@ class PhoneValidationProcessor {
             const stats = await databaseManager.getTableStats();
 
             return {
-                backupTableRecords: stats.backupTable,
                 checkTableRecords: stats.checkTable,
                 validatedPhones: stats.validatedPhones,
                 invalidPhones: stats.invalidPhones,
-                pendingProcessing: Math.max(0, stats.backupTable - stats.checkTable),
-                processingComplete: stats.backupTable === stats.checkTable
             };
 
         } catch (error) {
@@ -328,286 +254,18 @@ class PhoneValidationProcessor {
 
     /**
      * Reprocess records with updated validation logic
-     * @param {boolean} forceReprocess - Whether to reprocess all records even if they exist
      * @returns {Promise<Object>} - Reprocessing results
      */
-    async reprocessRecords(forceReprocess = false) {
+    async reprocessRecords() {
         try {
             if (this.enableLogging) {
-                console.log(`Starting reprocessing with forceReprocess: ${forceReprocess}`);
+                console.log(`Starting reprocessing.`);
             }
-
-            if (forceReprocess) {
-                // Clear check_table before reprocessing
-                await databaseManager.query('DELETE FROM check_table');
-                if (this.enableLogging) {
-                    console.log('Cleared check_table for complete reprocessing');
-                }
-            }
-
-            // Process all backup records
-            return await this.processBackupRecords();
+            return await this.processAllRecords();
 
         } catch (error) {
             console.error('Error during reprocessing:', error.message);
             throw error;
-        }
-    }
-
-    /**
-     * Extract company information from backup_table record (columns + metadata fallback)
-     * @param {Object} record - Backup table record with company columns and metadata
-     * @returns {Object} Company information object
-     */
-    extractCompanyInfo(record) {
-        const companyInfo = {
-            companyName: null,
-            physicalAddress: null,
-            email: null,
-            website: null
-        };
-
-        // First priority: Use direct column data from backup_table
-        companyInfo.companyName = record.CompanyName || null;
-        companyInfo.physicalAddress = record.PhysicalAddress || null;
-        companyInfo.email = record.Email || null;
-        companyInfo.website = record.Website || null;
-
-        // Second priority: Extract from metadata if columns are empty
-        try {
-            if (record.extracted_metadata && (!companyInfo.companyName || !companyInfo.email)) {
-                const metadata = typeof record.extracted_metadata === 'string'
-                    ? JSON.parse(record.extracted_metadata)
-                    : record.extracted_metadata;
-
-                if (metadata && metadata.company_info) {
-                    const company = metadata.company_info;
-
-                    // Fill in missing data from metadata
-                    companyInfo.companyName = companyInfo.companyName || company.name || company.companyName || company.company || null;
-                    companyInfo.physicalAddress = companyInfo.physicalAddress || company.address || company.physicalAddress || company.location || null;
-                    companyInfo.email = companyInfo.email || company.email || company.mail || null;
-                    companyInfo.website = companyInfo.website || company.website || company.url || company.site || null;
-                }
-            }
-        } catch (error) {
-            if (this.enableLogging) {
-                console.warn(`Error extracting company info from metadata for record ${record.Id}:`, error.message);
-            }
-        }
-
-        return companyInfo;
-    }
-
-    /**
-     * Extract company information from Excel metadata (legacy method for backward compatibility)
-     * @param {Object} record - Backup table record with metadata
-     * @returns {Object} Company information object
-     */
-    extractCompanyInfoFromMetadata(record) {
-        const companyInfo = {
-            companyName: null,
-            physicalAddress: null,
-            email: null,
-            website: null
-        };
-
-        try {
-            if (record.extracted_metadata) {
-                const metadata = typeof record.extracted_metadata === 'string'
-                    ? JSON.parse(record.extracted_metadata)
-                    : record.extracted_metadata;
-
-                if (metadata && metadata.company_info) {
-                    const company = metadata.company_info;
-
-                    // Map company fields with fallbacks for different naming conventions
-                    companyInfo.companyName = company.name || company.companyName || company.company || null;
-                    companyInfo.physicalAddress = company.address || company.physicalAddress || company.location || null;
-                    companyInfo.email = company.email || company.mail || null;
-                    companyInfo.website = company.website || company.url || company.site || null;
-
-                    // Handle additional column data that might contain company info
-                    for (const [key, value] of Object.entries(company)) {
-                        if (key.startsWith('column_') && value && !companyInfo.companyName) {
-                            // Use first additional column as company name if no explicit company name found
-                            companyInfo.companyName = value;
-                            break;
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            if (this.enableLogging) {
-                console.warn(`Error extracting company info from metadata for record ${record.Id}:`, error.message);
-            }
-        }
-
-        return companyInfo;
-    }
-
-    /**
-     * Get the source type of a record (PDF or Excel)
-     * @param {Object} record - Backup table record
-     * @returns {string} Source type
-     */
-    getRecordSourceType(record) {
-        try {
-            if (record.extracted_metadata) {
-                const metadata = typeof record.extracted_metadata === 'string'
-                    ? JSON.parse(record.extracted_metadata)
-                    : record.extracted_metadata;
-
-                if (metadata && metadata.file_type) {
-                    return metadata.file_type.toUpperCase();
-                }
-            }
-
-            // Fallback: check source_file extension
-            if (record.source_file) {
-                const extension = record.source_file.toLowerCase().split('.').pop();
-                if (extension === 'xlsx' || extension === 'xls') {
-                    return 'EXCEL';
-                } else if (extension === 'pdf') {
-                    return 'PDF';
-                }
-            }
-
-            return 'UNKNOWN';
-        } catch (error) {
-            return 'UNKNOWN';
-        }
-    }
-
-    /**
-     * Get Excel-specific validation statistics
-     * @returns {Promise<Object>} Excel validation statistics
-     */
-    async getExcelValidationStats() {
-        try {
-            // Get all Excel records from backup_table
-            const excelBackupRecords = await databaseManager.query(`
-        SELECT Id, Phone, source_file, extracted_metadata
-        FROM backup_table
-        WHERE source_file LIKE '%.xlsx' OR source_file LIKE '%.xls'
-           OR extracted_metadata LIKE '%"file_type":"excel"%'
-      `);
-
-            // Get corresponding check_table records
-            const excelIds = excelBackupRecords.map(r => r.Id);
-            let excelCheckRecords = [];
-
-            if (excelIds.length > 0) {
-                excelCheckRecords = await databaseManager.query(
-                    'SELECT Id, Phone, Status FROM check_table WHERE Id IN (?)',
-                    [excelIds]
-                );
-            }
-
-            // Calculate statistics
-            const stats = {
-                totalExcelRecords: excelBackupRecords.length,
-                validatedExcelRecords: excelCheckRecords.length,
-                pendingValidation: excelBackupRecords.length - excelCheckRecords.length,
-                validSingaporeNumbers: excelCheckRecords.filter(r => r.Status === 1).length,
-                invalidNumbers: excelCheckRecords.filter(r => r.Status === 0).length,
-                validationRate: excelBackupRecords.length > 0
-                    ? ((excelCheckRecords.length / excelBackupRecords.length) * 100).toFixed(2)
-                    : 0,
-                singaporeValidRate: excelCheckRecords.length > 0
-                    ? ((excelCheckRecords.filter(r => r.Status === 1).length / excelCheckRecords.length) * 100).toFixed(2)
-                    : 0
-            };
-
-            return {
-                success: true,
-                stats: stats,
-                timestamp: new Date().toISOString()
-            };
-
-        } catch (error) {
-            console.error('Error getting Excel validation statistics:', error.message);
-            return {
-                success: false,
-                error: error.message,
-                timestamp: new Date().toISOString()
-            };
-        }
-    }
-
-    /**
-     * Get validation statistics by source type (PDF vs Excel)
-     * @returns {Promise<Object>} Validation statistics by source type
-     */
-    async getValidationStatsBySourceType() {
-        try {
-            // Get all backup records with metadata
-            const allBackupRecords = await databaseManager.query(`
-        SELECT Id, Phone, source_file, extracted_metadata
-        FROM backup_table
-      `);
-
-            // Get all check records
-            const allCheckRecords = await databaseManager.query(`
-        SELECT Id, Phone, Status
-        FROM check_table
-      `);
-
-            // Create lookup for check records
-            const checkRecordMap = new Map();
-            allCheckRecords.forEach(record => {
-                checkRecordMap.set(record.Id, record);
-            });
-
-            // Categorize records by source type
-            const stats = {
-                excel: { total: 0, validated: 0, valid: 0, invalid: 0 },
-                pdf: { total: 0, validated: 0, valid: 0, invalid: 0 },
-                unknown: { total: 0, validated: 0, valid: 0, invalid: 0 }
-            };
-
-            for (const backupRecord of allBackupRecords) {
-                const sourceType = this.getRecordSourceType(backupRecord).toLowerCase();
-                const category = sourceType === 'excel' ? 'excel' :
-                    sourceType === 'pdf' ? 'pdf' : 'unknown';
-
-                stats[category].total++;
-
-                const checkRecord = checkRecordMap.get(backupRecord.Id);
-                if (checkRecord) {
-                    stats[category].validated++;
-                    if (checkRecord.Status === 1) {
-                        stats[category].valid++;
-                    } else {
-                        stats[category].invalid++;
-                    }
-                }
-            }
-
-            // Calculate percentages
-            for (const category of Object.keys(stats)) {
-                const categoryStats = stats[category];
-                categoryStats.validationRate = categoryStats.total > 0
-                    ? ((categoryStats.validated / categoryStats.total) * 100).toFixed(2)
-                    : 0;
-                categoryStats.singaporeValidRate = categoryStats.validated > 0
-                    ? ((categoryStats.valid / categoryStats.validated) * 100).toFixed(2)
-                    : 0;
-            }
-
-            return {
-                success: true,
-                statsBySourceType: stats,
-                timestamp: new Date().toISOString()
-            };
-
-        } catch (error) {
-            console.error('Error getting validation statistics by source type:', error.message);
-            return {
-                success: false,
-                error: error.message,
-                timestamp: new Date().toISOString()
-            };
         }
     }
 

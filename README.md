@@ -395,10 +395,7 @@ app-sg-phone/
 │   │   ├── singaporePhoneValidator.js   # Phone validation
 │   │   ├── duplicateDetectionService.js # Duplicate detection
 │   │   ├── excelExporter.js             # Excel export
-│   │   ├── columnMapper.js              # Column mapping
 │   │   ├── dataValidator.js             # Data validation
-│   │   ├── fileManager.js               # File management
-│   │   └── worksheetDetector.js         # Worksheet detection
 │   └── utils/
 │       ├── database.js                  # Database operations
 │       ├── config.js                    # Configuration
