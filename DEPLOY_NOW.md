@@ -47,7 +47,7 @@ Open **`DEPLOYMENT_CHECKLIST.md`** and follow each step (schema does NOT auto-ru
 
 ---
 
-## � Controlled Initialization
+## 🔥 Controlled Initialization
 
 If you need to apply the schema to an empty database:
 - Preferred: Run it manually in the database console on Render after taking a backup.

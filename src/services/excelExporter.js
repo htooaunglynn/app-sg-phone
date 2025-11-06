@@ -756,6 +756,8 @@ class ExcelExporter {
         const maxWidth = 100;
         const paddingChars = 2;
 
+        // WARNING: O(rows × columns) complexity - may impact performance with large worksheets
+        // Consider optimizing for datasets with thousands of rows by sampling
         for (let col = range.s.c; col <= range.e.c; col++) {
             let maxLength = 0;
 
@@ -801,6 +803,8 @@ class ExcelExporter {
         const lineHeight = 15; // Height per line in points
         const maxRowHeight = 200; // Maximum row height
 
+        // WARNING: O(rows × columns) complexity - may impact performance with large worksheets
+        // Consider optimizing for datasets with thousands of rows by sampling
         for (let row = range.s.r; row <= range.e.r; row++) {
             let maxLines = 1;
 
