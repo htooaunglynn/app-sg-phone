@@ -64,7 +64,8 @@ Make sure these are set in your Render web service:
    - It will NOT touch your database unless explicitly enabled
 
 6. **Verify Deployment**
-   - Check build logs for: "✅ Database initialization completed successfully!"
+   - Check build logs to confirm your server started successfully
+   - (If you intentionally enabled DB initialization by setting `DB_INIT_ON_BOOT=true` and `ALLOW_SCHEMA_RESET=true`, you should see: "✅ Database initialization completed successfully!")
    - Visit your app URL
    - Test login/register functionality
 
