@@ -100,8 +100,10 @@ async function uploadExcel() {
 
         closeExcelModal();
 
-        // Reload data to show the newly uploaded companies
+        // Reload data to show the newly uploaded companies and refresh counts
         await loadCompaniesData();
+        // Also refresh total validation counts since new data was added
+        await updateTotalValidationCounts();
 
     } catch (error) {
         console.error('Upload error:', error);
@@ -152,6 +154,60 @@ async function loadCompaniesData(page = 1) {
     }
 }
 
+// ============= COUNT MANAGEMENT =============
+
+async function updateTotalValidationCounts() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/validation-stats`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const stats = await response.json();
+            if (stats.success) {
+                // Update the count displays with total counts from database
+                const duplicateCountEl = document.getElementById('duplicateCount');
+                const invalidCountEl = document.getElementById('invalidCount');
+                const validCountEl = document.getElementById('validCount');
+                const totalCountEl = document.getElementById('totalCount');
+
+                if (duplicateCountEl) duplicateCountEl.textContent = stats.duplicateCount;
+                if (invalidCountEl) invalidCountEl.textContent = stats.invalidCount;
+                if (validCountEl) validCountEl.textContent = stats.validCount;
+                if (totalCountEl) totalCountEl.textContent = stats.totalRecords;
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching validation stats:', error);
+    }
+}
+
+function updateValidationCounts(data = []) {
+    let duplicateCount = 0;
+    let invalidCount = 0;
+    let validCount = 0;
+
+    data.forEach(company => {
+        const status = company.Status !== undefined ? company.Status : company.status;
+        const isValidSingapore = company.isValidSingaporePhone;
+
+        if (company.isDuplicate) {
+            duplicateCount++;
+        } else if (status === 0 || status === false || isValidSingapore === false) {
+            invalidCount++;
+        } else if (status === 1 || status === true || isValidSingapore === true) {
+            validCount++;
+        } else {
+            // Default fallback - treat as invalid if status is unclear
+            invalidCount++;
+        }
+    });
+
+    // Update the count displays for current page only (we'll show total counts separately)
+    // Note: We'll show total counts from the database instead of per-page counts
+}
+
 function renderTable(data = []) {
     const tableBody = document.getElementById('tableBody');
     const emptyState = document.getElementById('emptyState');
@@ -159,6 +215,9 @@ function renderTable(data = []) {
     if (!tableBody || !emptyState) return;
 
     companiesData = data;
+
+    // Update total validation counts from database instead of per-page counts
+    updateTotalValidationCounts();
 
     if (data.length === 0) {
         tableBody.innerHTML = '';
@@ -571,8 +630,9 @@ async function saveEdit() {
 // ============= INITIALIZATION =============
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load initial data
+    // Load initial data and total validation counts
     await loadCompaniesData();
+    await updateTotalValidationCounts();
 });
 
 // Close modal on escape key

@@ -106,6 +106,75 @@ app.use(express.static(path.join(__dirname, '../public')))
 // Authentication routes (server-rendered)
 app.use('/auth', authRoutes)
 
+// GET /api/validation-stats - get total validation counts across all records
+app.get('/api/validation-stats', requireAuth, async (req, res) => {
+    try {
+        // Get total count
+        const total = await db.getCheckRecordsCount()
+
+        // Get all companies to calculate validation stats
+        const allCompanies = await db.getCheckRecords(total, 0)
+        const phoneMap = new Map()
+
+        // Build phone frequency map
+        allCompanies.forEach(company => {
+            const phone = company.phone || company.Phone
+            if (phone) {
+                if (!phoneMap.has(phone)) {
+                    phoneMap.set(phone, [])
+                }
+                phoneMap.get(phone).push(company.id || company.Id)
+            }
+        })
+
+        // Count validation types
+        let duplicateCount = 0
+        let invalidCount = 0
+        let validCount = 0
+
+        // Identify duplicate phone numbers
+        const duplicatePhones = new Set()
+        phoneMap.forEach((ids, phone) => {
+            if (ids.length > 1) {
+                duplicatePhones.add(phone)
+            }
+        })
+
+        // Count each validation type
+        allCompanies.forEach(company => {
+            const phone = company.phone || company.Phone
+            const status = company.status !== undefined ? company.status : company.Status
+            const isDuplicate = phone && duplicatePhones.has(phone)
+
+            if (isDuplicate) {
+                duplicateCount++
+            } else if (status === 0 || status === false) {
+                invalidCount++
+            } else if (status === 1 || status === true) {
+                validCount++
+            } else {
+                // Default fallback - treat as invalid if status is unclear
+                invalidCount++
+            }
+        })
+
+        return res.json({
+            success: true,
+            totalRecords: total,
+            duplicateCount,
+            invalidCount,
+            validCount
+        })
+
+    } catch (error) {
+        console.error('Error fetching validation stats:', error)
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to fetch validation stats'
+        })
+    }
+})
+
 // GET /api/companies - fetch all companies from check_table with validation info (protected route)
 app.get('/api/companies', requireAuth, async (req, res) => {
     try {

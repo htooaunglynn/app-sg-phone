@@ -70,19 +70,32 @@
 
         <!-- Validation Legend -->
         <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 class="text-sm font-semibold mb-2">Phone Number Validation:</h3>
+            <h3 class="text-sm font-semibold mb-2">Phone Number Validation (All Records):</h3>
             <div class="flex flex-wrap gap-4 text-sm">
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-4 bg-orange-200 border border-orange-300 rounded"></div>
                     <span>Duplicate Phone Number</span>
+                    <span id="duplicateCount"
+                        class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">0</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-4 bg-red-200 border border-red-300 rounded"></div>
                     <span>Invalid Singapore Phone Number</span>
+                    <span id="invalidCount"
+                        class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">0</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-4 bg-white border border-gray-300 rounded"></div>
                     <span>Valid Singapore Phone Number</span>
+                    <span id="validCount"
+                        class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">0</span>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-gray-200">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="font-medium text-gray-700">Total Records in Database:</span>
+                    <span id="totalCount"
+                        class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">0</span>
                 </div>
             </div>
         </div>
