@@ -20,7 +20,7 @@ function openExcelModal() {
     }
 }
 
-function closeExcelModal() {
+async function closeExcelModal() {
     const modal = document.getElementById('excelModal');
     const fileInput = document.getElementById('excelFile');
     const fileName = document.getElementById('fileName');
@@ -576,16 +576,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Close modal on escape key
-document.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', async (event) => {
     if (event.key === 'Escape') {
-        closeExcelModal();
+        await closeExcelModal();
     }
 });
 
 // Close modal when clicking outside
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
     const modal = document.getElementById('excelModal');
     if (modal && event.target === modal) {
-        closeExcelModal();
+        await closeExcelModal();
     }
 });
