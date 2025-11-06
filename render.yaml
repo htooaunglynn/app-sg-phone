@@ -4,10 +4,14 @@ services:
     env: node
     plan: free
     buildCommand: npm ci --only=production
-    startCommand: node src/server.js
+    startCommand: node scripts/start.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DB_INIT_ON_BOOT
+        value: 'false'
+      - key: ALLOW_SCHEMA_RESET
+        value: 'false'
       - key: SESSION_SECRET
         sync: false
       - key: SESSION_TIMEOUT
@@ -22,6 +26,7 @@ services:
         sync: false
       - key: DB_NAME
         sync: false
+      - key: DB_SSL
+        value: 'true'
     autoDeploy: true
     branch: main
-    staticPublishPath: public

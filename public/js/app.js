@@ -20,7 +20,7 @@ function openExcelModal() {
     }
 }
 
-function closeExcelModal() {
+async function closeExcelModal() {
     const modal = document.getElementById('excelModal');
     const fileInput = document.getElementById('excelFile');
     const fileName = document.getElementById('fileName');
@@ -220,13 +220,16 @@ function renderTable(data = []) {
 
         return `
         <tr class="hover:bg-gray-50 border-b border-gray-100 ${rowBgColor}">
-            <td class="px-6 py-4 text-sm font-medium">${escapeHtml(id)}</td>
-            <td class="px-6 py-4 text-sm ${phoneStyle}">
-                <div>${escapeHtml(rawPhone)}</div>
+            <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">${escapeHtml(id)}</td>
+            <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
+                ${escapeHtml(rawPhone)}
+                <!-- Search helpers hidden to keep single-line phone cell. Restore if needed. -->
+                <!--
                 <div class="phone-search-buttons mt-1 flex gap-2">
                     <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
                     <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
+                -->
             </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(physicalAddress)}</td>
@@ -573,16 +576,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Close modal on escape key
-document.addEventListener('keydown', (event) => {
+document.addEventListener('keydown', async (event) => {
     if (event.key === 'Escape') {
-        closeExcelModal();
+        await closeExcelModal();
     }
 });
 
 // Close modal when clicking outside
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
     const modal = document.getElementById('excelModal');
     if (modal && event.target === modal) {
-        closeExcelModal();
+        await closeExcelModal();
     }
 });
