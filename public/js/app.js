@@ -397,7 +397,7 @@ function renderPagination(result) {
     paginationContainer.innerHTML = paginationHTML;
 }
 
-function filterTable() {
+async function filterTable() {
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
 
@@ -405,31 +405,61 @@ function filterTable() {
 
     if (!searchTerm) {
         // If search is cleared, reload data with pagination
-        loadCompaniesData(currentPage);
+        await loadCompaniesData(currentPage);
         return;
     }
 
-    // Filter current page data only
-    const filtered = companiesData.filter(company => {
-        const companyName = (company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '').toLowerCase();
-        const email = (company.Email || company.email || '').toLowerCase();
-        const phone = (company.Phone || company.phone || '').toLowerCase();
-        const website = (company.Website || company.website || '').toLowerCase();
-        const address = (company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '').toLowerCase();
+    try {
+        // Search across all records in the database
+        const response = await fetch(`${API_BASE_URL}/api/companies/search?q=${encodeURIComponent(searchTerm)}&limit=100&offset=0`, {
+            method: 'GET',
+            credentials: 'include'
+        });
 
-        return companyName.includes(searchTerm) ||
-            email.includes(searchTerm) ||
-            phone.includes(searchTerm) ||
-            website.includes(searchTerm) ||
-            address.includes(searchTerm);
-    });
+        if (!response.ok) {
+            throw new Error('Search failed');
+        }
 
-    renderTable(filtered);
+        const result = await response.json();
 
-    // Hide pagination when filtering
-    const paginationContainer = document.getElementById('paginationContainer');
-    if (paginationContainer) {
-        paginationContainer.style.display = 'none';
+        if (result.success && result.data) {
+            renderTable(result.data);
+
+            // Hide pagination when showing search results
+            const paginationContainer = document.getElementById('paginationContainer');
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
+        } else {
+            renderTable([]);
+        }
+
+    } catch (error) {
+        console.error('Search error:', error);
+        // Fallback to local filtering if search API fails
+        const filtered = companiesData.filter(company => {
+            const id = String(company.Id || company.id || '').toLowerCase();
+            const companyName = (company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '').toLowerCase();
+            const email = (company.Email || company.email || '').toLowerCase();
+            const phone = (company.Phone || company.phone || '').toLowerCase();
+            const website = (company.Website || company.website || '').toLowerCase();
+            const address = (company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '').toLowerCase();
+
+            return id.includes(searchTerm) ||
+                companyName.includes(searchTerm) ||
+                email.includes(searchTerm) ||
+                phone.includes(searchTerm) ||
+                website.includes(searchTerm) ||
+                address.includes(searchTerm);
+        });
+
+        renderTable(filtered);
+
+        // Hide pagination when filtering
+        const paginationContainer = document.getElementById('paginationContainer');
+        if (paginationContainer) {
+            paginationContainer.style.display = 'none';
+        }
     }
 }
 

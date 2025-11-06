@@ -354,6 +354,117 @@ app.post('/api/export', requireAuth, async (req, res) => {
     }
 })
 
+// GET /api/companies/search - search companies across all records
+app.get('/api/companies/search', requireAuth, async (req, res) => {
+    try {
+        const searchTerm = req.query.q;
+        if (!searchTerm || searchTerm.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                error: 'Search term is required'
+            });
+        }
+
+        const limit = parseInt(req.query.limit) || 100;
+        const offset = parseInt(req.query.offset) || 0;
+        const term = `%${searchTerm.trim().toLowerCase()}%`;
+
+        // Search across ID, phone, company_name, email, website, and physical_address
+        const searchQuery = `
+            SELECT id, numeric_id, phone, status,
+                   company_name, physical_address,
+                   email, website, created_at, updated_at
+            FROM check_table
+            WHERE LOWER(id::text) LIKE $1
+               OR LOWER(phone) LIKE $1
+               OR LOWER(COALESCE(company_name, '')) LIKE $1
+               OR LOWER(COALESCE(email, '')) LIKE $1
+               OR LOWER(COALESCE(website, '')) LIKE $1
+               OR LOWER(COALESCE(physical_address, '')) LIKE $1
+            ORDER BY numeric_id ASC, id ASC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const countQuery = `
+            SELECT COUNT(*) as count
+            FROM check_table
+            WHERE LOWER(id::text) LIKE $1
+               OR LOWER(phone) LIKE $1
+               OR LOWER(COALESCE(company_name, '')) LIKE $1
+               OR LOWER(COALESCE(email, '')) LIKE $1
+               OR LOWER(COALESCE(website, '')) LIKE $1
+               OR LOWER(COALESCE(physical_address, '')) LIKE $1
+        `;
+
+        const [searchResults, countResults] = await Promise.all([
+            db.query(searchQuery, [term, limit, offset]),
+            db.query(countQuery, [term])
+        ]);
+
+        const total = parseInt(countResults[0]?.count || 0);
+
+        // Get all companies to detect duplicates
+        const allCompanies = await db.getCheckRecords(await db.getCheckRecordsCount(), 0);
+        const phoneMap = new Map();
+
+        // Build phone frequency map
+        allCompanies.forEach(company => {
+            const phone = company.phone;
+            if (phone) {
+                if (!phoneMap.has(phone)) {
+                    phoneMap.set(phone, []);
+                }
+                phoneMap.get(phone).push(company.id);
+            }
+        });
+
+        // Identify duplicate phone numbers
+        const duplicatePhones = new Set();
+        phoneMap.forEach((ids, phone) => {
+            if (ids.length > 1) {
+                duplicatePhones.add(phone);
+            }
+        });
+
+        // Mark duplicates for search results
+        const enrichedResults = searchResults.map(company => {
+            const phone = company.phone;
+            const isDuplicate = phone && duplicatePhones.has(phone);
+            const isValidSingaporePhone = company.status === true;
+
+            return {
+                Id: company.id,
+                Phone: company.phone,
+                CompanyName: company.company_name,
+                PhysicalAddress: company.physical_address,
+                Email: company.email,
+                Website: company.website,
+                Status: company.status,
+                isDuplicate,
+                isValidSingaporePhone
+            };
+        });
+
+        return res.json({
+            success: true,
+            data: enrichedResults,
+            count: enrichedResults.length,
+            total: total,
+            limit: limit,
+            offset: offset,
+            searchTerm: searchTerm,
+            hasMore: (offset + searchResults.length) < total
+        });
+
+    } catch (error) {
+        console.error('Error searching companies:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to search companies'
+        });
+    }
+});
+
 // PUT /api/companies/:id - update company info (company fields only)
 app.put('/api/companies/:id', requireAuth, async (req, res) => {
     try {
