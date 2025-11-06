@@ -1,3 +1,8 @@
+-- WARNING: This schema is DESTRUCTIVE when executed as-is.
+-- It begins by dropping existing tables. Do NOT run in production
+-- unless you have a current backup and explicitly intend to reset data.
+-- Prefer running this only for initial setup or in local/dev environments.
+
 -- Drop tables if exist (order matters because of FK dependency)
 DROP TABLE IF EXISTS user_logins;
 DROP TABLE IF EXISTS users;

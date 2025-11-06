@@ -330,17 +330,13 @@ class ExcelExporter {
             const enableStyling = options.enableStyling !== false;
             const stylingOptions = options.stylingOptions || {};
 
-            // Set column widths (this doesn't require validation)
-            const columnWidths = [
-                { wch: 20 }, // ID
-                { wch: 15 }, // Phone Number
-                { wch: 25 }, // Company Name
-                { wch: 35 }, // Physical Address
-                { wch: 25 }, // Email
-                { wch: 25 }  // Website
-            ];
-
+            // Auto-fit column widths based on content
+            const columnWidths = this.calculateColumnWidths(worksheet, data);
             worksheet['!cols'] = columnWidths;
+
+            // Auto-fit row heights based on content
+            const rowHeights = this.calculateRowHeights(worksheet, data);
+            worksheet['!rows'] = rowHeights;
 
             // Identify duplicate phone numbers before styling with comprehensive error handling
             let duplicatePhoneInfo = null;
@@ -722,17 +718,14 @@ class ExcelExporter {
             // Ensure Excel export continues even if all formatting fails
             // This is critical for maintaining export functionality
             try {
-                // At minimum, ensure column widths are set
-                const columnWidths = [
-                    { wch: 20 }, // ID
-                    { wch: 15 }, // Phone Number
-                    { wch: 25 }, // Company Name
-                    { wch: 35 }, // Physical Address
-                    { wch: 25 }, // Email
-                    { wch: 25 }  // Website
-                ];
+                // At minimum, ensure column widths and row heights are set with auto-fit
+                const columnWidths = this.calculateColumnWidths(worksheet, data);
                 worksheet['!cols'] = columnWidths;
-                console.log('Applied basic column widths as fallback');
+
+                const rowHeights = this.calculateRowHeights(worksheet, data);
+                worksheet['!rows'] = rowHeights;
+
+                console.log('Applied auto-fit column widths and row heights as fallback');
             } catch (fallbackError) {
                 logStylingFailure('fallbackFormattingError', fallbackError, {
                     severity: 'error'
@@ -740,6 +733,95 @@ class ExcelExporter {
                 console.error('Even fallback formatting failed, export will continue with no formatting:', fallbackError.message);
             }
         }
+    }
+
+    /**
+     * Calculate optimal column widths based on content
+     * @param {Object} worksheet - XLSX worksheet object
+     * @param {Array} data - Worksheet data array
+     * @returns {Array} Array of column width objects
+     */
+    calculateColumnWidths(worksheet, data) {
+        const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+        if (!range) {
+            // Return default widths if no range
+            return [
+                { wch: 20 }, { wch: 15 }, { wch: 25 },
+                { wch: 35 }, { wch: 25 }, { wch: 25 }
+            ];
+        }
+
+        const columnWidths = [];
+        const minWidth = 10;
+        const maxWidth = 100;
+        const paddingChars = 2;
+
+        for (let col = range.s.c; col <= range.e.c; col++) {
+            let maxLength = 0;
+
+            // Check all rows for this column
+            for (let row = range.s.r; row <= range.e.r; row++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                const cell = worksheet[cellAddress];
+
+                if (cell && cell.v != null) {
+                    const cellValue = String(cell.v);
+                    const cellLength = cellValue.length;
+
+                    // Account for multi-line content
+                    const lines = cellValue.split('\n');
+                    const longestLine = Math.max(...lines.map(line => line.length));
+
+                    maxLength = Math.max(maxLength, longestLine);
+                }
+            }
+
+            // Add padding and constrain to min/max
+            const width = Math.min(Math.max(maxLength + paddingChars, minWidth), maxWidth);
+            columnWidths.push({ wch: width });
+        }
+
+        return columnWidths;
+    }
+
+    /**
+     * Calculate optimal row heights based on content
+     * @param {Object} worksheet - XLSX worksheet object
+     * @param {Array} data - Worksheet data array
+     * @returns {Array} Array of row height objects
+     */
+    calculateRowHeights(worksheet, data) {
+        const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+        if (!range) {
+            return [];
+        }
+
+        const rowHeights = [];
+        const baseRowHeight = 15; // Base height in points
+        const lineHeight = 15; // Height per line in points
+        const maxRowHeight = 200; // Maximum row height
+
+        for (let row = range.s.r; row <= range.e.r; row++) {
+            let maxLines = 1;
+
+            // Check all columns for this row
+            for (let col = range.s.c; col <= range.e.c; col++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                const cell = worksheet[cellAddress];
+
+                if (cell && cell.v != null) {
+                    const cellValue = String(cell.v);
+                    const lines = cellValue.split('\n').length;
+                    maxLines = Math.max(maxLines, lines);
+                }
+            }
+
+            // Calculate height based on number of lines
+            const height = Math.min(baseRowHeight + ((maxLines - 1) * lineHeight), maxRowHeight);
+            rowHeights.push({ hpt: height });
+        }
+
+        return rowHeights;
     }
 
     /**

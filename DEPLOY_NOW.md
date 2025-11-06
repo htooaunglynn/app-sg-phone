@@ -2,7 +2,7 @@
 
 ## ✅ Your Project is Deployment-Ready!
 
-This project is configured for **automatic deployment** to Render with **PostgreSQL database auto-initialization**.
+This project is configured for automatic deployment to Render. Database schema initialization in production is now opt-in only to prevent data loss.
 
 ---
 
@@ -21,7 +21,7 @@ git push origin main
 ```
 
 ### 3. Follow the Checklist
-Open **`DEPLOYMENT_CHECKLIST.md`** and follow each step.
+Open **`DEPLOYMENT_CHECKLIST.md`** and follow each step (schema does NOT auto-run).
 
 ---
 
@@ -40,23 +40,18 @@ Open **`DEPLOYMENT_CHECKLIST.md`** and follow each step.
 ## 🎯 What's Configured
 
 ✅ **Auto-Deploy**: Push to `main` = automatic deployment
-✅ **Auto-Schema**: Database schema runs automatically on deploy
+🚫 **No Auto-Schema**: Database schema does NOT run automatically on deploy
 ✅ **PostgreSQL**: Production-ready database
 ✅ **Zero Data Loss**: Existing data preserved on redeploy
 ✅ **Full Logging**: Detailed build and runtime logs
 
 ---
 
-## 🔥 Auto-Initialization
+## � Controlled Initialization
 
-On every deployment, the schema automatically:
-- Creates ENUM types (`user_status`, `login_result`)
-- Creates tables (`users`, `user_logins`, `check_table`)
-- Sets up triggers for auto-updating timestamps
-- Creates indexes for performance
-- Verifies tables were created successfully
-
-**No manual database setup required!**
+If you need to apply the schema to an empty database:
+- Preferred: Run it manually in the database console on Render after taking a backup.
+- Or: Temporarily set `DB_INIT_ON_BOOT=true` and `ALLOW_SCHEMA_RESET=true`, deploy once, then set both back to `false`.
 
 ---
 

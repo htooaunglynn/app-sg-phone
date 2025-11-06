@@ -1,48 +1,42 @@
 # Render Deployment Guide
 
-## Automatic PostgreSQL Schema Initialization
+⚠️ Important safety change: Production deployments no longer auto-apply the schema. The previous setup could drop tables on deploy (because `schema-postgres.sql` contains DROP TABLE statements). This guide reflects the safe, opt-in-only behavior.
 
-Your project is configured to automatically initialize the PostgreSQL database when deployed to Render.
+## How Deploy Works Now
 
-### How It Works
-
-1. **Build Phase**: `npm install && npm run build:css && node scripts/init-postgres.js`
+1. Build phase: `npm ci --only=production`
    - Installs dependencies
-   - Builds Tailwind CSS
-   - **Runs PostgreSQL schema initialization script**
-
-2. **Start Phase**: `node src/server.js`
+2. Start phase: `node scripts/start.js`
    - Starts your Express server
+   - Skips DB initialization by default
 
-### Database Schema Auto-Setup
+To intentionally run the schema in production, you must set both of these env vars (DANGEROUS):
+- `DB_INIT_ON_BOOT=true`
+- `ALLOW_SCHEMA_RESET=true`
 
-The `scripts/init-postgres.js` script automatically:
-- ✅ Connects to your Render PostgreSQL database
-- ✅ Executes `schema-postgres.sql`
-- ✅ Creates all tables (users, user_logins, check_table)
-- ✅ Sets up ENUM types, indexes, and triggers
-- ✅ Verifies tables were created successfully
-- ✅ Logs table counts for monitoring
+Without both, the schema will NOT run in production.
 
 ### Environment Variables Required
 
 Make sure these are set in your Render web service:
 
-| Variable          | Example                                | Description                    |
-| ----------------- | -------------------------------------- | ------------------------------ |
-| `DB_HOST`         | `dpg-xxxxx.oregon-postgres.render.com` | From Render PostgreSQL         |
-| `DB_PORT`         | `5432`                                 | PostgreSQL port (default 5432) |
-| `DB_NAME`         | `your_database_name`                   | From Render PostgreSQL         |
-| `DB_USER`         | `your_database_user`                   | From Render PostgreSQL         |
-| `DB_PASSWORD`     | `your_database_password`               | From Render PostgreSQL         |
-| `DB_SSL`          | `true`                                 | Enable SSL for production      |
-| `NODE_ENV`        | `production`                           | Environment mode               |
-| `PORT`            | `4000`                                 | Server port                    |
-| `SESSION_SECRET`  | `your-random-secret-key`               | Session encryption key         |
-| `SESSION_TIMEOUT` | `86400000`                             | Session timeout (24h)          |
-| `CORS_ORIGIN`     | `https://your-app.onrender.com`        | Your Render URL                |
+| Variable             | Example                                | Description                    |
+| -------------------- | -------------------------------------- | ------------------------------ |
+| `DB_HOST`            | `dpg-xxxxx.oregon-postgres.render.com` | From Render PostgreSQL         |
+| `DB_PORT`            | `5432`                                 | PostgreSQL port (default 5432) |
+| `DB_NAME`            | `your_database_name`                   | From Render PostgreSQL         |
+| `DB_USER`            | `your_database_user`                   | From Render PostgreSQL         |
+| `DB_PASSWORD`        | `your_database_password`               | From Render PostgreSQL         |
+| `DB_SSL`             | `true`                                 | Enable SSL for production      |
+| `NODE_ENV`           | `production`                           | Environment mode               |
+| `PORT`               | `4000`                                 | Server port                    |
+| `SESSION_SECRET`     | `your-random-secret-key`               | Session encryption key         |
+| `SESSION_TIMEOUT`    | `86400000`                             | Session timeout (24h)          |
+| `CORS_ORIGIN`        | `https://your-app.onrender.com`        | Your Render URL                |
+| `DB_INIT_ON_BOOT`    | `false`                                | Do NOT init DB on boot         |
+| `ALLOW_SCHEMA_RESET` | `false`                                | Extra guard to block schema    |
 
-### Deployment Steps
+## Deployment Steps
 
 1. **Create PostgreSQL Database on Render**
    - Dashboard → New → PostgreSQL
@@ -66,37 +60,22 @@ Make sure these are set in your Render web service:
 
 5. **Deploy**
    - Click "Create Web Service"
-   - Render will:
-     1. Install dependencies
-     2. Build CSS
-     3. **Run schema initialization** ✨
-     4. Start your server
-   - Check build logs to verify schema was created
+   - Render will install dependencies and start your server
+   - It will NOT touch your database unless explicitly enabled
 
 6. **Verify Deployment**
    - Check build logs for: "✅ Database initialization completed successfully!"
    - Visit your app URL
    - Test login/register functionality
 
-### Manual Schema Initialization (If Needed)
+### Manually Applying the Schema (One-time only)
 
-If you need to manually run the schema:
+Use one of these controlled methods:
 
-```bash
-# Local test
-node scripts/init-postgres.js
+- Preferred: Run in the database console (PSQL) on Render and paste `schema-postgres.sql` after taking a backup.
+- Or: Temporarily set `DB_INIT_ON_BOOT=true` and `ALLOW_SCHEMA_RESET=true` → deploy once → immediately set them back to `false` and redeploy.
 
-# Or use Render Shell
-# Go to your PostgreSQL database → Shell
-# Paste contents of schema-postgres.sql
-```
-
-### Auto-Deploy on Git Push
-
-Since `render.yaml` has `autoDeploy: true` and `branch: main`:
-- Every push to `main` branch triggers automatic deployment
-- Schema initialization runs on every deployment
-- Existing tables are preserved (using `IF NOT EXISTS`)
+Never leave these toggles enabled in production.
 
 ### Troubleshooting
 
@@ -109,16 +88,25 @@ Since `render.yaml` has `autoDeploy: true` and `branch: main`:
 - Run schema manually in Render PostgreSQL Shell
 - Check `schema-postgres.sql` for syntax errors
 
+## Data Loss Incident Playbook
+
+If you lost data due to a deploy running the schema:
+
+1. Immediately set `DB_INIT_ON_BOOT=false` and `ALLOW_SCHEMA_RESET=false` and redeploy.
+2. Restore your Render Postgres from backup (point-in-time restore):
+   - Render Dashboard → Your Postgres → Backups/Restores → Restore to a new database at a time before the deploy.
+   - Update your app's DB_* env vars to point to the restored database.
+3. Consider extracting only the affected tables (e.g., `check_table`, `users`, `user_logins`) if you prefer migrating data instead of a full DB swap.
+4. Keep the dangerous toggles OFF going forward.
+
 **Connection errors:**
 - Verify `DB_SSL=true` for Render PostgreSQL
 - Check database host/port/credentials
 
 ### What Happens on Each Deployment
 
-1. ✅ Schema creates tables if they don't exist
-2. ✅ Existing data is preserved
-3. ✅ New columns/indexes are added if schema updated
-4. ✅ No data loss on redeployment
+- The server starts. The schema does NOT run automatically.
+- Your data is preserved.
 
 ---
 

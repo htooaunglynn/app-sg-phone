@@ -12,6 +12,14 @@ const path = require('path');
 async function initDatabase() {
     console.log('🔍 Checking if database initialization is needed...');
 
+    // Explicit opt-in only: run DB init on boot when DB_INIT_ON_BOOT=true
+    const shouldInit = process.env.DB_INIT_ON_BOOT === 'true';
+    if (!shouldInit) {
+        console.log('⏭️  Skipping database initialization on boot.');
+        console.log('    Set DB_INIT_ON_BOOT=true to enable (use with care, especially in production).');
+        return false;
+    }
+
     // Check if database environment variables are available
     if (!process.env.DB_HOST) {
         console.log('⚠️  Database environment variables not set. Skipping initialization.');

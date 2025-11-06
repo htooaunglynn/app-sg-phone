@@ -3,10 +3,10 @@
 ## Pre-Deployment
 
 - [ ] Review `DEPLOYMENT_SUMMARY.md` for complete overview
-- [ ] Read `RENDER_DEPLOYMENT.md` for detailed steps
+- [ ] Read `RENDER_DEPLOYMENT.md` for detailed steps (updated: schema does NOT auto-run)
 - [ ] Install dependencies: `npm install`
 - [ ] Verify `schema-postgres.sql` exists
-- [ ] Verify `scripts/init-postgres.js` exists
+- [ ] Verify `scripts/init-postgres.js` exists (only run with explicit toggles)
 - [ ] Verify `render.yaml` is configured
 
 ## Render Setup
@@ -48,6 +48,8 @@ PORT=4000
 SESSION_SECRET=<generate-random-secret>
 SESSION_TIMEOUT=86400000
 CORS_ORIGIN=https://<your-app-name>.onrender.com
+DB_INIT_ON_BOOT=false
+ALLOW_SCHEMA_RESET=false
 ```
 
 - [ ] Generate SESSION_SECRET: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
@@ -55,7 +57,7 @@ CORS_ORIGIN=https://<your-app-name>.onrender.com
 
 ### 4. Deploy
 - [ ] Wait for build to complete
-- [ ] Check build logs for: **"✅ Database initialization completed successfully!"**
+- [ ] Confirm logs do NOT show schema init (by default)
 - [ ] Note your app URL: `https://<your-app-name>.onrender.com`
 
 ## Post-Deployment Verification
@@ -91,10 +93,10 @@ CORS_ORIGIN=https://<your-app-name>.onrender.com
 
 ## Common Issues
 
-### Build fails at schema initialization
+### If you intentionally run schema and it fails
 - [ ] Verify all DB_* environment variables are set
 - [ ] Check PostgreSQL database is running
-- [ ] Review build logs for specific error
+- [ ] Review logs for specific error
 
 ### Can't connect to database
 - [ ] Verify `DB_SSL=true` is set
@@ -102,8 +104,7 @@ CORS_ORIGIN=https://<your-app-name>.onrender.com
 - [ ] Verify PostgreSQL database is in same region
 
 ### Tables not created
-- [ ] Check build logs for schema initialization errors
-- [ ] Manually run schema in PostgreSQL console
+- [ ] Manually run schema in PostgreSQL console (preferred)
 - [ ] Verify `schema-postgres.sql` is valid
 
 ---
@@ -111,10 +112,9 @@ CORS_ORIGIN=https://<your-app-name>.onrender.com
 ## Success! 🎉
 
 When you see:
-- ✅ "✅ Database initialization completed successfully!" in build logs
 - ✅ Your app loads at `https://your-app.onrender.com`
 - ✅ You can register and login
-- ✅ Tables exist in PostgreSQL console
+- ✅ Tables exist in PostgreSQL console (after manual one-time init)
 
 **Your deployment is complete!**
 

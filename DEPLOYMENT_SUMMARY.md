@@ -2,24 +2,24 @@
 
 ## ✅ What Was Done
 
-Your project is now fully configured for automatic deployment to Render with PostgreSQL database auto-initialization.
+Your project is now configured for automatic deployment to Render with PostgreSQL. Database initialization in production is now opt-in only to avoid destructive resets.
 
 ### Files Created/Modified
 
 1. **`schema-postgres.sql`** ✨ NEW
    - PostgreSQL-compatible schema converted from MySQL
-   - Auto-creates all tables, indexes, triggers, and constraints
-   - Safe to run multiple times (uses `IF NOT EXISTS`)
+   - Creates tables, indexes, triggers, and constraints
+   - WARNING: contains `DROP TABLE IF EXISTS` at the top for clean setup. Do NOT run in production unless you have a backup and intend to reset data.
 
 2. **`scripts/init-postgres.js`** ✨ NEW
-   - Auto-initialization script
-   - Runs during Render build phase
+   - Initialization script (guarded)
+   - Skipped in production unless `ALLOW_SCHEMA_RESET=true`
    - Validates database connection
    - Creates all tables automatically
    - Provides detailed logging
 
 3. **`render.yaml`** ✨ UPDATED
-   - Build command now runs schema initialization
+   - Does NOT run schema initialization on deploy
    - Auto-deploys on push to `main` branch
    - Configured for free tier
 
@@ -46,26 +46,24 @@ Your project is now fully configured for automatic deployment to Render with Pos
 
 ```
 1. GitHub Push to main branch
-         ↓
+      ↓
 2. Render detects change (auto-deploy enabled)
-         ↓
+      ↓
 3. Build Phase:
-   - npm install (installs dependencies + pg package)
-   - npm run build:css (builds Tailwind CSS)
-   - node scripts/init-postgres.js ✨ (auto-creates database schema)
-         ↓
+   - npm ci --only=production (installs dependencies)
+      ↓
 4. Start Phase:
-   - node src/server.js (starts your Express server)
-         ↓
+   - node scripts/start.js (starts server; DB init is skipped by default)
+      ↓
 5. Your app is live! 🎉
 ```
 
 ### Schema Initialization Details:
 
-The `scripts/init-postgres.js` script:
+The `scripts/init-postgres.js` script (only when explicitly allowed):
 - ✅ Reads `schema-postgres.sql`
-- ✅ Connects to your Render PostgreSQL database
-- ✅ Executes the complete schema
+- ✅ Connects to your PostgreSQL database
+- ✅ Executes the complete schema (DESTRUCTIVE: drops and recreates tables)
 - ✅ Creates ENUM types (`user_status`, `login_result`)
 - ✅ Creates tables (`users`, `user_logins`, `check_table`)
 - ✅ Sets up triggers for auto-updating timestamps
@@ -143,9 +141,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### 4. Deploy!
 
 - Render starts building automatically
-- Watch the build logs
-- Look for: **"✅ Database initialization completed successfully!"**
 - Your app will be live at: `https://your-app.onrender.com`
+- The schema will NOT run unless you explicitly enable it.
 
 ### 5. Verify Deployment
 
@@ -163,24 +160,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## 🔄 Subsequent Deployments
 
-After initial setup, deployment is automatic:
-
-1. Make code changes locally
-2. Commit: `git commit -m "Your changes"`
-3. Push: `git push origin main`
-4. Render automatically:
-   - Detects the push
-   - Rebuilds your app
-   - Runs schema initialization (safe, preserves data)
-   - Restarts your service
-   - Your changes are live! 🎉
+After initial setup, deployment is automatic and does not modify the database schema by default.
 
 ---
 
 ## 🎯 Key Features
 
 ✅ **Automatic Deployment**: Push to `main` = auto-deploy
-✅ **Database Auto-Init**: Schema runs on every deployment
+✅ **Safe by default**: Schema never runs automatically in production
 ✅ **Zero Data Loss**: Existing tables/data preserved
 ✅ **Full Logging**: Detailed logs for monitoring
 ✅ **Production Ready**: SSL, sessions, authentication

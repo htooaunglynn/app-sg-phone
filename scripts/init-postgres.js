@@ -12,6 +12,15 @@ const path = require('path');
 async function initializeDatabase() {
     console.log('🚀 Starting PostgreSQL database initialization...');
 
+    // Safety guard: avoid destructive resets in production unless explicitly allowed
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowSchemaReset = process.env.ALLOW_SCHEMA_RESET === 'true' || process.env.DB_RESET === 'true';
+    if (isProduction && !allowSchemaReset) {
+        console.log('🛑 Production environment detected. Skipping schema apply/reset.');
+        console.log('    To run this intentionally, set ALLOW_SCHEMA_RESET=true (DANGEROUS) and redeploy.');
+        process.exit(0);
+    }
+
     // Database connection configuration from environment variables
     const dbConfig = {
         host: process.env.DB_HOST,
