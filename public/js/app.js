@@ -233,7 +233,7 @@ function renderTable(data = []) {
             </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(physicalAddress)}</td>
-            <td class="px-6 py-4 text-sm text-blue-600 whitespace-nowrap">
+            <td class="px-6 py-4 text-sm text-blue-600 break-all">
                 ${email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''}
             </td>
             <td class="px-6 py-4 text-sm text-blue-600">
