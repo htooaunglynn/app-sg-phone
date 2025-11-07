@@ -283,12 +283,12 @@ function renderTable(data = []) {
             <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
                 ${escapeHtml(rawPhone)}
                 <!-- Search helpers hidden to keep single-line phone cell. Restore if needed. -->
-                <!--
+
                 <div class="phone-search-buttons mt-1 flex gap-2">
                     <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
                     <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
-                -->
+
             </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(physicalAddress)}</td>
