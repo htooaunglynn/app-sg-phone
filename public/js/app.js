@@ -278,17 +278,17 @@ function renderTable(data = []) {
         const website = company.Website || company.website || '';
 
         return `
-        <tr class="hover:bg-gray-50 border-b border-gray-100 ${rowBgColor}">
+        <tr class="hover:bg-gray-50 border-b border-gray-100 ${rowBgColor}" onclick="openEditModal('${escapeHtml(String(id))}')" style="cursor: pointer;">
             <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">${escapeHtml(id)}</td>
             <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
                 ${escapeHtml(rawPhone)}
                 <!-- Search helpers hidden to keep single-line phone cell. Restore if needed. -->
-
+<!--
                 <div class="phone-search-buttons mt-1 flex gap-2">
                     <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
                     <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
-
+-->
             </td>
             <td class="px-6 py-4 text-sm">${escapeHtml(companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(physicalAddress)}</td>
@@ -298,12 +298,14 @@ function renderTable(data = []) {
             <td class="px-6 py-4 text-sm text-blue-600">
                 ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(website)}</a>` : ''}
             </td>
+            <!--
             <td class="px-6 py-4 text-sm">
                 <button onclick="openEditModal('${escapeHtml(String(id))}')"
                     class="text-gray-700 hover:text-black font-medium transition">
                     Edit
                 </button>
             </td>
+             -->
         </tr>
     `;
     }).join('');
