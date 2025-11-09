@@ -578,6 +578,18 @@ function openEditModal(id) {
         emailInput.value = company.Email || company.email || '';
         websiteInput.value = company.Website || company.website || '';
 
+        // Dynamic phone search links (was previously using unresolved template vars in EJS)
+        const rawPhone = String(company.Phone || company.phone || '').replace(/\D+/g, '');
+        const encodedPhone = encodeURIComponent(rawPhone);
+        const plus65Link = document.getElementById('editPhoneSearchPlus65');
+        const quotesLink = document.getElementById('editPhoneSearchQuotes');
+        if (plus65Link) {
+            plus65Link.href = rawPhone ? `https://www.google.com/search?q=%2B65${encodedPhone}` : '#';
+        }
+        if (quotesLink) {
+            quotesLink.href = rawPhone ? `https://www.google.com/search?q=%27${encodedPhone}%27` : '#';
+        }
+
         modal.classList.remove('hidden');
     } catch (e) {
         console.error('Failed to open edit modal:', e);
