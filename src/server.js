@@ -131,6 +131,8 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
         let duplicateCount = 0
         let invalidCount = 0
         let validCount = 0
+        let finishCount = 0
+        let notFinishCount = 0
 
         // Identify duplicate phone numbers
         const duplicatePhones = new Set()
@@ -145,6 +147,23 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
             const phone = company.phone || company.Phone
             const status = company.status !== undefined ? company.status : company.Status
             const isDuplicate = phone && duplicatePhones.has(phone)
+
+            // Check if record has finish data (at least one field filled)
+            const companyName = company.company_name
+            const physicalAddress = company.physical_address
+            const email = company.email
+            const website = company.website
+
+            const hasFinishData = (companyName && companyName.trim() !== '') ||
+                (physicalAddress && physicalAddress.trim() !== '') ||
+                (email && email.trim() !== '') ||
+                (website && website.trim() !== '')
+
+            if (hasFinishData) {
+                finishCount++
+            } else {
+                notFinishCount++
+            }
 
             if (isDuplicate) {
                 duplicateCount++
@@ -163,7 +182,9 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
             totalRecords: total,
             duplicateCount,
             invalidCount,
-            validCount
+            validCount,
+            finishCount,
+            notFinishCount
         })
 
     } catch (error) {

@@ -171,11 +171,15 @@ async function updateTotalValidationCounts() {
                 const invalidCountEl = document.getElementById('invalidCount');
                 const validCountEl = document.getElementById('validCount');
                 const totalCountEl = document.getElementById('totalCount');
+                const finishCountEl = document.getElementById('finishCount');
+                const notFinishCountEl = document.getElementById('notFinishCount');
 
                 if (duplicateCountEl) duplicateCountEl.textContent = stats.duplicateCount;
                 if (invalidCountEl) invalidCountEl.textContent = stats.invalidCount;
                 if (validCountEl) validCountEl.textContent = stats.validCount;
                 if (totalCountEl) totalCountEl.textContent = stats.totalRecords;
+                if (finishCountEl) finishCountEl.textContent = stats.finishCount;
+                if (notFinishCountEl) notFinishCountEl.textContent = stats.notFinishCount;
             }
         }
     } catch (error) {
