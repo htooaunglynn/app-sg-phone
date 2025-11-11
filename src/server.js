@@ -354,6 +354,252 @@ app.post('/api/export', requireAuth, async (req, res) => {
     }
 })
 
+// GET /api/export/finish-data - export records where at least one field is filled (protected route)
+app.get('/api/export/finish-data', requireAuth, async (req, res) => {
+    try {
+        console.log('Exporting finish data (at least one field filled)...')
+
+        // Get all records from database
+        const total = await db.getCheckRecordsCount()
+        const allRecords = await db.getCheckRecords(total, 0)
+
+        // Filter records where AT LEAST ONE field (company_name, physical_address, email, website) is NOT null
+        const finishRecords = allRecords.filter(record => {
+            const companyName = record.company_name
+            const physicalAddress = record.physical_address
+            const email = record.email
+            const website = record.website
+
+            // Check if at least one field is present and not empty
+            return (companyName && companyName.trim() !== '') ||
+                (physicalAddress && physicalAddress.trim() !== '') ||
+                (email && email.trim() !== '') ||
+                (website && website.trim() !== '')
+        })
+
+        console.log(`Found ${finishRecords.length} records with at least one field filled out of ${total} total records`)
+
+        if (finishRecords.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'No records found with at least one field filled'
+            })
+        }
+
+        // Format records for export
+        const exportData = finishRecords.map(record => ({
+            Id: record.id || '',
+            Phone: record.phone || '',
+            'Company Name': record.company_name || '',
+            'Physical Address': record.physical_address || '',
+            Email: record.email || '',
+            Website: record.website || ''
+        }))
+
+        // Use ExcelExporter service
+        const exportResult = await excelExporter.exportCheckTableRecords(exportData, {
+            sheetName: 'Finish Data',
+            enableStyling: true,
+            stylingOptions: {}
+        })
+
+        if (!exportResult.success || !exportResult.buffer) {
+            console.error('Excel export failed:', exportResult.error)
+            return res.status(500).json({
+                error: exportResult.error || 'Failed to generate Excel file'
+            })
+        }
+
+        // Send Excel file
+        const filename = `finish_data_export_${new Date().toISOString().split('T')[0]}.xlsx`
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+        res.setHeader('Content-Length', exportResult.buffer.length)
+
+        console.log(`Finish data export completed: ${finishRecords.length} records`)
+        res.send(exportResult.buffer)
+
+    } catch (err) {
+        console.error('Finish data export error:', err)
+        res.status(500).json({
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        })
+    }
+})
+
+// GET /api/export/no-data - export records where all fields are null (protected route)
+app.get('/api/export/no-data', requireAuth, async (req, res) => {
+    try {
+        console.log('Exporting no data (all fields empty)...')
+
+        // Get all records from database
+        const total = await db.getCheckRecordsCount()
+        const allRecords = await db.getCheckRecords(total, 0)
+
+        // Filter records where ALL fields (company_name, physical_address, email, website) are null or empty
+        const noDataRecords = allRecords.filter(record => {
+            const companyName = record.company_name
+            const physicalAddress = record.physical_address
+            const email = record.email
+            const website = record.website
+
+            // Check if all fields are null or empty
+            return (!companyName || companyName.trim() === '') &&
+                (!physicalAddress || physicalAddress.trim() === '') &&
+                (!email || email.trim() === '') &&
+                (!website || website.trim() === '')
+        })
+
+        console.log(`Found ${noDataRecords.length} records with all fields empty out of ${total} total records`)
+
+        if (noDataRecords.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'No records found with all fields empty'
+            })
+        }
+
+        // Format records for export
+        const exportData = noDataRecords.map(record => ({
+            Id: record.id || '',
+            Phone: record.phone || '',
+            'Company Name': record.company_name || '',
+            'Physical Address': record.physical_address || '',
+            Email: record.email || '',
+            Website: record.website || ''
+        }))
+
+        // Use ExcelExporter service
+        const exportResult = await excelExporter.exportCheckTableRecords(exportData, {
+            sheetName: 'No Data',
+            enableStyling: true,
+            stylingOptions: {}
+        })
+
+        if (!exportResult.success || !exportResult.buffer) {
+            console.error('Excel export failed:', exportResult.error)
+            return res.status(500).json({
+                error: exportResult.error || 'Failed to generate Excel file'
+            })
+        }
+
+        // Send Excel file
+        const filename = `no_data_export_${new Date().toISOString().split('T')[0]}.xlsx`
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+        res.setHeader('Content-Length', exportResult.buffer.length)
+
+        console.log(`No data export completed: ${noDataRecords.length} records`)
+        res.send(exportResult.buffer)
+
+    } catch (err) {
+        console.error('No data export error:', err)
+        res.status(500).json({
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        })
+    }
+})
+
+// GET /api/export/wrong-number - export records with invalid Singapore phone numbers (protected route)
+app.get('/api/export/wrong-number', requireAuth, async (req, res) => {
+    try {
+        console.log('Exporting wrong numbers (invalid Singapore phone numbers, excluding duplicates)...')
+
+        // Get all records from database
+        const total = await db.getCheckRecordsCount()
+        const allRecords = await db.getCheckRecords(total, 0)
+
+        // Build phone frequency map to identify duplicates (to exclude them)
+        const phoneMap = new Map()
+        allRecords.forEach(record => {
+            const phone = record.phone
+            if (phone) {
+                if (!phoneMap.has(phone)) {
+                    phoneMap.set(phone, [])
+                }
+                phoneMap.get(phone).push(record.id)
+            }
+        })
+
+        // Identify duplicate phone numbers
+        const duplicatePhones = new Set()
+        phoneMap.forEach((ids, phone) => {
+            if (ids.length > 1) {
+                duplicatePhones.add(phone)
+            }
+        })
+
+        // Filter records where NOT duplicate AND status is false (invalid Singapore phone number)
+        // This matches the logic in /api/validation-stats for invalidCount
+        const wrongNumberRecords = allRecords.filter(record => {
+            const phone = record.phone
+            const status = record.status
+            const isDuplicate = phone && duplicatePhones.has(phone)
+
+            // Include only if NOT duplicate AND invalid status
+            if (isDuplicate) {
+                return false
+            } else if (status === false || status === 0) {
+                return true
+            } else {
+                // Treat unclear status as invalid (matching validation-stats logic)
+                return status !== true && status !== 1
+            }
+        })
+
+        console.log(`Found ${wrongNumberRecords.length} records with invalid phone numbers (excluding duplicates) out of ${total} total records`)
+
+        if (wrongNumberRecords.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'No records found with invalid Singapore phone numbers'
+            })
+        }
+
+        // Format records for export
+        const exportData = wrongNumberRecords.map(record => ({
+            Id: record.id || '',
+            Phone: record.phone || '',
+            'Company Name': record.company_name || '',
+            'Physical Address': record.physical_address || '',
+            Email: record.email || '',
+            Website: record.website || ''
+        }))
+
+        // Use ExcelExporter service
+        const exportResult = await excelExporter.exportCheckTableRecords(exportData, {
+            sheetName: 'Wrong Numbers',
+            enableStyling: true,
+            stylingOptions: {}
+        })
+
+        if (!exportResult.success || !exportResult.buffer) {
+            console.error('Excel export failed:', exportResult.error)
+            return res.status(500).json({
+                error: exportResult.error || 'Failed to generate Excel file'
+            })
+        }
+
+        // Send Excel file
+        const filename = `wrong_number_export_${new Date().toISOString().split('T')[0]}.xlsx`
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+        res.setHeader('Content-Length', exportResult.buffer.length)
+
+        console.log(`Wrong number export completed: ${wrongNumberRecords.length} records`)
+        res.send(exportResult.buffer)
+
+    } catch (err) {
+        console.error('Wrong number export error:', err)
+        res.status(500).json({
+            error: err.message,
+            details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        })
+    }
+})
+
 // GET /api/companies/search - search companies across all records
 app.get('/api/companies/search', requireAuth, async (req, res) => {
     try {

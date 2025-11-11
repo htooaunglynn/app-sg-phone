@@ -278,24 +278,24 @@ function renderTable(data = []) {
         const website = company.Website || company.website || '';
 
         return `
-        <tr class="hover:bg-gray-50 border-b border-gray-100 ${rowBgColor}" onclick="openEditModal('${escapeHtml(String(id))}')" style="cursor: pointer;">
+        <tr class="hover:bg-gray-200 border-b border-gray-100 ${rowBgColor}" onclick="openEditModal('${escapeHtml(String(id))}')" style="cursor: pointer;">
             <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">${escapeHtml(id)}</td>
             <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
                 ${escapeHtml(rawPhone)}
                 <!-- Search helpers hidden to keep single-line phone cell. Restore if needed. -->
-<!--
+
                 <div class="phone-search-buttons mt-1 flex gap-2">
                     <a href="https://www.google.com/search?q=%2B65${encodedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
                     <a href="https://www.google.com/search?q=%27${encodedPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
--->
+
             </td>
-            <td class="px-6 py-4 text-sm">${escapeHtml(companyName)}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(physicalAddress)}</td>
-            <td class="px-6 py-4 text-sm text-blue-600 break-all">
+            <td class="px-6 py-4 text-sm whitespace-nowrap">${escapeHtml(companyName)}</td>
+            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(physicalAddress)}</td>
+            <td class="px-6 py-4 text-sm text-blue-600 break-all whitespace-nowrap">
                 ${email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''}
             </td>
-            <td class="px-6 py-4 text-sm text-blue-600">
+            <td class="px-6 py-4 text-sm text-blue-600 whitespace-nowrap">
                 ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(website)}</a>` : ''}
             </td>
             <!--
@@ -544,6 +544,174 @@ async function exportToExcel() {
         if (exportButton) {
             exportButton.disabled = false;
             exportButton.innerHTML = '<span>↓</span> Export Excel';
+        }
+    }
+}
+
+async function exportFinishData() {
+    try {
+        // Show loading state
+        const exportButton = event?.target || document.querySelector('button[onclick="exportFinishData()"]');
+        if (exportButton) {
+            exportButton.disabled = true;
+            exportButton.innerHTML = '<span>↓</span> Exporting...';
+        }
+
+        console.log('Exporting finish data (all fields filled)...');
+        const response = await fetch(`${API_BASE_URL}/api/export/finish-data`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Export failed');
+        }
+
+        // Check if there's data
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            if (!errorData.success) {
+                alert(errorData.error || 'No data to export');
+                return;
+            }
+        }
+
+        // Download the file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `finish_data_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        console.log('Finish data export completed');
+
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Failed to export finish data: ' + error.message);
+    } finally {
+        // Reset button state
+        const exportButton = document.querySelector('button[onclick="exportFinishData()"]');
+        if (exportButton) {
+            exportButton.disabled = false;
+            exportButton.innerHTML = '<span>↓</span> Export Finish Data';
+        }
+    }
+}
+
+async function exportNoData() {
+    try {
+        // Show loading state
+        const exportButton = event?.target || document.querySelector('button[onclick="exportNoData()"]');
+        if (exportButton) {
+            exportButton.disabled = true;
+            exportButton.innerHTML = '<span>↓</span> Exporting...';
+        }
+
+        console.log('Exporting no data (all fields empty)...');
+        const response = await fetch(`${API_BASE_URL}/api/export/no-data`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Export failed');
+        }
+
+        // Check if there's data
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            if (!errorData.success) {
+                alert(errorData.error || 'No data to export');
+                return;
+            }
+        }
+
+        // Download the file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `no_data_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        console.log('No data export completed');
+
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Failed to export no data: ' + error.message);
+    } finally {
+        // Reset button state
+        const exportButton = document.querySelector('button[onclick="exportNoData()"]');
+        if (exportButton) {
+            exportButton.disabled = false;
+            exportButton.innerHTML = '<span>↓</span> Export No Data';
+        }
+    }
+}
+
+async function exportWrongNumber() {
+    try {
+        // Show loading state
+        const exportButton = event?.target || document.querySelector('button[onclick="exportWrongNumber()"]');
+        if (exportButton) {
+            exportButton.disabled = true;
+            exportButton.innerHTML = '<span>↓</span> Exporting...';
+        }
+
+        console.log('Exporting wrong numbers (invalid Singapore phone numbers)...');
+        const response = await fetch(`${API_BASE_URL}/api/export/wrong-number`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Export failed');
+        }
+
+        // Check if there's data
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            if (!errorData.success) {
+                alert(errorData.error || 'No data to export');
+                return;
+            }
+        }
+
+        // Download the file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `wrong_number_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        console.log('Wrong number export completed');
+
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Failed to export wrong numbers: ' + error.message);
+    } finally {
+        // Reset button state
+        const exportButton = document.querySelector('button[onclick="exportWrongNumber()"]');
+        if (exportButton) {
+            exportButton.disabled = false;
+            exportButton.innerHTML = '<span>↓</span> Export Wrong Number';
         }
     }
 }
