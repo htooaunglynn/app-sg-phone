@@ -916,6 +916,21 @@ app.get('/', (req, res) => {
     }
 })
 
+// Health check endpoint for debugging
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        database: {
+            connected: db.isConnected,
+            type: 'PostgreSQL',
+            hasDatabaseUrl: !!process.env.DATABASE_URL,
+            hasDbHost: !!process.env.DB_HOST
+        },
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
 app.get('/login', (req, res) => {
     if (req.session && req.session.userId) return res.redirect('/')
     return res.render('html/login', { error: null })
