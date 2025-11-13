@@ -20,9 +20,12 @@ CREATE TABLE check_table (
     physical_address TEXT NULL,
     email VARCHAR(255) NULL UNIQUE,
     website VARCHAR(255) NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    -- In PostgreSQL we use a trigger for "ON UPDATE CURRENT_TIMESTAMP"
+    carrier VARCHAR(100) NULL,
+    line_type VARCHAR(50) NULL,
+        real_existence BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        -- In PostgreSQL we use a trigger for "ON UPDATE CURRENT_TIMESTAMP"
 );
 
 -- Indexes
@@ -93,3 +96,15 @@ CREATE TABLE user_logins (
 );
 
 CREATE INDEX idx_user_id ON user_logins (user_id);
+
+
+CREATE TABLE "session" (
+  "sid" varchar NOT NULL COLLATE "default",
+  "sess" json NOT NULL,
+  "expire" timestamp(6) NOT NULL
+)
+WITH (OIDS=FALSE);
+
+ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid");
+
+CREATE INDEX "IDX_session_expire" ON "session" ("expire");

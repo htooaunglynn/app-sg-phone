@@ -133,6 +133,7 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
         let validCount = 0
         let finishCount = 0
         let notFinishCount = 0
+        let realExistenceCount = 0
 
         // Identify duplicate phone numbers
         const duplicatePhones = new Set()
@@ -147,6 +148,12 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
             const phone = company.phone || company.Phone
             const status = company.status !== undefined ? company.status : company.Status
             const isDuplicate = phone && duplicatePhones.has(phone)
+            const realExistence = company.real_existence
+
+            // Count real existence verified
+            if (realExistence === true) {
+                realExistenceCount++
+            }
 
             // Check if record has finish data (at least one field filled)
             const companyName = company.company_name
@@ -184,7 +191,8 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
             invalidCount,
             validCount,
             finishCount,
-            notFinishCount
+            notFinishCount,
+            realExistenceCount
         })
 
     } catch (error) {
@@ -239,8 +247,12 @@ app.get('/api/companies', requireAuth, async (req, res) => {
 
             return {
                 ...company,
+                // keep existing flags
                 isDuplicate,
-                isValidSingaporePhone
+                isValidSingaporePhone,
+                // ensure both snake_case and camelCase are present for the frontend
+                real_existence: company.real_existence,
+                realExistence: company.real_existence !== undefined ? company.real_existence : company.realExistence
             }
         })
 
@@ -414,7 +426,9 @@ app.get('/api/export/finish-data', requireAuth, async (req, res) => {
             'Company Name': record.company_name || '',
             'Physical Address': record.physical_address || '',
             Email: record.email || '',
-            Website: record.website || ''
+            Website: record.website || '',
+            Carrier: record.carrier || '',
+            LineType: record.line_type || ''
         }))
 
         // Use ExcelExporter service
@@ -488,7 +502,9 @@ app.get('/api/export/no-data', requireAuth, async (req, res) => {
             'Company Name': record.company_name || '',
             'Physical Address': record.physical_address || '',
             Email: record.email || '',
-            Website: record.website || ''
+            Website: record.website || '',
+            Carrier: record.carrier || '',
+            LineType: record.line_type || ''
         }))
 
         // Use ExcelExporter service
@@ -586,7 +602,9 @@ app.get('/api/export/wrong-number', requireAuth, async (req, res) => {
             'Company Name': record.company_name || '',
             'Physical Address': record.physical_address || '',
             Email: record.email || '',
-            Website: record.website || ''
+            Website: record.website || '',
+            Carrier: record.carrier || '',
+            LineType: record.line_type || ''
         }))
 
         // Use ExcelExporter service
@@ -640,7 +658,7 @@ app.get('/api/companies/search', requireAuth, async (req, res) => {
         const searchQuery = `
             SELECT id, numeric_id, phone, status,
                    company_name, physical_address,
-                   email, website, created_at, updated_at
+                   email, website, carrier, line_type, real_existence, created_at, updated_at
             FROM check_table
             WHERE LOWER(id::text) LIKE $1
                OR LOWER(phone) LIKE $1
@@ -706,7 +724,11 @@ app.get('/api/companies/search', requireAuth, async (req, res) => {
                 PhysicalAddress: company.physical_address,
                 Email: company.email,
                 Website: company.website,
+                Carrier: company.carrier,
+                LineType: company.line_type,
                 Status: company.status,
+                real_existence: company.real_existence,
+                realExistence: company.real_existence !== undefined ? company.real_existence : company.realExistence,
                 isDuplicate,
                 isValidSingaporePhone
             };
@@ -760,6 +782,95 @@ app.put('/api/companies/:id', requireAuth, async (req, res) => {
     }
 })
 
+// POST /api/real-existence?from=...&to=... - check real existence using Numverify
+app.post('/api/real-existence', requireAuth, async (req, res) => {
+    try {
+        const from = parseInt(req.query.from);
+        const to = parseInt(req.query.to);
+        if (isNaN(from) || isNaN(to) || from > to) {
+            return res.json({ success: false, error: 'Invalid numeric_id range.' });
+        }
+
+        // Query all records with status = 1 and numeric_id in range
+        const sql = `SELECT id, phone, numeric_id FROM check_table WHERE status = true AND numeric_id >= $1 AND numeric_id <= $2`;
+        const records = await db.query(sql, [from, to]);
+        if (!records || records.length === 0) {
+            return res.json({ success: false, error: 'No records found in range.' });
+        }
+
+        // Numverify API config
+        const NUMVERIFY_API_KEY = process.env.NUMVERIFY_API_KEY;
+        const NUMVERIFY_URL = 'https://apilayer.net/api/validate';
+        if (!NUMVERIFY_API_KEY) {
+            return res.json({ success: false, error: 'Numverify API key not configured.' });
+        }
+
+        // Helper to call Numverify
+        async function checkNumverify(phone) {
+            const url = `${NUMVERIFY_URL}?access_key=${NUMVERIFY_API_KEY}&number=${encodeURIComponent(phone)}&country_code=SG&format=1`;
+            try {
+                const resp = await fetch(url);
+                const data = await resp.json();
+                return data;
+            } catch (err) {
+                return { valid: false, error: err.message };
+            }
+        }
+
+        // For each record, check real existence and update DB if valid
+        const results = [];
+        for (const rec of records) {
+            // Format phone for Numverify (add +65 if missing)
+            let phone = rec.phone;
+            if (!phone.startsWith('+65')) {
+                phone = '+65' + phone.replace(/^65/, '');
+            }
+            const nv = await checkNumverify(phone);
+            // Handle Numverify errors (including rate limit)
+            if (nv && nv.success === false && nv.error) {
+                const { code, type, info } = nv.error;
+                if (code === 106 || String(type).includes('rate_limit')) {
+                    // Return immediately with partial results and a specific flag
+                    return res.json({
+                        success: false,
+                        error: info || 'Rate limit reached from Numverify',
+                        errorCode: code,
+                        errorType: type,
+                        rateLimit: true,
+                        results
+                    });
+                }
+            }
+            let valid = nv.valid === true;
+            // Persist results: set carrier/line_type; set real_existence only when valid
+            const carrier = nv.carrier || null;
+            const lineType = nv.line_type || null;
+            await db.query(
+                `UPDATE check_table
+                 SET carrier = $1,
+                     line_type = $2,
+                     real_existence = CASE WHEN $3 THEN true ELSE real_existence END,
+                     updated_at = NOW()
+                 WHERE id = $4`,
+                [carrier, lineType, valid, rec.id]
+            );
+            results.push({
+                id: rec.id,
+                phone: rec.phone,
+                valid,
+                carrier: carrier || '',
+                line_type: lineType || '',
+                error: nv.error || ''
+            });
+        }
+
+        return res.json({ success: true, results });
+    } catch (error) {
+        console.error('Real existence check error:', error);
+        return res.json({ success: false, error: error.message });
+    }
+});
+
 const PORT = process.env.PORT || 4000
 
 // Initialize database connection
@@ -767,12 +878,16 @@ async function startServer() {
     try {
         // Connect to database
         await db.connect();
+        // Ensure new columns exist for storing Numverify metadata
+        if (typeof db.ensureOptionalColumns === 'function') {
+            await db.ensureOptionalColumns();
+        }
         console.log('Database connected successfully');
 
         // Start server
         app.listen(PORT, () => {
             console.log(`Server running on http://localhost:${PORT}`);
-            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            // console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

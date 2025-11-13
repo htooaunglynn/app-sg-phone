@@ -8,7 +8,7 @@ const {
 
 class ExcelExporter {
     constructor() {
-        this.defaultHeaders = ['ID', 'Phone Number', 'Company Name', 'Physical Address', 'Email', 'Website'];
+        this.defaultHeaders = ['ID', 'Phone Number', 'Company Name', 'Physical Address', 'Email', 'Website', 'Carrier', 'Line Type'];
         this.maxRecordsPerExport = 50000; // Limit for performance
         this.maxFileSizeBytes = 50 * 1024 * 1024; // 50MB limit
     }
@@ -229,7 +229,9 @@ class ExcelExporter {
                 record.CompanyName || record['Company Name'] || record.companyName || record.company_name || '',
                 record.PhysicalAddress || record['Physical Address'] || record.physicalAddress || record.physical_address || '',
                 record.Email || record.email || '',
-                record.Website || record.website || ''
+                record.Website || record.website || '',
+                record.Carrier || record.carrier || '',
+                record.LineType || record.line_type || record.lineType || ''
             ];
             worksheetData.push(row);
         });

@@ -173,6 +173,7 @@ async function updateTotalValidationCounts() {
                 const totalCountEl = document.getElementById('totalCount');
                 const finishCountEl = document.getElementById('finishCount');
                 const notFinishCountEl = document.getElementById('notFinishCount');
+                const realExistenceCountEl = document.getElementById('realExistenceCount');
 
                 if (duplicateCountEl) duplicateCountEl.textContent = stats.duplicateCount;
                 if (invalidCountEl) invalidCountEl.textContent = stats.invalidCount;
@@ -180,6 +181,7 @@ async function updateTotalValidationCounts() {
                 if (totalCountEl) totalCountEl.textContent = stats.totalRecords;
                 if (finishCountEl) finishCountEl.textContent = stats.finishCount;
                 if (notFinishCountEl) notFinishCountEl.textContent = stats.notFinishCount;
+                if (realExistenceCountEl) realExistenceCountEl.textContent = stats.realExistenceCount || 0;
             }
         }
     } catch (error) {
@@ -239,20 +241,45 @@ function renderTable(data = []) {
         // Get Status from either camelCase (Id, Phone, Status) or lowercase (id, phone, status)
         const status = company.Status !== undefined ? company.Status : company.status;
         const isValidSingapore = company.isValidSingaporePhone;
+        const realExistence = company.real_existence || company.realExistence;
 
-        // Debug logging
+        // Debug logging - expanded
         if (index === 0) {
-            console.log('Sample company data:', {
+            console.log('=== FIRST COMPANY DEBUG ===');
+            console.log('Raw company object:', company);
+            console.log('Extracted values:', {
                 isDuplicate: company.isDuplicate,
                 isValidSingaporePhone: isValidSingapore,
                 Status: status,
-                Phone: company.Phone || company.phone
+                Phone: company.Phone || company.phone,
+                real_existence: realExistence,
+                rawRealExistence: company.real_existence,
+                camelRealExistence: company.realExistence
+            });
+            console.log('========================');
+        }
+
+        // Also log any record with real_existence to verify
+        if (realExistence === true) {
+            console.log('Found verified record:', {
+                id: company.Id || company.id,
+                phone: company.Phone || company.phone,
+                real_existence: realExistence,
+                isDuplicate: company.isDuplicate
             });
         }
 
-        // Priority: 1. Duplicates (Orange), 2. Invalid (Red), 3. Valid (White)
-        if (company.isDuplicate) {
-            // Orange background for duplicate phone numbers (highest priority)
+        // Priority: Show combined status - Real Existence (Green) + Duplicate indicator (Orange border)
+        if (realExistence === true && company.isDuplicate) {
+            // Both verified AND duplicate - green background with orange border
+            rowBgColor = 'bg-green-100 border-l-4 border-orange-500';
+            phoneStyle = 'bg-orange-200 font-semibold';
+        } else if (realExistence === true) {
+            // Green background for verified real existence only
+            rowBgColor = 'bg-green-100';
+            phoneStyle = 'bg-green-200 font-semibold';
+        } else if (company.isDuplicate) {
+            // Orange background for duplicate phone numbers only
             rowBgColor = 'bg-orange-100';
             phoneStyle = 'bg-orange-200 font-semibold';
         } else if (status === 0 || status === false || isValidSingapore === false) {
@@ -302,6 +329,8 @@ function renderTable(data = []) {
             <td class="px-6 py-4 text-sm text-blue-600 whitespace-nowrap">
                 ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(website)}</a>` : ''}
             </td>
+            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(company.carrier || company.Carrier || '')}</td>
+            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(company.line_type || company.LineType || '')}</td>
             <!--
             <td class="px-6 py-4 text-sm">
                 <button onclick="openEditModal('${escapeHtml(String(id))}')"
@@ -510,7 +539,9 @@ async function exportToExcel() {
             'Company Name': company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '',
             'Physical Address': company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '',
             Email: company.Email || company.email || '',
-            Website: company.Website || company.website || ''
+            Website: company.Website || company.website || '',
+            Carrier: company.Carrier || company.carrier || '',
+            LineType: company.LineType || company.line_type || company.lineType || ''
         }));
 
         const exportResponse = await fetch(`${API_BASE_URL}/api/export`, {

@@ -11,6 +11,19 @@ class PostgresDatabaseManager {
     }
 
     /**
+     * Ensure new optional columns exist in check_table
+     * Adds carrier and line_type if they are missing
+     */
+    async ensureOptionalColumns() {
+        try {
+            await this.query(`ALTER TABLE check_table ADD COLUMN IF NOT EXISTS carrier VARCHAR(100) NULL`);
+            await this.query(`ALTER TABLE check_table ADD COLUMN IF NOT EXISTS line_type VARCHAR(50) NULL`);
+        } catch (err) {
+            console.warn('ensureOptionalColumns warning:', err.message);
+        }
+    }
+
+    /**
      * Create PostgreSQL connection pool
      */
     createPool() {
@@ -319,7 +332,7 @@ class PostgresDatabaseManager {
         const sql = `
             SELECT id, numeric_id, phone, status,
                    company_name, physical_address,
-                   email, website, created_at, updated_at
+                   email, website, carrier, line_type, real_existence, created_at, updated_at
             FROM check_table
             ORDER BY numeric_id ASC, id ASC
             LIMIT $1 OFFSET $2
@@ -335,7 +348,7 @@ class PostgresDatabaseManager {
         const sql = `
             SELECT id, numeric_id, phone, status,
                    company_name, physical_address,
-                   email, website, created_at, updated_at
+                   email, website, carrier, line_type, real_existence, created_at, updated_at
             FROM check_table
             ORDER BY numeric_id ASC, id ASC
             LIMIT $1 OFFSET $2
@@ -399,7 +412,7 @@ class PostgresDatabaseManager {
 
             const placeholders = chunk.map((_, idx) => `$${idx + 1}`).join(',');
             const sql = `
-                SELECT id, phone, company_name, physical_address, email, website, created_at
+                SELECT id, phone, company_name, physical_address, email, website, carrier, line_type, real_existence, created_at
                 FROM check_table
                 WHERE id IN (${placeholders})
             `;
