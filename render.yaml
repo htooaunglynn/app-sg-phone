@@ -18,15 +18,12 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
+      # Neon Database Connection
+      - key: DATABASE_URL
         sync: false
       - key: DB_SSL
         value: 'true'
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: 'false'
     autoDeploy: true
     branch: main
