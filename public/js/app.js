@@ -789,10 +789,10 @@ function openEditModal(id) {
         const plus65Link = document.getElementById('editPhoneSearchPlus65');
         const quotesLink = document.getElementById('editPhoneSearchQuotes');
         if (plus65Link) {
-            plus65Link.href = rawPhone ? `https://www.google.com/search?q=%2B65${encodedPhone}` : '#';
+            plus65Link.href = rawPhone ? `https://www.google.com/search?q=%2B65+${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}` : '#';
         }
         if (quotesLink) {
-            quotesLink.href = rawPhone ? `https://www.google.com/search?q=%27${encodedPhone}%27` : '#';
+            quotesLink.href = rawPhone ? `https://www.google.com/search?q=%27${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}%27` : '#';
         }
 
         modal.classList.remove('hidden');
