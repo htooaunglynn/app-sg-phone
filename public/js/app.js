@@ -354,7 +354,7 @@ function renderPagination(result) {
         if (tableContainer && tableContainer.parentElement) {
             paginationContainer = document.createElement('div');
             paginationContainer.id = 'paginationContainer';
-            paginationContainer.className = 'mt-4 flex items-center justify-between px-4';
+            paginationContainer.className = 'mt-4 w-full';
             tableContainer.parentElement.insertBefore(paginationContainer, tableContainer.nextSibling);
         } else {
             return; // Can't add pagination if no container found
@@ -362,7 +362,7 @@ function renderPagination(result) {
     }
 
     // Show pagination
-    paginationContainer.style.display = 'flex';
+    paginationContainer.style.display = 'block';
 
     const total = result.total || 0;
     const totalPages = Math.ceil(total / pageSize);
@@ -376,10 +376,12 @@ function renderPagination(result) {
     const endRecord = Math.min(currentPage * pageSize, total);
 
     let paginationHTML = `
-        <div class="text-sm text-gray-600">
-            Showing ${startRecord} to ${endRecord} of ${total} results
+        <div class="flex items-center justify-between px-4 mb-3">
+            <div class="text-sm text-gray-600">
+                Showing ${startRecord} to ${endRecord} of ${total} results
+            </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex items-center justify-center gap-1 px-4 flex-wrap">
     `;
 
     // Previous button
@@ -392,13 +394,26 @@ function renderPagination(result) {
         `;
     }
 
-    // Page numbers (show max 5 pages)
-    const maxPages = 5;
+    // Page numbers (show max 15 pages)
+    const maxPages = 15;
     let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
     let endPage = Math.min(totalPages, startPage + maxPages - 1);
 
     if (endPage - startPage < maxPages - 1) {
         startPage = Math.max(1, endPage - maxPages + 1);
+    }
+
+    // Show first page if not in range
+    if (startPage > 1) {
+        paginationHTML += `
+            <button onclick="loadCompaniesData(1)"
+                class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                1
+            </button>
+        `;
+        if (startPage > 2) {
+            paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+        }
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -416,6 +431,19 @@ function renderPagination(result) {
                 </button>
             `;
         }
+    }
+
+    // Show last page if not in range
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+        }
+        paginationHTML += `
+            <button onclick="loadCompaniesData(${totalPages})"
+                class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                ${totalPages}
+            </button>
+        `;
     }
 
     // Next button
