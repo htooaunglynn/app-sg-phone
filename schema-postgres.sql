@@ -18,7 +18,7 @@ CREATE TABLE check_table (
     status BOOLEAN NULL,   -- tinyint(1) → boolean
     company_name VARCHAR(255) NULL,
     physical_address TEXT NULL,
-    email VARCHAR(255) NULL UNIQUE,
+    email VARCHAR(255) NULL,
     website VARCHAR(255) NULL,
     carrier VARCHAR(100) NULL,
     line_type VARCHAR(50) NULL,
@@ -31,7 +31,6 @@ CREATE TABLE check_table (
 -- Indexes
 CREATE INDEX idx_phone ON check_table (phone);
 CREATE INDEX idx_status ON check_table (status);
-CREATE INDEX idx_email ON check_table (email);
 CREATE INDEX idx_created_at ON check_table (created_at);
 CREATE INDEX idx_updated_at ON check_table (updated_at);
 CREATE INDEX idx_company_name ON check_table (company_name);

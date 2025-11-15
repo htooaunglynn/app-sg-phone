@@ -11,6 +11,31 @@ let currentPage = 1;
 let pageSize = 50;
 let totalRecords = 0;
 
+// Cached DOM elements
+let cachedElements = {};
+
+// Helper to get normalized field value
+function getField(obj, ...keys) {
+    for (const key of keys) {
+        if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+    }
+    return '';
+}
+
+// Cache DOM elements
+function cacheElements() {
+    cachedElements = {
+        tableBody: document.getElementById('tableBody'),
+        emptyState: document.getElementById('emptyState'),
+        searchInput: document.getElementById('searchInput'),
+        paginationContainer: document.getElementById('paginationContainer'),
+        duplicateCount: document.getElementById('duplicateCount'),
+        invalidCount: document.getElementById('invalidCount'),
+        totalCount: document.getElementById('totalCount'),
+        finishCount: document.getElementById('finishCount')
+    };
+}
+
 // ============= MODAL MANAGEMENT =============
 
 function openExcelModal() {
@@ -166,52 +191,21 @@ async function updateTotalValidationCounts() {
         if (response.ok) {
             const stats = await response.json();
             if (stats.success) {
-                // Update the count displays with total counts from database
-                const duplicateCountEl = document.getElementById('duplicateCount');
-                const invalidCountEl = document.getElementById('invalidCount');
-                const validCountEl = document.getElementById('validCount');
-                const totalCountEl = document.getElementById('totalCount');
-                const finishCountEl = document.getElementById('finishCount');
-                const notFinishCountEl = document.getElementById('notFinishCount');
-                const realExistenceCountEl = document.getElementById('realExistenceCount');
+                // Use cached elements for better performance
+                const duplicateCountEl = cachedElements.duplicateCount || document.getElementById('duplicateCount');
+                const invalidCountEl = cachedElements.invalidCount || document.getElementById('invalidCount');
+                const totalCountEl = cachedElements.totalCount || document.getElementById('totalCount');
+                const finishCountEl = cachedElements.finishCount || document.getElementById('finishCount');
 
                 if (duplicateCountEl) duplicateCountEl.textContent = stats.duplicateCount;
                 if (invalidCountEl) invalidCountEl.textContent = stats.invalidCount;
-                if (validCountEl) validCountEl.textContent = stats.validCount;
                 if (totalCountEl) totalCountEl.textContent = stats.totalRecords;
                 if (finishCountEl) finishCountEl.textContent = stats.finishCount;
-                if (notFinishCountEl) notFinishCountEl.textContent = stats.notFinishCount;
-                if (realExistenceCountEl) realExistenceCountEl.textContent = stats.realExistenceCount || 0;
             }
         }
     } catch (error) {
         console.error('Error fetching validation stats:', error);
     }
-}
-
-function updateValidationCounts(data = []) {
-    let duplicateCount = 0;
-    let invalidCount = 0;
-    let validCount = 0;
-
-    data.forEach(company => {
-        const status = company.Status !== undefined ? company.Status : company.status;
-        const isValidSingapore = company.isValidSingaporePhone;
-
-        if (company.isDuplicate) {
-            duplicateCount++;
-        } else if (status === 0 || status === false || isValidSingapore === false) {
-            invalidCount++;
-        } else if (status === 1 || status === true || isValidSingapore === true) {
-            validCount++;
-        } else {
-            // Default fallback - treat as invalid if status is unclear
-            invalidCount++;
-        }
-    });
-
-    // Update the count displays for current page only (we'll show total counts separately)
-    // Note: We'll show total counts from the database instead of per-page counts
 }
 
 function renderTable(data = []) {
@@ -238,68 +232,26 @@ function renderTable(data = []) {
         let rowBgColor = '';
         let phoneStyle = '';
 
-        // Get Status from either camelCase (Id, Phone, Status) or lowercase (id, phone, status)
         const status = company.Status !== undefined ? company.Status : company.status;
         const isValidSingapore = company.isValidSingaporePhone;
-        const realExistence = company.real_existence || company.realExistence;
 
-        // Debug logging - expanded
-        if (index === 0) {
-            console.log('=== FIRST COMPANY DEBUG ===');
-            console.log('Raw company object:', company);
-            console.log('Extracted values:', {
-                isDuplicate: company.isDuplicate,
-                isValidSingaporePhone: isValidSingapore,
-                Status: status,
-                Phone: company.Phone || company.phone,
-                real_existence: realExistence,
-                rawRealExistence: company.real_existence,
-                camelRealExistence: company.realExistence
-            });
-            console.log('========================');
-        }
-
-        // Also log any record with real_existence to verify
-        if (realExistence === true) {
-            console.log('Found verified record:', {
-                id: company.Id || company.id,
-                phone: company.Phone || company.phone,
-                real_existence: realExistence,
-                isDuplicate: company.isDuplicate
-            });
-        }
-
-        // Priority: Show combined status - Real Existence (Green) + Duplicate indicator (Orange border)
-        if (realExistence === true && company.isDuplicate) {
-            // Both verified AND duplicate - green background with orange border
-            rowBgColor = 'bg-green-100 border-l-4 border-orange-500';
-            phoneStyle = 'bg-orange-200 font-semibold';
-        } else if (realExistence === true) {
-            // Green background for verified real existence only
-            rowBgColor = 'bg-green-100';
-            phoneStyle = 'bg-green-200 font-semibold';
-        } else if (company.isDuplicate) {
-            // Orange background for duplicate phone numbers only
+        if (company.isDuplicate) {
+            // Orange background for duplicate phone numbers
             rowBgColor = 'bg-orange-100';
             phoneStyle = 'bg-orange-200 font-semibold';
         } else if (status === 0 || status === false || isValidSingapore === false) {
-            // Red background for invalid Singapore phone numbers (Status = 0 or false)
+            // Red background for invalid Singapore phone numbers
             rowBgColor = 'bg-red-50';
             phoneStyle = 'bg-red-200 font-semibold';
-        } else if (status === 1 || status === true || isValidSingapore === true) {
-            // White/normal background for valid Singapore phone numbers (Status = 1 or true)
+        } else {
+            // Default background for valid or unknown status
             rowBgColor = '';
             phoneStyle = '';
-        } else {
-            // Default fallback - treat as invalid if status is unclear
-            rowBgColor = 'bg-red-50';
-            phoneStyle = 'bg-red-200 font-semibold';
         }
 
         // Prepare phone helpers
         const rawPhone = String(company.Phone || company.phone || '');
-        const digitsOnly = rawPhone.replace(/\D+/g, '');
-        const encodedPhone = encodeURIComponent(digitsOnly);
+        const encodedPhone = encodeURIComponent(rawPhone.replace(/\D+/g, ''));
 
         // Get field values supporting both cases
         const id = company.Id || company.id || (index + 1);
@@ -313,13 +265,10 @@ function renderTable(data = []) {
             <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">${escapeHtml(id)}</td>
             <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
                 ${escapeHtml(rawPhone)}
-                <!-- Search helpers hidden to keep single-line phone cell. Restore if needed. -->
-
                 <div class="phone-search-buttons mt-1 flex gap-2">
                     <a href="https://www.google.com/search?q=%2B65+${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
                     <a href="https://www.google.com/search?q=%27${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
-
             </td>
             <td class="px-6 py-4 text-sm whitespace-nowrap">${escapeHtml(companyName)}</td>
             <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(physicalAddress)}</td>
@@ -329,16 +278,6 @@ function renderTable(data = []) {
             <td class="px-6 py-4 text-sm text-blue-600 whitespace-nowrap">
                 ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(website)}</a>` : ''}
             </td>
-            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(company.carrier || company.Carrier || '')}</td>
-            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(company.line_type || company.LineType || '')}</td>
-            <!--
-            <td class="px-6 py-4 text-sm">
-                <button onclick="openEditModal('${escapeHtml(String(id))}')"
-                    class="text-gray-700 hover:text-black font-medium transition">
-                    Edit
-                </button>
-            </td>
-             -->
         </tr>
     `;
     }).join('');
@@ -346,7 +285,7 @@ function renderTable(data = []) {
 
 function renderPagination(result) {
     // Check if pagination container exists, if not create it
-    let paginationContainer = document.getElementById('paginationContainer');
+    let paginationContainer = cachedElements.paginationContainer || document.getElementById('paginationContainer');
 
     if (!paginationContainer) {
         // Create pagination container after the table
@@ -356,6 +295,8 @@ function renderPagination(result) {
             paginationContainer.id = 'paginationContainer';
             paginationContainer.className = 'mt-4 w-full';
             tableContainer.parentElement.insertBefore(paginationContainer, tableContainer.nextSibling);
+            // Cache the newly created element
+            cachedElements.paginationContainer = paginationContainer;
         } else {
             return; // Can't add pagination if no container found
         }
@@ -461,7 +402,7 @@ function renderPagination(result) {
 }
 
 async function filterTable() {
-    const searchInput = document.getElementById('searchInput');
+    const searchInput = cachedElements.searchInput || document.getElementById('searchInput');
     if (!searchInput) return;
 
     const searchTerm = searchInput.value.toLowerCase().trim();
@@ -486,27 +427,28 @@ async function filterTable() {
         const result = await response.json();
 
         if (result.success && result.data) {
-            renderTable(result.data);
+            // Skip count updates during search for better performance
+            renderTable(result.data, true);
 
             // Hide pagination when showing search results
-            const paginationContainer = document.getElementById('paginationContainer');
+            const paginationContainer = cachedElements.paginationContainer || document.getElementById('paginationContainer');
             if (paginationContainer) {
                 paginationContainer.style.display = 'none';
             }
         } else {
-            renderTable([]);
+            renderTable([], true);
         }
 
     } catch (error) {
         console.error('Search error:', error);
         // Fallback to local filtering if search API fails
         const filtered = companiesData.filter(company => {
-            const id = String(company.Id || company.id || '').toLowerCase();
-            const companyName = (company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '').toLowerCase();
-            const email = (company.Email || company.email || '').toLowerCase();
-            const phone = (company.Phone || company.phone || '').toLowerCase();
-            const website = (company.Website || company.website || '').toLowerCase();
-            const address = (company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '').toLowerCase();
+            const id = String(getField(company, 'Id', 'id')).toLowerCase();
+            const companyName = String(getField(company, 'CompanyName', 'Company Name', 'companyName', 'company_name')).toLowerCase();
+            const email = String(getField(company, 'Email', 'email')).toLowerCase();
+            const phone = String(getField(company, 'Phone', 'phone')).toLowerCase();
+            const website = String(getField(company, 'Website', 'website')).toLowerCase();
+            const address = String(getField(company, 'PhysicalAddress', 'Physical Address', 'physicalAddress', 'physical_address')).toLowerCase();
 
             return id.includes(searchTerm) ||
                 companyName.includes(searchTerm) ||
@@ -516,17 +458,15 @@ async function filterTable() {
                 address.includes(searchTerm);
         });
 
-        renderTable(filtered);
+        renderTable(filtered, true);
 
         // Hide pagination when filtering
-        const paginationContainer = document.getElementById('paginationContainer');
+        const paginationContainer = cachedElements.paginationContainer || document.getElementById('paginationContainer');
         if (paginationContainer) {
             paginationContainer.style.display = 'none';
         }
     }
 }
-
-// Note: Delete functionality removed per access restrictions. All delete actions have been disabled.
 
 // ============= EXPORT FUNCTIONALITY =============
 
@@ -534,7 +474,6 @@ async function exportToExcel() {
     try {
         // Show loading state
         const exportButton = event?.target || document.querySelector('button[onclick="exportToExcel()"]');
-        const originalText = exportButton?.textContent;
         if (exportButton) {
             exportButton.disabled = true;
             exportButton.innerHTML = '<span>↓</span> Exporting...';
@@ -567,9 +506,7 @@ async function exportToExcel() {
             'Company Name': company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '',
             'Physical Address': company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '',
             Email: company.Email || company.email || '',
-            Website: company.Website || company.website || '',
-            Carrier: company.Carrier || company.carrier || '',
-            LineType: company.LineType || company.line_type || company.lineType || ''
+            Website: company.Website || company.website || ''
         }));
 
         const exportResponse = await fetch(`${API_BASE_URL}/api/export`, {
@@ -793,7 +730,7 @@ function escapeHtml(text) {
 function openEditModal(id) {
     try {
         editingCompanyId = id;
-        const company = companiesData.find(c => String(c.Id || c.id) === String(id));
+        const company = companiesData.find(c => String(getField(c, 'Id', 'id')) === String(id));
         const modal = document.getElementById('editModal');
         if (!modal || !company) return;
 
@@ -804,23 +741,24 @@ function openEditModal(id) {
         const emailInput = document.getElementById('editEmail');
         const websiteInput = document.getElementById('editWebsite');
 
-        idInput.value = company.Id || company.id || '';
-        phoneInput.value = company.Phone || company.phone || '';
-        nameInput.value = company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '';
-        addrInput.value = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '';
-        emailInput.value = company.Email || company.email || '';
-        websiteInput.value = company.Website || company.website || '';
+        idInput.value = getField(company, 'Id', 'id');
+        phoneInput.value = getField(company, 'Phone', 'phone');
+        nameInput.value = getField(company, 'CompanyName', 'Company Name', 'companyName', 'company_name');
+        addrInput.value = getField(company, 'PhysicalAddress', 'Physical Address', 'physicalAddress', 'physical_address');
+        emailInput.value = getField(company, 'Email', 'email');
+        websiteInput.value = getField(company, 'Website', 'website');
 
-        // Dynamic phone search links (was previously using unresolved template vars in EJS)
-        const rawPhone = String(company.Phone || company.phone || '').replace(/\D+/g, '');
-        const encodedPhone = encodeURIComponent(rawPhone);
+        // Dynamic phone search links
+        const rawPhone = String(getField(company, 'Phone', 'phone')).replace(/\D+/g, '');
+        const formattedPhone = rawPhone.replace(/(\d{4})(\d{4})/, '$1+$2');
+        const encodedPhone = encodeURIComponent(formattedPhone);
         const plus65Link = document.getElementById('editPhoneSearchPlus65');
         const quotesLink = document.getElementById('editPhoneSearchQuotes');
         if (plus65Link) {
-            plus65Link.href = rawPhone ? `https://www.google.com/search?q=%2B65+${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}` : '#';
+            plus65Link.href = rawPhone ? `https://www.google.com/search?q=%2B65+${encodedPhone}` : '#';
         }
         if (quotesLink) {
-            quotesLink.href = rawPhone ? `https://www.google.com/search?q=%27${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}%27` : '#';
+            quotesLink.href = rawPhone ? `https://www.google.com/search?q=%27${encodedPhone}%27` : '#';
         }
 
         modal.classList.remove('hidden');
@@ -871,28 +809,22 @@ async function saveEdit() {
         }
 
         // Update local data for immediate UX
-        const idx = companiesData.findIndex(c => String(c.Id || c.id) === String(id));
+        const idx = companiesData.findIndex(c => String(getField(c, 'Id', 'id')) === String(id));
         if (idx !== -1) {
             const item = companiesData[idx];
-            // Update all possible column name variations for compatibility
-            item.CompanyName = companyName;
-            item['Company Name'] = companyName;
-            item.companyName = companyName;
-            item.company_name = companyName;
+            // Update primary field and maintain existing field name
+            const existingNameKey = ['CompanyName', 'Company Name', 'companyName', 'company_name'].find(k => k in item) || 'CompanyName';
+            const existingAddrKey = ['PhysicalAddress', 'Physical Address', 'physicalAddress', 'physical_address'].find(k => k in item) || 'PhysicalAddress';
+            const existingEmailKey = ['Email', 'email'].find(k => k in item) || 'Email';
+            const existingWebsiteKey = ['Website', 'website'].find(k => k in item) || 'Website';
 
-            item.PhysicalAddress = physicalAddress;
-            item['Physical Address'] = physicalAddress;
-            item.physicalAddress = physicalAddress;
-            item.physical_address = physicalAddress;
-
-            item.Email = email;
-            item.email = email;
-
-            item.Website = website;
-            item.website = website;
+            item[existingNameKey] = companyName;
+            item[existingAddrKey] = physicalAddress;
+            item[existingEmailKey] = email;
+            item[existingWebsiteKey] = website;
         }
 
-        renderTable(companiesData);
+        renderTable(companiesData, true);
         closeEditModal();
     } catch (err) {
         console.error('Save edit failed:', err);
@@ -905,22 +837,25 @@ async function saveEdit() {
 // ============= INITIALIZATION =============
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Cache DOM elements for better performance
+    cacheElements();
+
     // Load initial data and total validation counts
     await loadCompaniesData();
     await updateTotalValidationCounts();
 });
 
 // Close modal on escape key
-document.addEventListener('keydown', async (event) => {
+document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        await closeExcelModal();
+        closeExcelModal();
     }
 });
 
 // Close modal when clicking outside
-document.addEventListener('click', async (event) => {
+document.addEventListener('click', (event) => {
     const modal = document.getElementById('excelModal');
     if (modal && event.target === modal) {
-        await closeExcelModal();
+        closeExcelModal();
     }
 });
