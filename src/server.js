@@ -115,83 +115,64 @@ app.use(express.static(path.join(__dirname, '../public')))
 // Authentication routes (server-rendered)
 app.use('/auth', authRoutes)
 
+// --- Utility Functions ---
+function buildPhoneMap(records, idKey = 'id', phoneKey = 'phone') {
+    const phoneMap = new Map();
+    records.forEach(record => {
+        const phone = record[phoneKey] || record[phoneKey.charAt(0).toUpperCase() + phoneKey.slice(1)];
+        if (phone) {
+            if (!phoneMap.has(phone)) phoneMap.set(phone, []);
+            phoneMap.get(phone).push(record[idKey] || record[idKey.charAt(0).toUpperCase() + idKey.slice(1)]);
+        }
+    });
+    return phoneMap;
+}
+
+function getDuplicatePhones(phoneMap) {
+    const duplicates = new Set();
+    phoneMap.forEach(ids => { if (ids.length > 1) duplicates.add(ids[0]); });
+    return duplicates;
+}
+
+function isFinishData(record) {
+    return (
+        (record.company_name && record.company_name.trim() !== '') ||
+        (record.physical_address && record.physical_address.trim() !== '') ||
+        (record.email && record.email.trim() !== '') ||
+        (record.website && record.website.trim() !== '')
+    );
+}
+
+function getDuplicatePhoneSet(phoneMap) {
+    const duplicatePhones = new Set();
+    phoneMap.forEach((ids, phone) => {
+        if (ids.length > 1) duplicatePhones.add(phone);
+    });
+    return duplicatePhones;
+}
+
+// --- Route Handlers ---
 // GET /api/validation-stats - get total validation counts across all records
 app.get('/api/validation-stats', requireAuth, async (req, res) => {
     try {
-        // Get total count
-        const total = await db.getCheckRecordsCount()
+        const total = await db.getCheckRecordsCount();
+        const allCompanies = await db.getCheckRecords(total, 0);
+        const phoneMap = buildPhoneMap(allCompanies);
+        const duplicatePhones = getDuplicatePhoneSet(phoneMap);
 
-        // Get all companies to calculate validation stats
-        const allCompanies = await db.getCheckRecords(total, 0)
-        const phoneMap = new Map()
+        let duplicateCount = 0, invalidCount = 0, validCount = 0, finishCount = 0, notFinishCount = 0, realExistenceCount = 0;
 
-        // Build phone frequency map
         allCompanies.forEach(company => {
-            const phone = company.phone || company.Phone
-            if (phone) {
-                if (!phoneMap.has(phone)) {
-                    phoneMap.set(phone, [])
-                }
-                phoneMap.get(phone).push(company.id || company.Id)
-            }
-        })
-
-        // Count validation types
-        let duplicateCount = 0
-        let invalidCount = 0
-        let validCount = 0
-        let finishCount = 0
-        let notFinishCount = 0
-        let realExistenceCount = 0
-
-        // Identify duplicate phone numbers
-        const duplicatePhones = new Set()
-        phoneMap.forEach((ids, phone) => {
-            if (ids.length > 1) {
-                duplicatePhones.add(phone)
-            }
-        })
-
-        // Count each validation type
-        allCompanies.forEach(company => {
-            const phone = company.phone || company.Phone
-            const status = company.status !== undefined ? company.status : company.Status
-            const isDuplicate = phone && duplicatePhones.has(phone)
-            const realExistence = company.real_existence
-
-            // Count real existence verified
-            if (realExistence === true) {
-                realExistenceCount++
-            }
-
-            // Check if record has finish data (at least one field filled)
-            const companyName = company.company_name
-            const physicalAddress = company.physical_address
-            const email = company.email
-            const website = company.website
-
-            const hasFinishData = (companyName && companyName.trim() !== '') ||
-                (physicalAddress && physicalAddress.trim() !== '') ||
-                (email && email.trim() !== '') ||
-                (website && website.trim() !== '')
-
-            if (hasFinishData) {
-                finishCount++
-            } else {
-                notFinishCount++
-            }
-
-            if (isDuplicate) {
-                duplicateCount++
-            } else if (status === 0 || status === false) {
-                invalidCount++
-            } else if (status === 1 || status === true) {
-                validCount++
-            } else {
-                // Default fallback - treat as invalid if status is unclear
-                invalidCount++
-            }
-        })
+            const phone = company.phone || company.Phone;
+            const status = company.status !== undefined ? company.status : company.Status;
+            const isDuplicate = phone && duplicatePhones.has(phone);
+            if (company.real_existence === true) realExistenceCount++;
+            if (isFinishData(company)) finishCount++; else notFinishCount++;
+            if (isDuplicate) duplicateCount++;
+            else if (status === 0 || status === false) invalidCount++;
+            else if (status === 1 || status === true) validCount++;
+            else invalidCount++;
+        });
 
         return res.json({
             success: true,
@@ -202,16 +183,15 @@ app.get('/api/validation-stats', requireAuth, async (req, res) => {
             finishCount,
             notFinishCount,
             realExistenceCount
-        })
-
+        });
     } catch (error) {
-        console.error('Error fetching validation stats:', error)
+        console.error('Error fetching validation stats:', error);
         return res.status(500).json({
             success: false,
             error: 'Failed to fetch validation stats'
-        })
+        });
     }
-})
+});
 
 // GET /api/companies - fetch all companies from check_table with validation info (protected route)
 app.get('/api/companies', requireAuth, async (req, res) => {
