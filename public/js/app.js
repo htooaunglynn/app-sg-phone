@@ -251,7 +251,10 @@ function renderTable(data = []) {
 
         // Prepare phone helpers
         const rawPhone = String(company.Phone || company.phone || '');
-        const encodedPhone = encodeURIComponent(rawPhone.replace(/\D+/g, ''));
+        const cleanPhone = rawPhone.replace(/\D+/g, '');
+        const formattedPhone = cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2');
+        const encodedFormattedPhone = encodeURIComponent(formattedPhone);
+        const encodedCleanPhone = encodeURIComponent(cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2'));
 
         // Get field values supporting both cases
         const id = company.Id || company.id || (index + 1);
@@ -266,8 +269,8 @@ function renderTable(data = []) {
             <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
                 ${escapeHtml(rawPhone)}
                 <div class="phone-search-buttons mt-1 flex gap-2">
-                    <a href="https://www.google.com/search?q=%2B65+${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
-                    <a href="https://www.google.com/search?q=%27${encodedPhone.replace(/(\d{4})(\d{4})/, '$1+$2')}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                    <a href="https://www.google.com/search?q=%2B65+${encodedFormattedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedCleanPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
                 </div>
             </td>
             <td class="px-6 py-4 text-sm whitespace-nowrap">${escapeHtml(companyName)}</td>
@@ -749,16 +752,17 @@ function openEditModal(id) {
         websiteInput.value = getField(company, 'Website', 'website');
 
         // Dynamic phone search links
-        const rawPhone = String(getField(company, 'Phone', 'phone')).replace(/\D+/g, '');
-        const formattedPhone = rawPhone.replace(/(\d{4})(\d{4})/, '$1+$2');
-        const encodedPhone = encodeURIComponent(formattedPhone);
+        const cleanPhone = String(getField(company, 'Phone', 'phone')).replace(/\D+/g, '');
+        const formattedPhone = cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2');
+        const encodedFormattedPhone = encodeURIComponent(formattedPhone);
+        const encodedCleanPhone = encodeURIComponent(cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2'));
         const plus65Link = document.getElementById('editPhoneSearchPlus65');
         const quotesLink = document.getElementById('editPhoneSearchQuotes');
         if (plus65Link) {
-            plus65Link.href = rawPhone ? `https://www.google.com/search?q=%2B65+${encodedPhone}` : '#';
+            plus65Link.href = cleanPhone ? `https://www.google.com/search?q=%2B65+${encodedFormattedPhone}` : '#';
         }
         if (quotesLink) {
-            quotesLink.href = rawPhone ? `https://www.google.com/search?q=%27${encodedPhone}%27` : '#';
+            quotesLink.href = cleanPhone ? `https://www.google.com/search?q=%27${encodedCleanPhone}%27` : '#';
         }
 
         modal.classList.remove('hidden');
