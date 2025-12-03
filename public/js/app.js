@@ -42,6 +42,11 @@ function openExcelModal() {
     const modal = document.getElementById('excelModal');
     if (modal) {
         modal.classList.remove('hidden');
+        modal.classList.add('modal-opening');
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            modal.classList.remove('modal-opening');
+        }, 300);
     }
 }
 
@@ -50,7 +55,14 @@ async function closeExcelModal() {
     const fileInput = document.getElementById('excelFile');
     const fileName = document.getElementById('fileName');
 
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('modal-closing');
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('modal-closing');
+        }, 200);
+    }
     if (fileInput) fileInput.value = '';
     if (fileName) fileName.textContent = '';
 
@@ -229,7 +241,7 @@ function renderTable(data = []) {
 
     tableBody.innerHTML = data.map((company, index) => {
         // Determine background color based on validation
-        let rowBgColor = '';
+        let rowBgStyle = '';
         let phoneStyle = '';
 
         const status = company.Status !== undefined ? company.Status : company.status;
@@ -237,15 +249,15 @@ function renderTable(data = []) {
 
         if (company.isDuplicate) {
             // Orange background for duplicate phone numbers
-            rowBgColor = 'bg-orange-100';
-            phoneStyle = 'bg-orange-200 font-semibold';
+            rowBgStyle = 'background-color: var(--validation-duplicate);';
+            phoneStyle = 'font-semibold';
         } else if (status === 0 || status === false || isValidSingapore === false) {
             // Red background for invalid Singapore phone numbers
-            rowBgColor = 'bg-red-50';
-            phoneStyle = 'bg-red-200 font-semibold';
+            rowBgStyle = 'background-color: var(--validation-invalid);';
+            phoneStyle = 'font-semibold';
         } else {
             // Default background for valid or unknown status
-            rowBgColor = '';
+            rowBgStyle = '';
             phoneStyle = '';
         }
 
@@ -264,22 +276,22 @@ function renderTable(data = []) {
         const website = company.Website || company.website || '';
 
         return `
-        <tr class="hover:bg-gray-200 border-b border-gray-100 ${rowBgColor}" onclick="openEditModal('${escapeHtml(String(id))}')" style="cursor: pointer;">
-            <td class="px-6 py-4 text-sm font-medium whitespace-nowrap">${escapeHtml(id)}</td>
-            <td class="px-6 py-4 text-sm ${phoneStyle} whitespace-nowrap">
-                ${escapeHtml(rawPhone)}
+        <tr onclick="openEditModal('${escapeHtml(String(id))}')" style="cursor: pointer; ${rowBgStyle}">
+            <td class="whitespace-nowrap">${escapeHtml(id)}</td>
+            <td class="${phoneStyle} whitespace-nowrap">
+                ${escapeHtml(formattedPhone)}
                 <div class="phone-search-buttons mt-1 flex gap-2">
-                    <a href="https://www.google.com/search?q=%2B65+${encodedFormattedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs text-blue-600 hover:underline">+65 search</a>
-                    <a href="https://www.google.com/search?q=%27${encodedCleanPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs text-blue-600 hover:underline">'quotes' search</a>
+                    <a href="https://www.google.com/search?q=%2B65+${encodedFormattedPhone}" target="_blank" rel="noopener noreferrer" class="phone-search-btn plus65 text-xs hover:underline" style="color: var(--accent-blue);">+65 search</a>
+                    <a href="https://www.google.com/search?q=%27${encodedCleanPhone}%27" target="_blank" rel="noopener noreferrer" class="phone-search-btn quotes text-xs hover:underline" style="color: var(--accent-blue);">'quotes' search</a>
                 </div>
             </td>
-            <td class="px-6 py-4 text-sm whitespace-nowrap">${escapeHtml(companyName)}</td>
-            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">${escapeHtml(physicalAddress)}</td>
-            <td class="px-6 py-4 text-sm text-blue-600 break-all whitespace-nowrap">
-                ${email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''}
+            <td class="whitespace-nowrap">${escapeHtml(companyName)}</td>
+            <td class="whitespace-nowrap" style="color: var(--text-tertiary);">${escapeHtml(physicalAddress)}</td>
+            <td class="break-all whitespace-nowrap">
+                ${email ? `<a href="mailto:${escapeHtml(email)}" style="color: var(--accent-blue);">${escapeHtml(email)}</a>` : ''}
             </td>
-            <td class="px-6 py-4 text-sm text-blue-600 whitespace-nowrap">
-                ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(website)}</a>` : ''}
+            <td class="whitespace-nowrap">
+                ${website ? `<a href="http://${escapeHtml(website)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-blue);">${escapeHtml(website)}</a>` : ''}
             </td>
         </tr>
     `;
@@ -287,22 +299,11 @@ function renderTable(data = []) {
 }
 
 function renderPagination(result) {
-    // Check if pagination container exists, if not create it
-    let paginationContainer = cachedElements.paginationContainer || document.getElementById('paginationContainer');
-
+    const paginationContainer = cachedElements.paginationContainer || document.getElementById('paginationContainer');
+    
     if (!paginationContainer) {
-        // Create pagination container after the table
-        const tableContainer = document.querySelector('.overflow-x-auto');
-        if (tableContainer && tableContainer.parentElement) {
-            paginationContainer = document.createElement('div');
-            paginationContainer.id = 'paginationContainer';
-            paginationContainer.className = 'mt-4 w-full';
-            tableContainer.parentElement.insertBefore(paginationContainer, tableContainer.nextSibling);
-            // Cache the newly created element
-            cachedElements.paginationContainer = paginationContainer;
-        } else {
-            return; // Can't add pagination if no container found
-        }
+        console.error('Pagination container not found');
+        return;
     }
 
     // Show pagination
@@ -321,7 +322,7 @@ function renderPagination(result) {
 
     let paginationHTML = `
         <div class="flex items-center justify-between px-4 mb-3">
-            <div class="text-sm text-gray-600">
+            <div class="pagination-info text-sm">
                 Showing ${startRecord} to ${endRecord} of ${total} results
             </div>
         </div>
@@ -332,7 +333,7 @@ function renderPagination(result) {
     if (currentPage > 1) {
         paginationHTML += `
             <button onclick="loadCompaniesData(${currentPage - 1})"
-                class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                class="pagination-btn text-sm font-medium">
                 Previous
             </button>
         `;
@@ -351,26 +352,26 @@ function renderPagination(result) {
     if (startPage > 1) {
         paginationHTML += `
             <button onclick="loadCompaniesData(1)"
-                class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                class="pagination-btn text-sm font-medium">
                 1
             </button>
         `;
         if (startPage > 2) {
-            paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+            paginationHTML += `<span class="pagination-ellipsis px-2">...</span>`;
         }
     }
 
     for (let i = startPage; i <= endPage; i++) {
         if (i === currentPage) {
             paginationHTML += `
-                <button class="px-3 py-1 bg-black text-white rounded text-sm font-medium">
+                <button class="pagination-btn pagination-btn-active text-sm font-medium">
                     ${i}
                 </button>
             `;
         } else {
             paginationHTML += `
                 <button onclick="loadCompaniesData(${i})"
-                    class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                    class="pagination-btn text-sm font-medium">
                     ${i}
                 </button>
             `;
@@ -380,11 +381,11 @@ function renderPagination(result) {
     // Show last page if not in range
     if (endPage < totalPages) {
         if (endPage < totalPages - 1) {
-            paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+            paginationHTML += `<span class="pagination-ellipsis px-2">...</span>`;
         }
         paginationHTML += `
             <button onclick="loadCompaniesData(${totalPages})"
-                class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                class="pagination-btn text-sm font-medium">
                 ${totalPages}
             </button>
         `;
@@ -394,7 +395,7 @@ function renderPagination(result) {
     if (currentPage < totalPages) {
         paginationHTML += `
             <button onclick="loadCompaniesData(${currentPage + 1})"
-                class="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 text-sm font-medium">
+                class="pagination-btn text-sm font-medium">
                 Next
             </button>
         `;
@@ -728,6 +729,29 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function copyPhoneNumber() {
+    const phoneInput = document.getElementById('editPhone');
+    if (!phoneInput) return;
+
+    const rawPhone = phoneInput.value.replace(/\D+/g, '');
+    const formattedPhone = rawPhone.replace(/(\d{4})(\d{4})/, '$1 $2');
+
+    navigator.clipboard.writeText(formattedPhone).then(() => {
+        // Show feedback
+        const copyBtn = event?.target;
+        if (copyBtn) {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 1500);
+        }
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy phone number');
+    });
+}
+
 // ============= EDIT MODAL FUNCTIONS =============
 
 function openEditModal(id) {
@@ -766,6 +790,11 @@ function openEditModal(id) {
         }
 
         modal.classList.remove('hidden');
+        modal.classList.add('modal-opening');
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            modal.classList.remove('modal-opening');
+        }, 300);
     } catch (e) {
         console.error('Failed to open edit modal:', e);
     }
@@ -773,7 +802,14 @@ function openEditModal(id) {
 
 function closeEditModal() {
     const modal = document.getElementById('editModal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('modal-closing');
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('modal-closing');
+        }, 200);
+    }
     editingCompanyId = null;
 }
 
@@ -838,9 +874,44 @@ async function saveEdit() {
     }
 }
 
+// ============= THEME TOGGLE =============
+
+function toggleTheme() {
+    const root = document.documentElement;
+    const themeIcon = document.getElementById('themeIcon');
+    const currentTheme = root.getAttribute('data-theme');
+    
+    if (currentTheme === 'light') {
+        root.setAttribute('data-theme', 'dark');
+        if (themeIcon) themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        root.setAttribute('data-theme', 'light');
+        if (themeIcon) themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const root = document.documentElement;
+    const themeIcon = document.getElementById('themeIcon');
+    
+    if (savedTheme === 'light') {
+        root.setAttribute('data-theme', 'light');
+        if (themeIcon) themeIcon.textContent = '☀️';
+    } else {
+        root.setAttribute('data-theme', 'dark');
+        if (themeIcon) themeIcon.textContent = '🌙';
+    }
+}
+
 // ============= INITIALIZATION =============
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Initialize theme before anything else
+    initTheme();
+    
     // Cache DOM elements for better performance
     cacheElements();
 

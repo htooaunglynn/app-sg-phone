@@ -1,13 +1,307 @@
 @import "tailwindcss";
 
+/* ============================================
+   APPLE DARK THEME DESIGN SYSTEM
+   ============================================ */
+
+:root {
+    /* ========== COLOR SYSTEM - DARK THEME (DEFAULT) ========== */
+    
+    /* Background Colors */
+    --bg-primary: #0B0B0D;
+    --bg-secondary: #111113;
+    --bg-tertiary: #1C1C1E;
+    --bg-elevated: #2C2C2E;
+    
+    /* Text Colors */
+    --text-primary: #FFFFFF;
+    --text-secondary: #F5F5F7;
+    --text-tertiary: #AEAEB2;
+    --text-muted: #8E8E93;
+    
+    /* Accent Colors */
+    --accent-blue: #0A84FF; /* Apple's standard blue - adjusted brightness for links */
+    --accent-blue-hover: #0077ED;
+    --accent-blue-button: #0071E3; /* Darker blue for buttons (WCAG AA compliance with white text) */
+    --accent-orange: #FF9500;
+    --accent-red: #FF3B30;
+    --accent-yellow: #FFCC00;
+    
+    /* Validation Colors (Dark Theme Compatible) */
+    --validation-duplicate: rgba(255, 149, 0, 0.15);
+    --validation-invalid: rgba(255, 59, 48, 0.15);
+    --validation-finish: rgba(255, 204, 0, 0.15);
+    
+    /* Border Colors */
+    --border-primary: #2C2C2E;
+    --border-secondary: #3A3A3C;
+    
+    /* ========== TYPOGRAPHY SYSTEM ========== */
+    
+    /* Font Stack */
+    --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    
+    /* Type Scale */
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
+    
+    /* Font Weights */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    /* Line Heights */
+    --line-height-tight: 1.4;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.6;
+    
+    /* Letter Spacing */
+    --letter-spacing-tight: -0.02em;
+    --letter-spacing-normal: 0;
+    
+    /* ========== SPACING SYSTEM (8px grid) ========== */
+    
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+    
+    /* ========== BORDER RADIUS SYSTEM ========== */
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    
+    /* ========== SHADOW SYSTEM ========== */
+    
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.6);
+    --shadow-nav: 0 2px 8px rgba(0, 0, 0, 0.4);
+    
+    /* ========== ANIMATION TIMING ========== */
+    
+    --transition-fast: 100ms ease;
+    --transition-normal: 200ms ease-in-out;
+    --transition-slow: 300ms ease-in-out;
+    
+    /* ========== GLASS EFFECT ========== */
+    
+    --glass-bg: rgba(28, 28, 30, 0.8);
+    --glass-bg-light: rgba(28, 28, 30, 0.7);
+    --glass-blur: 40px;
+    --glass-blur-light: 20px;
+}
+
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+
+:root[data-theme="light"] {
+    /* Background Colors */
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F5F5F7;
+    --bg-tertiary: #FFFFFF;
+    --bg-elevated: #FFFFFF;
+    
+    /* Text Colors */
+    --text-primary: #1D1D1F;
+    --text-secondary: #1D1D1F;
+    --text-tertiary: #6E6E73;
+    --text-muted: #86868B;
+    
+    /* Accent Colors */
+    --accent-blue: #0071E3;
+    --accent-blue-hover: #0077ED;
+    --accent-blue-button: #0071E3;
+    --accent-orange: #FF9500;
+    --accent-red: #FF3B30;
+    --accent-yellow: #F5A623;
+    
+    /* Validation Colors (Light Theme Compatible) */
+    --validation-duplicate: rgba(255, 149, 0, 0.1);
+    --validation-invalid: rgba(255, 59, 48, 0.1);
+    --validation-finish: rgba(245, 166, 35, 0.1);
+    
+    /* Border Colors */
+    --border-primary: #D2D2D7;
+    --border-secondary: #C7C7CC;
+    
+    /* Glass Effect */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-bg-light: rgba(255, 255, 255, 0.7);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.25);
+    --shadow-nav: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   GLASS EFFECT UTILITY CLASSES
+   ============================================ */
+
+/* Primary glass effect - 80% opacity, 40px blur */
+.glass-effect {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+/* Light glass effect - 70% opacity, 20px blur */
+.glass-effect-light {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(var(--glass-blur-light));
+    -webkit-backdrop-filter: blur(var(--glass-blur-light));
+}
+
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(1px)) {
+    .glass-effect {
+        background: rgba(28, 28, 30, 0.95);
+    }
+    
+    .glass-effect-light {
+        background: rgba(28, 28, 30, 0.90);
+    }
+}
+
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+
 /* Apple-inspired minimalist design */
 html {
     scroll-behavior: smooth;
 }
 
 body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base); /* 14px */
+    line-height: var(--line-height-normal); /* 1.5 */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* Heading typography - font weights 600-700 and letter-spacing -0.02em */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: var(--font-weight-semibold); /* 600 */
+    letter-spacing: var(--letter-spacing-tight); /* -0.02em */
+}
+
+h1 {
+    font-size: var(--font-size-xl); /* 24px */
+}
+
+h2 {
+    font-size: var(--font-size-lg); /* 20px */
+}
+
+h3 {
+    font-size: var(--font-size-md); /* 16px */
+}
+
+/* ============================================
+   SEARCH INPUT STYLING
+   ============================================ */
+
+.search-input {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid transparent;
+    transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.4;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+/* ============================================
+   BUTTON STYLING - APPLE AESTHETICS
+   ============================================ */
+
+/* Primary Button (Upload Excel) */
+.btn-primary {
+    background-color: var(--accent-blue-button);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow-sm);
+    border: none;
+    transition: background-color var(--transition-normal), 
+                box-shadow var(--transition-normal),
+                transform var(--transition-fast);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-blue-hover);
+    box-shadow: 0 2px 4.8px rgba(0, 0, 0, 0.36); /* 20% increase */
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+    transition: transform var(--transition-fast);
+}
+
+/* Secondary Buttons (Export buttons) */
+.btn-secondary {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-weight: var(--font-weight-medium);
+    box-shadow: var(--shadow-sm);
+    transition: background-color var(--transition-normal),
+                border-color var(--transition-normal),
+                box-shadow var(--transition-normal),
+                transform var(--transition-fast);
+}
+
+.btn-secondary:hover {
+    background-color: var(--bg-elevated);
+    border-color: var(--border-secondary);
+    box-shadow: 0 2px 4.8px rgba(0, 0, 0, 0.36); /* 20% increase */
+}
+
+.btn-secondary:active {
+    transform: scale(0.98);
+    transition: transform var(--transition-fast);
+}
+
+/* Button container spacing */
+.button-group {
+    display: flex;
+    gap: var(--spacing-sm); /* 12px gap */
+    flex-wrap: wrap;
+}
+
+@media (min-width: 640px) {
+    .button-group {
+        flex-wrap: nowrap;
+    }
 }
 
 /* Smooth transitions */
@@ -24,13 +318,51 @@ button:active {
     transform: scale(0.98);
 }
 
-/* Table styling */
-tbody tr:hover {
-    background-color: #f9fafb;
+/* ============================================
+   DATA TABLE STYLING - DARK THEME
+   ============================================ */
+
+/* Table container */
+.table-container {
+    background-color: var(--bg-secondary); /* #111113 */
+    border-radius: var(--radius-lg); /* 16px */
+    padding: var(--spacing-lg); /* 24px */
+    overflow-x: auto;
 }
 
+/* Table header */
+thead tr {
+    background-color: var(--bg-tertiary); /* #1C1C1E */
+}
+
+thead th {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold); /* 600 */
+    padding: var(--spacing-md); /* 16px vertical */
+}
+
+/* Table cells */
+tbody td {
+    color: var(--text-secondary); /* white/light gray */
+    padding: var(--spacing-md); /* 16px vertical */
+}
+
+/* Row borders */
 tbody tr {
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border-primary); /* #2C2C2E */
+}
+
+tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Row hover state */
+tbody tr {
+    transition: background-color 150ms ease;
+}
+
+tbody tr:hover {
+    background-color: var(--bg-tertiary); /* #1C1C1E */
 }
 
 /* Modal animation */
@@ -50,23 +382,270 @@ tbody tr {
     }
 }
 
-/* Scrollbar styling */
+/* ============================================
+   LINK STYLING - ACCENT BLUE WITH HOVER
+   ============================================ */
+
+/* General link styling - all links use accent blue with brightness boost for accessibility */
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: filter var(--transition-normal);
+    /* Brightness boost for WCAG AA compliance on dark backgrounds */
+    filter: brightness(1.15);
+}
+
+/* Hover state - additional brightness increase for all links */
+a:hover {
+    filter: brightness(1.35);
+}
+
+/* Visited links maintain accent color */
+a:visited {
+    color: var(--accent-blue);
+}
+
+/* Email links - explicit styling */
+a[href^="mailto:"] {
+    color: var(--accent-blue);
+    transition: filter var(--transition-normal);
+}
+
+a[href^="mailto:"]:hover {
+    filter: brightness(1.2);
+}
+
+a[href^="mailto:"]:visited {
+    color: var(--accent-blue);
+}
+
+/* Website links - explicit styling for http and https */
+a[href^="http://"],
+a[href^="https://"] {
+    color: var(--accent-blue);
+    transition: filter var(--transition-normal);
+}
+
+a[href^="http://"]:hover,
+a[href^="https://"]:hover {
+    filter: brightness(1.2);
+}
+
+a[href^="http://"]:visited,
+a[href^="https://"]:visited {
+    color: var(--accent-blue);
+}
+
+/* Phone search links - specific styling */
+.phone-search-btn {
+    color: var(--accent-blue);
+    transition: filter var(--transition-normal);
+    /* Enhanced for WCAG AA compliance on all validation backgrounds */
+    filter: brightness(1.15);
+}
+
+.phone-search-btn:hover {
+    filter: brightness(1.35); /* Increased from 1.2 to account for base brightness */
+}
+
+.phone-search-btn:visited {
+    color: var(--accent-blue);
+}
+
+/* ============================================
+   VALIDATION HIGHLIGHTING - DARK THEME
+   ============================================ */
+
+/* Ensure phone cells maintain visibility on validation backgrounds */
+.font-semibold {
+    font-weight: var(--font-weight-semibold); /* 600 */
+    color: var(--text-primary); /* Ensure high contrast */
+}
+
+/* ============================================
+   VALIDATION LEGEND PANEL - GLASS EFFECT
+   ============================================ */
+
+.validation-legend {
+    margin-top: var(--spacing-2xl); /* 48px vertical spacing from table */
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg); /* 16px */
+    border: 1px solid var(--border-primary); /* #2C2C2E */
+}
+
+.validation-legend-heading {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary); /* white */
+    margin-bottom: var(--spacing-sm);
+}
+
+.validation-legend-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg); /* 24px horizontal spacing */
+    font-size: var(--font-size-sm);
+}
+
+.validation-stat-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs); /* 8px */
+}
+
+/* Colored indicator boxes with 8px border radius */
+.validation-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: var(--radius-sm); /* 8px */
+    flex-shrink: 0;
+}
+
+.validation-indicator-duplicate {
+    background-color: var(--validation-duplicate); /* rgba(255, 149, 0, 0.15) */
+    border: 1px solid var(--accent-orange);
+}
+
+.validation-indicator-invalid {
+    background-color: var(--validation-invalid); /* rgba(255, 59, 48, 0.15) */
+    border: 1px solid var(--accent-red);
+}
+
+.validation-indicator-finish {
+    background-color: var(--validation-finish); /* rgba(255, 204, 0, 0.15) */
+    border: 1px solid var(--accent-yellow);
+}
+
+.validation-label {
+    color: var(--text-secondary);
+}
+
+/* Badge backgrounds with semi-transparent colors and white text */
+.validation-badge {
+    padding: 4px 8px;
+    border-radius: 9999px; /* fully rounded */
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary); /* white text */
+}
+
+.validation-badge-duplicate {
+    background-color: rgba(255, 149, 0, 0.3); /* semi-transparent orange */
+}
+
+.validation-badge-invalid {
+    background-color: rgba(255, 59, 48, 0.3); /* semi-transparent red */
+}
+
+.validation-badge-finish {
+    background-color: rgba(255, 204, 0, 0.3); /* semi-transparent yellow */
+}
+
+.validation-badge-total {
+    background-color: var(--bg-elevated); /* #2C2C2E */
+}
+
+.validation-legend-divider {
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-primary); /* #2C2C2E */
+}
+
+.validation-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--font-size-sm);
+}
+
+.validation-total-label {
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   SCROLLBAR STYLING - DARK THEME
+   ============================================ */
+
+/* Scrollbar width - 8px */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
+/* Scrollbar track - transparent background */
 ::-webkit-scrollbar-track {
     background: transparent;
 }
 
+/* Scrollbar thumb - dark gray with 50% opacity when inactive */
 ::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: var(--border-primary); /* #2C2C2E */
     border-radius: 4px;
+    opacity: 0.5; /* 50% opacity for inactive scrollbars */
 }
 
+/* Scrollbar thumb hover - brighter color with full opacity */
 ::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
+    background: var(--border-secondary); /* #3A3A3C */
+    opacity: 1; /* Full opacity on hover */
+}
+
+/* Firefox scrollbar styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(44, 44, 46, 0.5) transparent; /* thumb track */
+}
+
+*:hover {
+    scrollbar-color: rgba(58, 58, 60, 1) transparent; /* brighter on hover */
+}
+
+/* ============================================
+   EMPTY STATE STYLING
+   ============================================ */
+
+.empty-state {
+    color: var(--text-tertiary); /* #AEAEB2 - light gray */
+    text-align: center;
+    padding: var(--spacing-2xl) 0; /* 48px vertical padding */
+}
+
+/* ============================================
+   ACCESSIBILITY UTILITIES
+   ============================================ */
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Enhanced focus indicators for keyboard navigation */
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 0;
+}
+
+/* Ensure table rows are keyboard accessible */
+tbody tr:focus-within {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
 }
 
 /* Drag and drop */
@@ -84,4 +663,170 @@ tbody tr {
 
 .animate-spin-slow {
     animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   MODAL DIALOGS - DARK THEME & GLASS EFFECTS
+   ============================================ */
+
+/* Modal overlay with backdrop blur */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+}
+
+/* Modal content container */
+.modal-content {
+    background-color: var(--bg-tertiary); /* #1C1C1E */
+    border-radius: var(--radius-xl); /* 20px */
+    padding: var(--spacing-xl); /* 32px */
+    box-shadow: var(--shadow-xl); /* 0 20px 60px rgba(0, 0, 0, 0.6) */
+}
+
+/* Modal headings */
+.modal-content h2 {
+    color: var(--text-primary);
+    font-weight: var(--font-weight-semibold); /* 600 */
+}
+
+/* Modal close button */
+.modal-close-btn {
+    color: var(--text-tertiary); /* light gray */
+    transition: color var(--transition-normal);
+}
+
+.modal-close-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Modal open animation */
+@keyframes modalOpen {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1.0);
+    }
+}
+
+/* Modal close animation */
+@keyframes modalClose {
+    from {
+        opacity: 1;
+        transform: scale(1.0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Apply animations */
+.modal-opening {
+    animation: modalOpen 300ms ease-in-out forwards;
+}
+
+.modal-closing {
+    animation: modalClose 200ms ease-in-out forwards;
+}
+
+/* Modal text styling */
+.modal-content p {
+    color: var(--text-tertiary);
+}
+
+/* Modal form fields container - 20px vertical gaps */
+.modal-form-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px; /* 20px vertical gaps between form fields */
+}
+
+/* Modal labels - light gray */
+.modal-content label {
+    color: var(--text-tertiary); /* #AEAEB2 */
+    font-size: var(--font-size-sm);
+}
+
+/* Modal input fields - dark theme styling */
+.modal-input {
+    background-color: var(--bg-elevated); /* #2C2C2E */
+    color: var(--text-primary); /* white */
+    border-radius: var(--radius-md); /* 12px */
+    padding: var(--spacing-sm); /* 12px */
+    border: 1px solid transparent;
+    transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.modal-input:focus {
+    outline: none;
+    border-color: var(--accent-blue); /* accent blue border */
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+.modal-input::placeholder {
+    color: var(--text-muted); /* muted gray */
+}
+
+/* Modal readonly inputs - darker shade */
+.modal-input-readonly {
+    background-color: var(--bg-tertiary) !important; /* #1C1C1E - darker shade */
+    color: var(--text-primary);
+    border-radius: var(--radius-md); /* 12px */
+    padding: var(--spacing-sm); /* 12px */
+    border: 1px solid var(--border-primary);
+}
+
+/* ============================================
+   PAGINATION CONTROLS - DARK THEME
+   ============================================ */
+
+/* Pagination info text - "Showing X to Y" */
+.pagination-info {
+    color: var(--text-tertiary); /* light gray */
+}
+
+/* Pagination buttons */
+.pagination-btn {
+    background-color: transparent;
+    color: var(--text-secondary); /* white/light gray */
+    border: 1px solid var(--border-primary); /* #2C2C2E */
+    border-radius: var(--radius-sm); /* 8px */
+    padding: 4px 12px; /* px-3 py-1 equivalent */
+    transition: background-color var(--transition-normal),
+                border-color var(--transition-normal);
+}
+
+.pagination-btn:hover {
+    background-color: var(--bg-elevated); /* lighter background */
+    border-color: var(--border-secondary);
+}
+
+/* Active page button - accent blue background */
+.pagination-btn-active {
+    background-color: var(--accent-blue-button) !important;
+    color: var(--text-primary) !important; /* white text */
+    border-color: var(--accent-blue-button) !important;
+}
+
+.pagination-btn-active:hover {
+    background-color: var(--accent-blue-hover) !important;
+    border-color: var(--accent-blue-hover) !important;
+}
+
+/* Pagination ellipsis */
+.pagination-ellipsis {
+    color: var(--text-muted); /* muted gray */
+}
+/* ============================================
+   EMPTY STATE STYLING
+   ============================================ */
+
+.empty-state {
+    color: var(--text-tertiary); /* #AEAEB2 - light gray */
+    text-align: center;
+    padding: var(--spacing-2xl) 0; /* 48px vertical padding */
 }

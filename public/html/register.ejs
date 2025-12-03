@@ -6,69 +6,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - DataHub</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
 
-<body class="bg-white text-gray-900 font-sans">
+<body style="background-color: var(--bg-primary); color: var(--text-primary);" class="font-sans">
     <div class="min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
             <!-- Logo -->
             <div class="text-center mb-8">
                 <div class="flex justify-center mb-4">
-                    <div class="w-12 h-12 bg-black rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-lg">D</span>
+                    <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background-color: var(--accent-blue);">
+                        <span class="font-bold text-lg" style="color: var(--text-primary);">D</span>
                     </div>
                 </div>
-                <h1 class="text-3xl font-semibold mb-2">DataHub</h1>
-                <p class="text-gray-600">Create your account</p>
+                <h1 class="text-3xl font-semibold mb-2" style="color: var(--text-primary);">DataHub</h1>
+                <p style="color: var(--text-tertiary);">Create your account</p>
             </div>
 
             <!-- Form -->
             <form id="registerForm" class="space-y-4" method="POST" action="/auth/register">
                 <div>
-                    <label class="block text-sm font-medium mb-2">Full Name</label>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--text-tertiary);">Full Name</label>
                     <input type="text" id="registerName" name="name" required
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition"
+                        class="modal-input w-full"
                         placeholder="John Doe">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--text-tertiary);">Email</label>
                     <input type="email" id="registerEmail" name="email" required
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition"
+                        class="modal-input w-full"
                         placeholder="you@example.com">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-2">Password</label>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--text-tertiary);">Password</label>
                     <input type="password" id="registerPassword" name="password" required minlength="8"
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition"
+                        class="modal-input w-full"
                         placeholder="••••••••">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-2">Confirm Password</label>
+                    <label class="block text-sm font-medium mb-2" style="color: var(--text-tertiary);">Confirm Password</label>
                     <input type="password" id="registerConfirmPassword" name="confirmPassword" required minlength="8"
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition"
+                        class="modal-input w-full"
                         placeholder="••••••••">
                 </div>
 
                 <% if (typeof error !=='undefined' && error) { %>
-                    <div id="registerError" class="bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm">
+                    <div id="registerError" class="px-4 py-2 rounded-lg text-sm" style="background-color: var(--validation-invalid); color: var(--accent-red); border: 1px solid var(--accent-red);">
                         <%= error %>
                     </div>
                     <% } %>
 
                         <button type="submit"
-                            class="w-full px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 font-medium transition">
+                            class="btn-primary w-full">
                             Create Account
                         </button>
             </form>
 
             <!-- Login Link -->
             <div class="text-center mt-6">
-                <p class="text-gray-600">
+                <p style="color: var(--text-tertiary);">
                     Already have an account?
-                    <a href="/login" class="text-black font-medium hover:underline">Sign in</a>
+                    <a href="/login" class="font-medium hover:underline" style="color: var(--accent-blue);">Sign in</a>
                 </p>
             </div>
         </div>
