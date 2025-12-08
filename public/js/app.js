@@ -268,8 +268,11 @@ function renderTable(data = []) {
         const encodedFormattedPhone = encodeURIComponent(formattedPhone);
         const encodedCleanPhone = encodeURIComponent(cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2'));
 
+        // Calculate row number based on pagination
+        const rowNumber = ((currentPage - 1) * pageSize) + index + 1;
+
         // Get field values supporting both cases
-        const id = company.Id || company.id || (index + 1);
+        const id = company.Id || company.id || '';
         const companyName = company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '';
         const physicalAddress = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '';
         const email = company.Email || company.email || '';
@@ -277,6 +280,7 @@ function renderTable(data = []) {
 
         return `
         <tr onclick="openEditModal('${escapeHtml(String(id))}')" style="cursor: pointer; ${rowBgStyle}">
+            <td class="whitespace-nowrap">${rowNumber}</td>
             <td class="whitespace-nowrap">${escapeHtml(id)}</td>
             <td class="${phoneStyle} whitespace-nowrap">
                 ${escapeHtml(formattedPhone)}
@@ -300,7 +304,7 @@ function renderTable(data = []) {
 
 function renderPagination(result) {
     const paginationContainer = cachedElements.paginationContainer || document.getElementById('paginationContainer');
-    
+
     if (!paginationContainer) {
         console.error('Pagination container not found');
         return;
@@ -880,7 +884,7 @@ function toggleTheme() {
     const root = document.documentElement;
     const themeIcon = document.getElementById('themeIcon');
     const currentTheme = root.getAttribute('data-theme');
-    
+
     if (currentTheme === 'light') {
         root.setAttribute('data-theme', 'dark');
         if (themeIcon) themeIcon.textContent = '🌙';
@@ -896,7 +900,7 @@ function initTheme() {
     const savedTheme = localStorage.getItem('theme');
     const root = document.documentElement;
     const themeIcon = document.getElementById('themeIcon');
-    
+
     if (savedTheme === 'light') {
         root.setAttribute('data-theme', 'light');
         if (themeIcon) themeIcon.textContent = '☀️';
@@ -911,7 +915,7 @@ function initTheme() {
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize theme before anything else
     initTheme();
-    
+
     // Cache DOM elements for better performance
     cacheElements();
 

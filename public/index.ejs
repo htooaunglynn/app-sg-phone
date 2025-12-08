@@ -16,14 +16,21 @@
         <div class="max-w-7xl mx-auto" style="padding: var(--spacing-md) var(--spacing-lg);">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--accent-blue);">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style="background-color: var(--accent-blue);">
                         <span class="font-bold text-sm" style="color: var(--text-primary);">D</span>
                     </div>
-                    <span style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-lg); color: var(--text-primary);">DataHub</span>
+                    <span
+                        style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-lg); color: var(--text-primary);">DataHub</span>
                 </div>
                 <div class="flex items-center gap-4">
-                    <a href="/" class="text-sm font-medium" style="color: var(--text-tertiary); transition: color var(--transition-normal);" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-tertiary)'">Home</a>
-                    <button id="themeToggle" onclick="toggleTheme()" class="text-sm font-medium px-3 py-1.5 rounded-lg" style="background-color: var(--bg-elevated); color: var(--text-secondary); transition: all var(--transition-normal);" aria-label="Toggle theme">
+                    <a href="/" class="text-sm font-medium"
+                        style="color: var(--text-tertiary); transition: color var(--transition-normal);"
+                        onmouseover="this.style.color='var(--text-primary)'"
+                        onmouseout="this.style.color='var(--text-tertiary)'">Home</a>
+                    <button id="themeToggle" onclick="toggleTheme()" class="text-sm font-medium px-3 py-1.5 rounded-lg"
+                        style="background-color: var(--bg-elevated); color: var(--text-secondary); transition: all var(--transition-normal);"
+                        aria-label="Toggle theme">
                         <span id="themeIcon">🌙</span>
                     </button>
                     <div class="flex items-center gap-2">
@@ -33,7 +40,10 @@
                                 <button type="submit" class="btn-secondary text-sm">Logout</button>
                             </form>
                             <% } else { %>
-                                <a href="/login" class="text-sm font-medium" style="color: var(--text-secondary); transition: color var(--transition-normal);" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Login</a>
+                                <a href="/login" class="text-sm font-medium"
+                                    style="color: var(--text-secondary); transition: color var(--transition-normal);"
+                                    onmouseover="this.style.color='var(--text-primary)'"
+                                    onmouseout="this.style.color='var(--text-secondary)'">Login</a>
                                 <% } %>
                     </div>
                 </div>
@@ -50,36 +60,30 @@
                 <label for="searchInput" class="sr-only">Search companies</label>
                 <input type="text" id="searchInput"
                     placeholder="Search by ID, company, email, phone, website, or address..."
-                    class="search-input flex-1"
-                    onkeyup="filterTable()"
+                    class="search-input flex-1" onkeyup="filterTable()"
                     aria-label="Search by ID, company, email, phone, website, or address">
             </div>
 
 
             <!-- Buttons -->
             <div class="button-group">
-                <button type="button" onclick="openExcelModal()"
-                    class="btn-primary flex items-center gap-2"
+                <button type="button" onclick="openExcelModal()" class="btn-primary flex items-center gap-2"
                     aria-label="Upload Excel file">
                     <span aria-hidden="true">↑</span> Upload Excel
                 </button>
-                <button type="button" onclick="exportToExcel()"
-                    class="btn-secondary flex items-center gap-2"
+                <button type="button" onclick="exportToExcel()" class="btn-secondary flex items-center gap-2"
                     aria-label="Export all data to Excel">
                     <span aria-hidden="true">↓</span> Export Excel
                 </button>
-                <button type="button" onclick="exportFinishData()"
-                    class="btn-secondary flex items-center gap-2"
+                <button type="button" onclick="exportFinishData()" class="btn-secondary flex items-center gap-2"
                     aria-label="Export finish data to Excel">
                     <span aria-hidden="true">↓</span> Export Finish Data
                 </button>
-                <button type="button" onclick="exportNoData()"
-                    class="btn-secondary flex items-center gap-2"
+                <button type="button" onclick="exportNoData()" class="btn-secondary flex items-center gap-2"
                     aria-label="Export records with no data">
                     <span aria-hidden="true">↓</span> Export No Data
                 </button>
-                <button type="button" onclick="exportWrongNumber()"
-                    class="btn-secondary flex items-center gap-2"
+                <button type="button" onclick="exportWrongNumber()" class="btn-secondary flex items-center gap-2"
                     aria-label="Export records with wrong numbers">
                     <span aria-hidden="true">↓</span> Export Wrong Number
                 </button>
@@ -93,6 +97,7 @@
             <table class="w-full text-sm table-auto">
                 <thead>
                     <tr>
+                        <th class="text-left whitespace-nowrap">No</th>
                         <th class="text-left whitespace-nowrap">ID</th>
                         <th class="text-left whitespace-nowrap">Phone</th>
                         <th class="text-left whitespace-nowrap">Company Name</th>
@@ -101,7 +106,7 @@
                         <th class="text-left whitespace-nowrap">Website</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
+                <tbody id="tableBody" class="text-left whitespace-nowrap">
                     <!-- Rows will be populated by JavaScript -->
                 </tbody>
             </table>
@@ -120,12 +125,14 @@
                 <div class="validation-stat-item">
                     <div class="validation-indicator validation-indicator-duplicate" aria-hidden="true"></div>
                     <span class="validation-label">Duplicate Phone Number</span>
-                    <span id="duplicateCount" class="validation-badge validation-badge-duplicate" aria-live="polite">0</span>
+                    <span id="duplicateCount" class="validation-badge validation-badge-duplicate"
+                        aria-live="polite">0</span>
                 </div>
                 <div class="validation-stat-item">
                     <div class="validation-indicator validation-indicator-invalid" aria-hidden="true"></div>
                     <span class="validation-label">Invalid Singapore Phone Number</span>
-                    <span id="invalidCount" class="validation-badge validation-badge-invalid" aria-live="polite">0</span>
+                    <span id="invalidCount" class="validation-badge validation-badge-invalid"
+                        aria-live="polite">0</span>
                 </div>
                 <div class="validation-stat-item">
                     <div class="validation-indicator validation-indicator-finish" aria-hidden="true"></div>
@@ -142,17 +149,20 @@
     </main>
 
     <!-- Excel Upload Modal -->
-    <div id="excelModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="excelModalTitle">
+    <div id="excelModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+        role="dialog" aria-modal="true" aria-labelledby="excelModalTitle">
         <div class="modal-content max-w-md w-full">
             <div class="flex justify-between items-center mb-4">
                 <h2 id="excelModalTitle" class="text-xl font-semibold">Upload Excel File</h2>
-                <button type="button" onclick="closeExcelModal()" class="modal-close-btn" aria-label="Close upload modal">✕</button>
+                <button type="button" onclick="closeExcelModal()" class="modal-close-btn"
+                    aria-label="Close upload modal">✕</button>
             </div>
 
             <p class="text-sm mb-4">Upload an Excel file with columns: ID, Phone, Company Name, Physical
                 Address, Email, Website</p>
 
-            <div class="border-2 border-dashed rounded-lg p-8 text-center mb-4" style="border-color: var(--border-primary);">
+            <div class="border-2 border-dashed rounded-lg p-8 text-center mb-4"
+                style="border-color: var(--border-primary);">
                 <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="hidden"
                     onchange="handleFileUpload(event)" aria-label="Excel file input">
                 <button type="button" onclick="document.getElementById('excelFile').click()"
@@ -164,37 +174,35 @@
             </div>
 
             <div class="button-group">
-                <button type="button" onclick="closeExcelModal()"
-                    class="btn-secondary flex-1">Cancel</button>
-                <button type="button" onclick="uploadExcel()"
-                    class="btn-primary flex-1">Upload</button>
+                <button type="button" onclick="closeExcelModal()" class="btn-secondary flex-1">Cancel</button>
+                <button type="button" onclick="uploadExcel()" class="btn-primary flex-1">Upload</button>
             </div>
         </div>
     </div>
 
     <!-- Edit Company Modal -->
-    <div id="editModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div id="editModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4"
+        role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
         <div class="modal-content max-w-lg w-full">
             <div class="flex justify-between items-center mb-4">
                 <h2 id="editModalTitle" class="text-xl font-semibold">Edit Company</h2>
-                <button type="button" onclick="closeEditModal()" class="modal-close-btn" aria-label="Close edit modal">✕</button>
+                <button type="button" onclick="closeEditModal()" class="modal-close-btn"
+                    aria-label="Close edit modal">✕</button>
             </div>
 
             <div class="modal-form-fields">
                 <div>
                     <label for="editId" class="block text-sm mb-1">ID</label>
-                    <input id="editId" type="text" class="modal-input-readonly w-full"
-                        readonly aria-readonly="true">
+                    <input id="editId" type="text" class="modal-input-readonly w-full" readonly aria-readonly="true">
                 </div>
                 <div>
                     <label for="editPhone" class="block text-sm mb-1">Phone</label>
                     <div class="flex gap-2">
-                        <input id="editPhone" type="text"
-                            class="modal-input-readonly flex-1"
-                            readonly aria-readonly="true">
+                        <input id="editPhone" type="text" class="modal-input-readonly flex-1" readonly
+                            aria-readonly="true">
                         <button type="button" onclick="copyPhoneNumber()"
-                            class="btn-secondary px-3 py-2 text-sm whitespace-nowrap"
-                            aria-label="Copy phone number">📋 Copy</button>
+                            class="btn-secondary px-3 py-2 text-sm whitespace-nowrap" aria-label="Copy phone number">📋
+                            Copy</button>
                     </div>
                     <div class="phone-search-buttons mt-1 flex gap-2">
                         <a id="editPhoneSearchPlus65" href="#" target="_blank" rel="noopener noreferrer"
@@ -207,32 +215,26 @@
                 </div>
                 <div>
                     <label for="editCompanyName" class="block text-sm mb-1">Company Name</label>
-                    <input id="editCompanyName" type="text" class="modal-input w-full"
-                        placeholder="Company Name">
+                    <input id="editCompanyName" type="text" class="modal-input w-full" placeholder="Company Name">
                 </div>
                 <div>
                     <label for="editPhysicalAddress" class="block text-sm mb-1">Physical Address</label>
-                    <input id="editPhysicalAddress" type="text"
-                        class="modal-input w-full"
+                    <input id="editPhysicalAddress" type="text" class="modal-input w-full"
                         placeholder="Physical Address">
                 </div>
                 <div>
                     <label for="editEmail" class="block text-sm mb-1">Email</label>
-                    <input id="editEmail" type="email" class="modal-input w-full"
-                        placeholder="Email">
+                    <input id="editEmail" type="email" class="modal-input w-full" placeholder="Email">
                 </div>
                 <div>
                     <label for="editWebsite" class="block text-sm mb-1">Website</label>
-                    <input id="editWebsite" type="text" class="modal-input w-full"
-                        placeholder="Website">
+                    <input id="editWebsite" type="text" class="modal-input w-full" placeholder="Website">
                 </div>
             </div>
 
             <div class="button-group mt-6">
-                <button type="button" onclick="closeEditModal()"
-                    class="btn-secondary flex-1">Cancel</button>
-                <button type="button" onclick="saveEdit()"
-                    class="btn-primary flex-1">Save</button>
+                <button type="button" onclick="closeEditModal()" class="btn-secondary flex-1">Cancel</button>
+                <button type="button" onclick="saveEdit()" class="btn-primary flex-1">Save</button>
             </div>
         </div>
     </div>
