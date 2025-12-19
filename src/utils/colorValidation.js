@@ -4,12 +4,12 @@
  * Implements automated tests to verify color matching and accessibility compliance
  */
 
-const { 
-    DUPLICATE_ORANGE_COLOR, 
-    COLOR_CONFIG, 
-    validateColorCode, 
+const {
+    DUPLICATE_ORANGE_COLOR,
+    COLOR_CONFIG,
+    validateColorCode,
     validateColorAccessibility,
-    validateDuplicateOrangeConsistency 
+    validateDuplicateOrangeConsistency
 } = require('./colorConfig');
 
 /**
@@ -220,25 +220,25 @@ function runColorMatchingTests() {
     try {
         const webColors = COLOR_CONFIG;
         const excelColors = COLOR_CONFIG; // Same source, should be consistent
-        
+
         const consistencyResult = validateColorConsistency(webColors, excelColors);
         test1.passed = consistencyResult.isConsistent;
         test1.errors = consistencyResult.errors;
         test1.warnings = consistencyResult.warnings;
-        
+
         if (test1.passed) {
             testResults.passed++;
         } else {
             testResults.failed++;
         }
         testResults.warnings += test1.warnings.length;
-        
+
     } catch (error) {
         test1.passed = false;
         test1.errors.push(`Test execution failed: ${error.message}`);
         testResults.failed++;
     }
-    
+
     testResults.tests.push(test1);
 
     // Test 2: Duplicate orange color compliance
@@ -258,25 +258,25 @@ function runColorMatchingTests() {
                 '--duplicate-orange-hover': '#FF8C00' // This should generate a warning
             }
         };
-        
+
         const complianceResult = validateDuplicateOrangeCompliance(colors);
         test2.passed = complianceResult.isCompliant;
         test2.errors = complianceResult.errors;
         test2.warnings = complianceResult.warnings;
-        
+
         if (test2.passed) {
             testResults.passed++;
         } else {
             testResults.failed++;
         }
         testResults.warnings += test2.warnings.length;
-        
+
     } catch (error) {
         test2.passed = false;
         test2.errors.push(`Test execution failed: ${error.message}`);
         testResults.failed++;
     }
-    
+
     testResults.tests.push(test2);
 
     // Test 3: Color accessibility compliance
@@ -293,26 +293,26 @@ function runColorMatchingTests() {
             COLOR_CONFIG.duplicate.background,
             { textSize: 'normal', targetLevel: 'AA' }
         );
-        
+
         test3.passed = accessibilityResult.isCompliant;
         if (!accessibilityResult.isCompliant) {
             test3.errors = accessibilityResult.errors;
         }
         test3.warnings = accessibilityResult.warnings;
-        
+
         if (test3.passed) {
             testResults.passed++;
         } else {
             testResults.failed++;
         }
         testResults.warnings += test3.warnings.length;
-        
+
     } catch (error) {
         test3.passed = false;
         test3.errors.push(`Test execution failed: ${error.message}`);
         testResults.failed++;
     }
-    
+
     testResults.tests.push(test3);
 
     // Generate summary
@@ -415,7 +415,7 @@ function runColorAccessibilityTests() {
 
         test1.details = result;
         test1.passed = result.isCompliant;
-        
+
         if (!test1.passed) {
             test1.errors = result.errors;
         }
@@ -451,7 +451,7 @@ function runColorAccessibilityTests() {
 
         test2.details = result;
         test2.passed = result.isCompliant;
-        
+
         if (!test2.passed) {
             test2.errors = result.errors;
         }
@@ -484,9 +484,9 @@ function runColorAccessibilityTests() {
  */
 function runAllColorValidationTests(options = {}) {
     const startTime = Date.now();
-    
-    console.log('Running color validation tests...');
-    
+
+
+
     const results = {
         timestamp: new Date().toISOString(),
         duration: 0,
@@ -542,8 +542,8 @@ function runAllColorValidationTests(options = {}) {
     }
     results.summary += ` (${results.duration}ms)`;
 
-    console.log(results.summary);
-    
+
+
     return results;
 }
 

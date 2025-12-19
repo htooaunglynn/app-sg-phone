@@ -9,15 +9,15 @@ const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
+// logging removed
+
 async function initializeDatabase() {
-    console.log('🚀 Starting PostgreSQL database initialization...');
+
 
     // Safety guard: avoid destructive resets in production unless explicitly allowed
     const isProduction = process.env.NODE_ENV === 'production';
     const allowSchemaReset = process.env.ALLOW_SCHEMA_RESET === 'true' || process.env.DB_RESET === 'true';
     if (isProduction && !allowSchemaReset) {
-        console.log('🛑 Production environment detected. Skipping schema apply/reset.');
-        console.log('    To run this intentionally, set ALLOW_SCHEMA_RESET=true (DANGEROUS) and redeploy.');
         process.exit(0);
     }
 
@@ -47,13 +47,10 @@ async function initializeDatabase() {
 
     try {
         // Connect to database
-        console.log(`📡 Connecting to PostgreSQL at ${dbConfig.host}...`);
         await client.connect();
-        console.log('✅ Connected to PostgreSQL');
 
         // Read schema file
         const schemaPath = path.join(__dirname, '../schema-postgres.sql');
-        console.log(`📄 Reading schema from: ${schemaPath}`);
 
         if (!fs.existsSync(schemaPath)) {
             throw new Error(`Schema file not found: ${schemaPath}`);
@@ -62,12 +59,9 @@ async function initializeDatabase() {
         const schema = fs.readFileSync(schemaPath, 'utf8');
 
         // Execute schema
-        console.log('⚙️  Executing schema...');
         await client.query(schema);
-        console.log('✅ Schema executed successfully');
 
         // Verify tables were created
-        console.log('🔍 Verifying tables...');
         const tablesResult = await client.query(`
             SELECT table_name
             FROM information_schema.tables
@@ -77,7 +71,7 @@ async function initializeDatabase() {
         `);
 
         const tables = tablesResult.rows.map(row => row.table_name);
-        console.log('✅ Tables found:', tables.join(', '));
+
 
         // Verify expected tables
         const expectedTables = ['users', 'user_logins', 'check_table'];
@@ -86,20 +80,20 @@ async function initializeDatabase() {
         if (missingTables.length > 0) {
             console.warn('⚠️  Warning: Some expected tables are missing:', missingTables.join(', '));
         } else {
-            console.log('✅ All expected tables created successfully');
+
         }
 
         // Get table counts
         for (const table of tables) {
             try {
                 const countResult = await client.query(`SELECT COUNT(*) as count FROM "${table}"`);
-                console.log(`   ${table}: ${countResult.rows[0].count} rows`);
+
             } catch (err) {
                 console.warn(`   Could not count rows in ${table}:`, err.message);
             }
         }
 
-        console.log('✅ Database initialization completed successfully!');
+
         process.exit(0);
 
     } catch (error) {
@@ -109,7 +103,7 @@ async function initializeDatabase() {
 
     } finally {
         await client.end();
-        console.log('📡 Database connection closed');
+
     }
 }
 

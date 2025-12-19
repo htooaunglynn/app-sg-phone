@@ -212,7 +212,6 @@ class Config {
             if (!fs.existsSync(dir)) {
                 try {
                     fs.mkdirSync(dir, { recursive: true });
-                    console.log(`Created directory: ${dir}`);
                 } catch (error) {
                     console.error(`Failed to create directory ${dir}:`, error.message);
                     if (process.env.NODE_ENV === 'production') {
@@ -267,20 +266,7 @@ class Config {
      * Print configuration summary (without sensitive data)
      */
     printSummary() {
-        console.log('\n=== Application Configuration ===');
-        console.log(`App: ${this.app.name} v${this.app.version}`);
-        console.log(`Environment: ${this.server.environment}`);
-        console.log(`Server: ${this.server.host}:${this.server.port}`);
-        console.log(`Database: PostgreSQL - ${this.database.host}:${this.database.port}/${this.database.database}`);
-        console.log(`Upload Directory: ${this.upload.directory}`);
-        console.log(`Export Directory: ${this.export.directory}`);
-        console.log(`Max File Size: ${(this.upload.maxFileSize / 1024 / 1024).toFixed(1)}MB`);
-        console.log(`Singapore Country Code: ${this.phoneValidation.singaporeCountryCode}`);
-        console.log(`Batch Validation Size: ${this.phoneValidation.batchValidationSize}`);
-        console.log(`Check Table: ${this.dualTable.checkTableName}`);
-        console.log(`Auto Process Validation: ${this.dualTable.autoProcessValidation}`);
-        console.log(`Graceful Shutdown: ${this.shutdown.enableGracefulShutdown}`);
-        console.log('================================\n');
+        // printSummary intentionally silent (console logs removed)
     }
 }
 

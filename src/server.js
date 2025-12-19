@@ -79,16 +79,6 @@ app.use(session({
 // Debug session middleware (only in production for troubleshooting)
 if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
-        console.log('Session Debug:', {
-            path: req.path,
-            method: req.method,
-            sessionID: req.sessionID,
-            hasSession: !!req.session,
-            userId: req.session?.userId,
-            cookies: Object.keys(req.cookies || {}),
-            secure: req.secure,
-            protocol: req.protocol
-        });
         next();
     });
 }
@@ -273,7 +263,6 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
 
         const filename = req.file.originalname
-        console.log(`Processing Excel file: ${filename}`)
 
         // Capture count before insert for accurate delta
         const countBefore = await db.getCheckRecordsCount()
@@ -289,17 +278,7 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
         const countAfter = await db.getCheckRecordsCount()
         const insertedDelta = Math.max(0, countAfter - countBefore)
 
-        console.log('Processing result:', {
-            success: result.success,
-            error: result.error,
-            totalRecords: result.totalRecords,
-            storedRecords: result.storedRecords,
-            updatedRecords: result.updatedRecords,
-            insertedDelta,
-            validRecords: result.validRecords,
-            invalidRecords: result.invalidRecords,
-            errorsCount: (result.errors || []).length
-        })
+
 
         if (!result.success) {
             console.error('Processing failed:', result.error)
@@ -340,8 +319,7 @@ app.post('/api/export', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Expecting non-empty array in body' })
         }
 
-        console.log(`Starting Excel export for ${rows.length} records with advanced styling`)
-        console.log('Sample record structure:', rows[0] ? Object.keys(rows[0]) : 'No records')
+
 
         // Use ExcelExporter service with full styling support
         const exportResult = await excelExporter.exportCheckTableRecords(rows, {
@@ -363,7 +341,7 @@ app.post('/api/export', requireAuth, async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
         res.setHeader('Content-Length', exportResult.buffer.length)
 
-        console.log(`Excel export completed: ${exportResult.metadata.recordCount} records, ${exportResult.metadata.fileSize} bytes`)
+
 
         res.send(exportResult.buffer)
     } catch (err) {
@@ -379,7 +357,7 @@ app.post('/api/export', requireAuth, async (req, res) => {
 // GET /api/export/finish-data - export records where at least one field is filled (protected route)
 app.get('/api/export/finish-data', requireAuth, async (req, res) => {
     try {
-        console.log('Exporting finish data (at least one field filled)...')
+
 
         // Get all records from database
         const total = await db.getCheckRecordsCount()
@@ -399,7 +377,7 @@ app.get('/api/export/finish-data', requireAuth, async (req, res) => {
                 (website && website.trim() !== '')
         })
 
-        console.log(`Found ${finishRecords.length} records with at least one field filled out of ${total} total records`)
+
 
         if (finishRecords.length === 0) {
             return res.status(404).json({
@@ -440,7 +418,7 @@ app.get('/api/export/finish-data', requireAuth, async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
         res.setHeader('Content-Length', exportResult.buffer.length)
 
-        console.log(`Finish data export completed: ${finishRecords.length} records`)
+
         res.send(exportResult.buffer)
 
     } catch (err) {
@@ -455,7 +433,7 @@ app.get('/api/export/finish-data', requireAuth, async (req, res) => {
 // GET /api/export/no-data - export records where all fields are null (protected route)
 app.get('/api/export/no-data', requireAuth, async (req, res) => {
     try {
-        console.log('Exporting no data (all fields empty)...')
+
 
         // Get all records from database
         const total = await db.getCheckRecordsCount()
@@ -475,7 +453,7 @@ app.get('/api/export/no-data', requireAuth, async (req, res) => {
                 (!website || website.trim() === '')
         })
 
-        console.log(`Found ${noDataRecords.length} records with all fields empty out of ${total} total records`)
+
 
         if (noDataRecords.length === 0) {
             return res.status(404).json({
@@ -516,7 +494,7 @@ app.get('/api/export/no-data', requireAuth, async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
         res.setHeader('Content-Length', exportResult.buffer.length)
 
-        console.log(`No data export completed: ${noDataRecords.length} records`)
+
         res.send(exportResult.buffer)
 
     } catch (err) {
@@ -531,7 +509,7 @@ app.get('/api/export/no-data', requireAuth, async (req, res) => {
 // GET /api/export/wrong-number - export records with invalid Singapore phone numbers (protected route)
 app.get('/api/export/wrong-number', requireAuth, async (req, res) => {
     try {
-        console.log('Exporting wrong numbers (invalid Singapore phone numbers, excluding duplicates)...')
+
 
         // Get all records from database
         const total = await db.getCheckRecordsCount()
@@ -575,7 +553,7 @@ app.get('/api/export/wrong-number', requireAuth, async (req, res) => {
             }
         })
 
-        console.log(`Found ${wrongNumberRecords.length} records with invalid phone numbers (excluding duplicates) out of ${total} total records`)
+
 
         if (wrongNumberRecords.length === 0) {
             return res.status(404).json({
@@ -616,7 +594,7 @@ app.get('/api/export/wrong-number', requireAuth, async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
         res.setHeader('Content-Length', exportResult.buffer.length)
 
-        console.log(`Wrong number export completed: ${wrongNumberRecords.length} records`)
+
         res.send(exportResult.buffer)
 
     } catch (err) {
@@ -860,6 +838,146 @@ app.post('/api/real-existence', requireAuth, async (req, res) => {
     }
 });
 
+// POST /api/check-duplicates - Check and fill missing data for duplicate phone numbers
+app.post('/api/check-duplicates', requireAuth, async (req, res) => {
+    try {
+
+
+        // Get all records from the database
+        const allRecords = await db.query('SELECT * FROM check_table ORDER BY id');
+
+        if (!allRecords || allRecords.length === 0) {
+            return res.json({
+                success: true,
+                message: 'No records found in database',
+                processedCount: 0,
+                updatedCount: 0
+            });
+        }
+
+        // Group records by phone number
+        const phoneGroups = new Map();
+        allRecords.forEach(record => {
+            const phone = record.phone?.trim();
+            if (phone) {
+                if (!phoneGroups.has(phone)) {
+                    phoneGroups.set(phone, []);
+                }
+                phoneGroups.get(phone).push(record);
+            }
+        });
+
+        let processedCount = 0;
+        let updatedCount = 0;
+
+        // Process each phone group that has duplicates
+        for (const [phone, records] of phoneGroups) {
+            if (records.length > 1) {
+                processedCount++;
+
+
+                // Find the record with the most complete data
+                let sourceRecord = null;
+                let sourceScore = -1;
+
+                for (const record of records) {
+                    let score = 0;
+                    if (record.company_name && record.company_name.trim()) score++;
+                    if (record.physical_address && record.physical_address.trim()) score++;
+                    if (record.email && record.email.trim()) score++;
+                    if (record.website && record.website.trim()) score++;
+
+                    if (score > sourceScore) {
+                        sourceScore = score;
+                        sourceRecord = record;
+                    }
+                }
+
+                // If we found a source record with data, update other records
+                if (sourceRecord && sourceScore > 0) {
+                    for (const targetRecord of records) {
+                        if (targetRecord.id !== sourceRecord.id) {
+                            const updates = [];
+                            const params = [];
+                            let paramIndex = 1;
+                            let hasUpdates = false;
+
+                            // Check and update company_name
+                            if (sourceRecord.company_name && sourceRecord.company_name.trim() &&
+                                (!targetRecord.company_name || !targetRecord.company_name.trim())) {
+                                updates.push(`company_name = $${paramIndex}`);
+                                params.push(sourceRecord.company_name);
+                                paramIndex++;
+                                hasUpdates = true;
+                            }
+
+                            // Check and update physical_address
+                            if (sourceRecord.physical_address && sourceRecord.physical_address.trim() &&
+                                (!targetRecord.physical_address || !targetRecord.physical_address.trim())) {
+                                updates.push(`physical_address = $${paramIndex}`);
+                                params.push(sourceRecord.physical_address);
+                                paramIndex++;
+                                hasUpdates = true;
+                            }
+
+                            // Check and update email
+                            if (sourceRecord.email && sourceRecord.email.trim() &&
+                                (!targetRecord.email || !targetRecord.email.trim())) {
+                                updates.push(`email = $${paramIndex}`);
+                                params.push(sourceRecord.email);
+                                paramIndex++;
+                                hasUpdates = true;
+                            }
+
+                            // Check and update website
+                            if (sourceRecord.website && sourceRecord.website.trim() &&
+                                (!targetRecord.website || !targetRecord.website.trim())) {
+                                updates.push(`website = $${paramIndex}`);
+                                params.push(sourceRecord.website);
+                                paramIndex++;
+                                hasUpdates = true;
+                            }
+
+                            // Perform the update if there are changes
+                            if (hasUpdates) {
+                                updates.push(`updated_at = NOW()`);
+                                params.push(targetRecord.id);
+
+                                const updateQuery = `
+                                    UPDATE check_table
+                                    SET ${updates.join(', ')}
+                                    WHERE id = $${paramIndex}
+                                `;
+
+                                await db.query(updateQuery, params);
+                                updatedCount++;
+
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        return res.json({
+            success: true,
+            message: 'Duplicate check completed successfully',
+            processedCount,
+            updatedCount
+        });
+
+    } catch (error) {
+        console.error('Error in check duplicates:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Failed to check duplicates: ' + error.message
+        });
+    }
+});
+
 const PORT = process.env.PORT || 4000
 
 // Initialize database connection
@@ -871,12 +989,10 @@ async function startServer() {
         if (typeof db.ensureOptionalColumns === 'function') {
             await db.ensureOptionalColumns();
         }
-        console.log('Database connected successfully');
+
 
         // Start server
         app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
-            // console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

@@ -13,34 +13,24 @@ router.get('/register', (req, res) => {
 router.post('/register', async (req, res) => {
     const { name, email, password, confirmPassword } = req.body;
 
-    console.log('Registration attempt:', {
-        hasName: !!name,
-        hasEmail: !!email,
-        hasPassword: !!password,
-        hasConfirmPassword: !!confirmPassword,
-        email: email // Log email for debugging
-    });
+
 
     // Validation
     if (!name || !email || !password) {
-        console.log('Validation failed: Missing required fields');
         return res.status(400).render('html/register', { error: 'All fields are required' });
     }
 
     if (password.length < 8) {
-        console.log('Validation failed: Password too short');
         return res.status(400).render('html/register', { error: 'Password must be at least 8 characters long' });
     }
 
     if (password !== confirmPassword) {
-        console.log('Validation failed: Passwords do not match');
         return res.status(400).render('html/register', { error: 'Passwords do not match' });
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        console.log('Validation failed: Invalid email format');
         return res.status(400).render('html/register', { error: 'Please enter a valid email address' });
     }
 
@@ -49,7 +39,6 @@ router.post('/register', async (req, res) => {
         const existingUsers = await db.query('SELECT id FROM users WHERE email = $1', [email]);
 
         if (existingUsers.length > 0) {
-            console.log('Validation failed: Email already exists');
             return res.status(400).render('html/register', { error: 'Email already registered' });
         }
 
@@ -75,7 +64,6 @@ router.post('/register', async (req, res) => {
                 return res.status(500).render('html/register', { error: 'Registration successful but login failed. Please try logging in.' });
             }
 
-            console.log('User registered successfully:', { userId: result[0].id, email, sessionID: req.sessionID });
             return res.redirect('/');
         });
     } catch (error) {
@@ -155,7 +143,6 @@ router.post('/login', async (req, res) => {
                 return res.status(500).render('html/login', { error: 'Login successful but session failed. Please try again.' });
             }
 
-            console.log('User logged in successfully:', { userId: user.id, email: user.email, sessionID: req.sessionID });
             return res.redirect('/');
         });
     } catch (error) {

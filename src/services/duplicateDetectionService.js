@@ -1769,16 +1769,7 @@ class DuplicateDetectionService {
                 }
             });
 
-            // Enhanced console logging with more context
-            console.log(`[DUPLICATE_ENTRY] ${timestamp} - ID: ${duplicateId}, Phone: ${phone}, Source: ${sourceFile || 'unknown'}`);
-
-            if (existingRecord) {
-                console.log(`  - Originally from: ${existingRecord.sourceFile || 'unknown'} at ${existingRecord.createdAt || 'unknown time'}`);
-            }
-
-            if (duplicateRecord.metadata) {
-                console.log(`  - Record metadata: ${JSON.stringify(duplicateRecord.metadata)}`);
-            }
+            // Console logging removed for duplicate entry
 
             // Store detailed log entry for potential external logging systems
             this.storeDuplicateLogEntry(logEntry);
@@ -2040,16 +2031,7 @@ class DuplicateDetectionService {
                 });
             }
 
-            // Console logging with enhanced format
-            console.log(`[DUPLICATE_REPORT] ${report.timestamp} - Generated for ${report.sourceFile || 'unknown source'}: ${summary.totalDuplicates} duplicates found`);
-
-            if (summary.totalDuplicates > 0) {
-                console.log(`  - Unique phone numbers: ${summary.uniquePhoneNumbers}`);
-                console.log(`  - Source files involved: ${Object.keys(summary.duplicatesBySourceFile).length}`);
-                console.log(`  - Average duplicates per file: ${summary.averageDuplicatesPerFile}`);
-                console.log(`  - Generation time: ${metadata.generationTime}ms`);
-                console.log(`  - Detection method: ${metadata.detectionMethod}`);
-            }
+            // Console logging removed for duplicate report generation
 
         } catch (error) {
             this.logOperation('duplicate_report_logging_error', {
@@ -2517,7 +2499,7 @@ class DuplicateDetectionService {
                 break;
             case 'INFO':
                 if (['DEBUG', 'INFO'].includes(this.logging.logLevel)) {
-                    console.log(`[DUPLICATE_INFO] ${logEntry.timestamp} - ${operation}:`, details);
+                    // console.log removed for INFO level
                 }
                 break;
             case 'WARN':
@@ -2613,7 +2595,7 @@ class DuplicateDetectionService {
             metadata: decision.metadata || {}
         };
 
-        console.log(`[DUPLICATE_AUDIT] ${auditEntry.timestamp} - Decision: ${decision.type} for record ${decision.recordId}`);
+        // console.log removed for audit trail
         this.storeAuditLogEntry(auditEntry);
     }
 
@@ -2633,7 +2615,7 @@ class DuplicateDetectionService {
             }
         };
 
-        console.log(`[DUPLICATE_MONITOR] ${monitoringLog.timestamp} - Stats:`, monitoringLog.stats);
+        // console.log removed for monitoring stats
         this.storeMonitoringLogEntry(monitoringLog);
     }
 
@@ -2964,11 +2946,7 @@ class DuplicateDetectionService {
             totalRecordsProcessed: this.metrics.totalChecks
         });
 
-        console.log(`[DUPLICATE_TRENDS] ${timestamp} - Trend Analysis:`);
-        console.log(`  - Duplicate Rate: ${trendData.trends.duplicateRate.toFixed(2)}%`);
-        console.log(`  - Average Processing Time: ${trendData.trends.averageProcessingTime}ms`);
-        console.log(`  - Error Rate: ${trendData.trends.errorTrend.toFixed(2)}%`);
-        console.log(`  - Health Status: ${trendData.healthStatus.overall}`);
+        // console.log removed for duplicate trends
 
         if (trendData.healthStatus.issues.length > 0) {
             console.warn(`  - Issues: ${trendData.healthStatus.issues.join(', ')}`);

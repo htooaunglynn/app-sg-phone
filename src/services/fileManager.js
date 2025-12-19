@@ -10,16 +10,16 @@ class FileManager {
         this.originalDir = path.join(this.uploadDir, 'original');
         this.excelDir = path.join(this.uploadDir, 'excel');
         this.pdfDir = path.join(this.uploadDir, 'pdf');
-        
+
         // File size limits (default 10MB)
         this.maxFileSize = parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024;
-        
+
         // Supported file types
         this.supportedTypes = ['.pdf', '.xlsx', '.xls'];
-        
+
         // File retention settings (default 30 days)
         this.retentionDays = parseInt(process.env.FILE_RETENTION_DAYS) || 30;
-        
+
         // Security settings
         this.securitySettings = {
             enableVirusScanning: process.env.ENABLE_VIRUS_SCANNING === 'true',
@@ -48,7 +48,7 @@ class FileManager {
 
         // Rate limiting
         this.rateLimiter = new Map();
-        
+
         this.initializeDirectories();
     }
 
@@ -58,23 +58,21 @@ class FileManager {
     async initializeDirectories() {
         try {
             const directories = [
-                this.uploadDir, 
-                this.tempDir, 
+                this.uploadDir,
+                this.tempDir,
                 this.originalDir,
                 this.excelDir,
                 this.pdfDir,
                 this.securitySettings.quarantineDir
             ];
-            
+
             for (const dir of directories) {
                 await this.ensureDirectoryExists(dir);
                 await this.setSecurePermissions(dir);
             }
-            
+
             // Initialize rate limiter cleanup
             this.startRateLimiterCleanup();
-            
-            console.log('File manager directories initialized successfully with security settings');
         } catch (error) {
             console.error('Failed to initialize file manager directories:', error);
             throw new Error('File system initialization failed');
@@ -91,7 +89,6 @@ class FileManager {
         } catch (error) {
             if (error.code === 'ENOENT') {
                 await fs.mkdir(dirPath, { recursive: true, mode: 0o755 });
-                console.log(`Created directory: ${dirPath}`);
             } else {
                 throw error;
             }
@@ -108,10 +105,10 @@ class FileManager {
         const randomSuffix = crypto.randomBytes(4).toString('hex');
         const extension = path.extname(originalName);
         const baseName = path.basename(originalName, extension);
-        
+
         // Clean the base name to remove invalid characters
         const cleanBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, '_');
-        
+
         return `${timestamp}_${cleanBaseName}_${randomSuffix}${extension}`;
     }
 
@@ -209,22 +206,22 @@ class FileManager {
      */
     isExcelBuffer(buffer) {
         if (!buffer || buffer.length < 8) return false;
-        
+
         // Check for XLSX signature (ZIP-based format)
         const xlsxSignature = buffer.slice(0, 4);
-        if (xlsxSignature[0] === 0x50 && xlsxSignature[1] === 0x4B && 
+        if (xlsxSignature[0] === 0x50 && xlsxSignature[1] === 0x4B &&
             xlsxSignature[2] === 0x03 && xlsxSignature[3] === 0x04) {
             // Additional check for Excel-specific content
             const bufferString = buffer.toString('binary');
             return bufferString.includes('xl/') || bufferString.includes('worksheets/');
         }
-        
+
         // Check for XLS signature (OLE2 format)
         const xlsSignature = buffer.slice(0, 8);
-        return xlsSignature[0] === 0xD0 && xlsSignature[1] === 0xCF && 
-               xlsSignature[2] === 0x11 && xlsSignature[3] === 0xE0 &&
-               xlsSignature[4] === 0xA1 && xlsSignature[5] === 0xB1 &&
-               xlsSignature[6] === 0x1A && xlsSignature[7] === 0xE1;
+        return xlsSignature[0] === 0xD0 && xlsSignature[1] === 0xCF &&
+            xlsSignature[2] === 0x11 && xlsSignature[3] === 0xE0 &&
+            xlsSignature[4] === 0xA1 && xlsSignature[5] === 0xB1 &&
+            xlsSignature[6] === 0x1A && xlsSignature[7] === 0xE1;
     }
 
     /**
@@ -241,7 +238,7 @@ class FileManager {
 
         try {
             const pdfString = buffer.toString('binary');
-            
+
             // Check for PDF version
             const versionMatch = pdfString.match(/%PDF-(\d+\.\d+)/);
             if (!versionMatch) {
@@ -356,37 +353,37 @@ class FileManager {
             if (extension === '.xlsx') {
                 // XLSX is ZIP-based, check for basic ZIP structure
                 const bufferString = buffer.toString('binary');
-                
+
                 // Check for essential Excel components
                 if (!bufferString.includes('xl/')) {
                     result.errors.push('XLSX file missing Excel structure');
                     result.isValid = false;
                 }
-                
+
                 if (!bufferString.includes('worksheets/')) {
                     result.warnings.push('XLSX file may not contain worksheets');
                 }
-                
+
                 // Check for workbook.xml
                 if (!bufferString.includes('workbook.xml')) {
                     result.errors.push('XLSX file missing workbook definition');
                     result.isValid = false;
                 }
-                
+
                 // Check for shared strings (common in Excel files with text)
                 if (bufferString.includes('sharedStrings.xml')) {
                     result.warnings.push('Excel file contains shared strings (text data detected)');
                 }
-                
+
             } else if (extension === '.xls') {
                 // XLS is OLE2 format, basic structure validation
                 const bufferString = buffer.toString('binary');
-                
+
                 // Check for OLE2 structure markers
                 if (!bufferString.includes('Microsoft Excel')) {
                     result.warnings.push('XLS file may not be created by Microsoft Excel');
                 }
-                
+
                 // Check for workbook stream
                 if (!bufferString.includes('Workbook')) {
                     result.errors.push('XLS file missing workbook stream');
@@ -426,7 +423,7 @@ class FileManager {
 
         try {
             const extension = path.extname(originalName).toLowerCase();
-            
+
             // Set expected MIME types based on extension
             if (extension === '.xlsx') {
                 result.expectedMimeTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
@@ -712,7 +709,7 @@ class FileManager {
                 checksum: this.calculateChecksum(fileBuffer)
             };
 
-            console.log(`PDF file saved successfully: ${uniqueFilename}`);
+
 
             return {
                 success: true,
@@ -737,7 +734,7 @@ class FileManager {
     async saveOriginalFile(fileBuffer, originalName) {
         try {
             const extension = path.extname(originalName).toLowerCase();
-            
+
             // Route to appropriate validation and save method
             if (extension === '.pdf') {
                 return await this.saveOriginalPDF(fileBuffer, originalName);
@@ -790,7 +787,7 @@ class FileManager {
                 fileType: 'excel'
             };
 
-            console.log(`Excel file saved successfully: ${uniqueFilename}`);
+
 
             return {
                 success: true,
@@ -824,11 +821,11 @@ class FileManager {
         try {
             const extension = path.extname(filename).toLowerCase();
             const fileType = this.getFileType(extension);
-            
+
             // Try to find file in appropriate directory first, then fallback to original
             let filePath;
             let stats;
-            
+
             try {
                 const storageDir = this.getStorageDirectory(fileType);
                 filePath = path.join(storageDir, filename);
@@ -842,7 +839,7 @@ class FileManager {
                     throw error;
                 }
             }
-            
+
             const metadata = {
                 filename: filename,
                 filePath: filePath,
@@ -858,7 +855,7 @@ class FileManager {
                 const excelMetadata = await this.getExcelMetadata(filename);
                 metadata.excelInfo = excelMetadata;
             }
-            
+
             return metadata;
         } catch (error) {
             if (error.code === 'ENOENT') {
@@ -878,7 +875,7 @@ class FileManager {
             // Try Excel directory first, then fallback to original
             let filePath;
             let fileBuffer;
-            
+
             try {
                 filePath = path.join(this.excelDir, filename);
                 fileBuffer = await fs.readFile(filePath);
@@ -892,7 +889,7 @@ class FileManager {
                 }
             }
             const extension = path.extname(filename).toLowerCase();
-            
+
             const metadata = {
                 fileType: 'excel',
                 extension: extension,
@@ -913,29 +910,29 @@ class FileManager {
             if (metadata.isValid) {
                 // Try to get basic Excel structure info without full parsing
                 const bufferString = fileBuffer.toString('binary');
-                
+
                 if (extension === '.xlsx') {
                     // Count worksheet references in XLSX
                     const worksheetMatches = bufferString.match(/xl\/worksheets\/sheet\d+\.xml/g);
                     metadata.worksheetCount = worksheetMatches ? worksheetMatches.length : 0;
-                    
+
                     // Check for shared strings (indicates text data)
-                    metadata.hasData = bufferString.includes('sharedStrings.xml') || 
-                                     bufferString.includes('<c r=') || 
-                                     bufferString.includes('<v>');
-                    
+                    metadata.hasData = bufferString.includes('sharedStrings.xml') ||
+                        bufferString.includes('<c r=') ||
+                        bufferString.includes('<v>');
+
                     // Rough estimation of data rows (very approximate)
                     const rowMatches = bufferString.match(/<row r="/g);
                     metadata.estimatedRows = rowMatches ? rowMatches.length : 0;
-                    
+
                 } else if (extension === '.xls') {
                     // Basic XLS structure analysis
                     metadata.hasData = bufferString.includes('Sheet') || bufferString.includes('Worksheet');
-                    
+
                     // XLS worksheet counting is more complex, provide basic estimate
                     const sheetMatches = bufferString.match(/Sheet\d/g);
                     metadata.worksheetCount = sheetMatches ? new Set(sheetMatches).size : 1;
-                    
+
                     // Very rough row estimation for XLS
                     metadata.estimatedRows = Math.floor(fileBuffer.length / 100); // Rough estimate
                 }
@@ -980,23 +977,23 @@ class FileManager {
      */
     async listUploadedFiles(options = {}) {
         try {
-            const { 
-                sortBy = 'created', 
-                sortOrder = 'desc', 
-                limit = null, 
+            const {
+                sortBy = 'created',
+                sortOrder = 'desc',
+                limit = null,
                 fileType = null // 'pdf', 'excel', or null for all
             } = options;
-            
+
             // Scan multiple directories for files
             const allFiles = [];
-            
+
             // Scan type-specific directories
             const directories = [
                 { dir: this.pdfDir, type: 'pdf' },
                 { dir: this.excelDir, type: 'excel' },
                 { dir: this.originalDir, type: 'mixed' } // For backward compatibility
             ];
-            
+
             for (const { dir, type } of directories) {
                 try {
                     const dirFiles = await fs.readdir(dir);
@@ -1033,9 +1030,9 @@ class FileManager {
                     return type === fileType;
                 });
             }
-            
+
             const fileInfos = [];
-            
+
             for (const fileInfo of filteredFiles) {
                 try {
                     const metadata = await this.getFileMetadata(fileInfo.filename);
@@ -1063,7 +1060,7 @@ class FileManager {
                         comparison = new Date(a.created) - new Date(b.created);
                         break;
                 }
-                
+
                 return sortOrder === 'desc' ? -comparison : comparison;
             });
 
@@ -1085,7 +1082,7 @@ class FileManager {
         try {
             const extension = path.extname(filename).toLowerCase();
             const fileType = this.getFileType(extension);
-            
+
             // Try appropriate directory first, then fallback to original
             try {
                 const storageDir = this.getStorageDirectory(fileType);
@@ -1118,7 +1115,7 @@ class FileManager {
             const files = await fs.readdir(this.tempDir);
             const now = Date.now();
             const maxAge = maxAgeMinutes * 60 * 1000;
-            
+
             let deletedCount = 0;
             let errorCount = 0;
             const errors = [];
@@ -1127,11 +1124,11 @@ class FileManager {
                 try {
                     const filePath = path.join(this.tempDir, file);
                     const stats = await fs.stat(filePath);
-                    
+
                     if (now - stats.mtime.getTime() > maxAge) {
                         await fs.unlink(filePath);
                         deletedCount++;
-                        console.log(`Deleted temp file: ${file}`);
+
                     }
                 } catch (error) {
                     errorCount++;
@@ -1163,7 +1160,7 @@ class FileManager {
             const files = await this.listUploadedFiles();
             const now = Date.now();
             const retentionMs = retention * 24 * 60 * 60 * 1000;
-            
+
             let archivedCount = 0;
             let errorCount = 0;
             const errors = [];
@@ -1171,11 +1168,11 @@ class FileManager {
             for (const fileInfo of files) {
                 try {
                     const fileAge = now - new Date(fileInfo.created).getTime();
-                    
+
                     if (fileAge > retentionMs) {
                         // For now, we'll just log old files
                         // In a production system, you might move them to archive storage
-                        console.log(`File ${fileInfo.filename} is ${Math.round(fileAge / (24 * 60 * 60 * 1000))} days old and eligible for archival`);
+
                         archivedCount++;
                     }
                 } catch (error) {
@@ -1206,10 +1203,10 @@ class FileManager {
     async cleanupExcelTempFiles(maxAgeMinutes = 60) {
         try {
             const result = await this.cleanupTempFiles(maxAgeMinutes);
-            
+
             // Additional Excel-specific cleanup if needed
             // This could include cleaning up any Excel-specific temporary processing files
-            
+
             return {
                 ...result,
                 excelSpecificCleanup: true
@@ -1232,7 +1229,7 @@ class FileManager {
             const excelFiles = await this.listUploadedFiles({ fileType: 'excel' });
             const now = Date.now();
             const retentionMs = retention * 24 * 60 * 60 * 1000;
-            
+
             let archivedCount = 0;
             let errorCount = 0;
             const errors = [];
@@ -1240,11 +1237,11 @@ class FileManager {
             for (const fileInfo of excelFiles) {
                 try {
                     const fileAge = now - new Date(fileInfo.created).getTime();
-                    
+
                     if (fileAge > retentionMs) {
                         // For now, we'll just log old Excel files
                         // In a production system, you might move them to archive storage
-                        console.log(`Excel file ${fileInfo.filename} is ${Math.round(fileAge / (24 * 60 * 60 * 1000))} days old and eligible for archival`);
+
                         archivedCount++;
                     }
                 } catch (error) {
@@ -1277,11 +1274,11 @@ class FileManager {
         try {
             const extension = path.extname(filename).toLowerCase();
             const fileType = this.getFileType(extension);
-            
+
             // Try to find and delete file from appropriate directory
             let filePath;
             let metadata;
-            
+
             try {
                 const storageDir = this.getStorageDirectory(fileType);
                 filePath = path.join(storageDir, filename);
@@ -1297,12 +1294,12 @@ class FileManager {
                     throw error;
                 }
             }
-            
+
             // Delete the file
             await fs.unlink(filePath);
-            
-            console.log(`File deleted: ${filename} from ${path.dirname(filePath)}`);
-            
+
+
+
             return {
                 success: true,
                 deletedFile: metadata
@@ -1324,7 +1321,7 @@ class FileManager {
         try {
             // Set directory permissions to 755 (owner: rwx, group: rx, others: rx)
             await fs.chmod(dirPath, 0o755);
-            
+
             // On Unix systems, ensure proper ownership
             if (process.platform !== 'win32') {
                 const stats = await fs.stat(dirPath);
@@ -1344,7 +1341,7 @@ class FileManager {
         setInterval(() => {
             const now = Date.now();
             const oneHour = 60 * 60 * 1000;
-            
+
             for (const [key, data] of this.rateLimiter.entries()) {
                 if (now - data.timestamp > oneHour) {
                     this.rateLimiter.delete(key);
@@ -1361,25 +1358,25 @@ class FileManager {
     checkRateLimit(clientId) {
         const now = Date.now();
         const oneHour = 60 * 60 * 1000;
-        
+
         if (!this.rateLimiter.has(clientId)) {
             this.rateLimiter.set(clientId, { count: 1, timestamp: now });
             return true;
         }
-        
+
         const data = this.rateLimiter.get(clientId);
-        
+
         // Reset counter if more than an hour has passed
         if (now - data.timestamp > oneHour) {
             this.rateLimiter.set(clientId, { count: 1, timestamp: now });
             return true;
         }
-        
+
         // Check if within limits
         if (data.count >= this.securitySettings.maxFilesPerHour) {
             return false;
         }
-        
+
         // Increment counter
         data.count++;
         return true;
@@ -1477,7 +1474,7 @@ class FileManager {
     async performEnhancedSecurityChecks(fileBuffer, originalName, validation) {
         // Check for suspicious file patterns
         const fileHeader = fileBuffer.slice(0, 1024).toString('hex');
-        
+
         // Check for embedded executables
         const executableSignatures = [
             '4d5a', // PE executable
@@ -1526,7 +1523,7 @@ class FileManager {
         try {
             // Verify PDF structure integrity
             const pdfString = fileBuffer.toString('binary');
-            
+
             // Check for proper PDF structure
             if (!pdfString.startsWith('%PDF-')) {
                 validation.errors.push('Invalid PDF header');
@@ -1576,29 +1573,29 @@ class FileManager {
      */
     isSecureFilename(filename) {
         if (!filename || typeof filename !== 'string') return false;
-        
+
         // Check for path traversal attempts
         if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
             return false;
         }
-        
+
         // Check for null bytes
         if (filename.includes('\0')) {
             return false;
         }
-        
+
         // Check for control characters
         if (/[\x00-\x1f\x7f-\x9f]/.test(filename)) {
             return false;
         }
-        
+
         // Check for reserved names (Windows)
         const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
         const baseName = path.basename(filename, path.extname(filename)).toUpperCase();
         if (reservedNames.includes(baseName)) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -1624,7 +1621,7 @@ class FileManager {
 
             // Use streaming for large files
             const useStreaming = fileBuffer.length > this.performanceSettings.streamingThreshold;
-            
+
             if (useStreaming && this.performanceSettings.enableStreaming) {
                 await this.saveFileWithStreaming(fileBuffer, filePath);
             } else {
@@ -1652,7 +1649,7 @@ class FileManager {
                 streamingUsed: useStreaming
             };
 
-            console.log(`Enhanced PDF file saved successfully: ${uniqueFilename} (streaming: ${useStreaming})`);
+
 
             return {
                 success: true,
@@ -1677,27 +1674,27 @@ class FileManager {
     async saveFileWithStreaming(fileBuffer, filePath) {
         const writeStream = require('fs').createWriteStream(filePath);
         const chunkSize = this.performanceSettings.chunkSize;
-        
+
         return new Promise((resolve, reject) => {
             let offset = 0;
-            
+
             const writeNextChunk = () => {
                 if (offset >= fileBuffer.length) {
                     writeStream.end();
                     return;
                 }
-                
+
                 const chunk = fileBuffer.slice(offset, Math.min(offset + chunkSize, fileBuffer.length));
                 writeStream.write(chunk);
                 offset += chunkSize;
-                
+
                 // Use setImmediate to prevent blocking
                 setImmediate(writeNextChunk);
             };
-            
+
             writeStream.on('error', reject);
             writeStream.on('finish', resolve);
-            
+
             writeNextChunk();
         });
     }
@@ -1709,7 +1706,7 @@ class FileManager {
     async getStorageStats() {
         try {
             const files = await this.listUploadedFiles();
-            
+
             const stats = {
                 totalFiles: files.length,
                 totalSize: files.reduce((sum, file) => sum + file.size, 0),
@@ -1734,10 +1731,10 @@ class FileManager {
 
             if (files.length > 0) {
                 stats.averageSize = Math.round(stats.totalSize / files.length);
-                stats.oldestFile = files.reduce((oldest, file) => 
+                stats.oldestFile = files.reduce((oldest, file) =>
                     new Date(file.created) < new Date(oldest.created) ? file : oldest
                 );
-                stats.newestFile = files.reduce((newest, file) => 
+                stats.newestFile = files.reduce((newest, file) =>
                     new Date(file.created) > new Date(newest.created) ? file : newest
                 );
 

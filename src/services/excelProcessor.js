@@ -694,7 +694,7 @@ class ExcelProcessor {
 
             result.success = (result.newRecordsProcessed + result.duplicatesSkipped) === result.totalRecords;
 
-            console.log(`Mixed batch processed: ${result.newRecordsProcessed} new records, ${result.duplicatesSkipped} duplicates skipped`);
+
 
         } catch (error) {
             result.errors.push(`Mixed batch processing error: ${error.message}`);
@@ -725,7 +725,7 @@ class ExcelProcessor {
         };
 
         try {
-            console.log(`Attempting recovery for failed batch of ${failedBatch.length} records`);
+
 
             // Classify the original error
             const errorClassification = databaseManager.classifyDatabaseError(originalError);
@@ -765,7 +765,7 @@ class ExcelProcessor {
 
             recoveryResult.success = recoveryResult.recoveredRecords > 0 || recoveryResult.duplicatesFound > 0;
 
-            console.log(`Batch recovery completed: ${recoveryResult.recoveredRecords} recovered, ${recoveryResult.duplicatesFound} duplicates, ${recoveryResult.permanentFailures} permanent failures`);
+
 
         } catch (recoveryError) {
             recoveryResult.errors.push(`Recovery failed: ${recoveryError.message}`);
@@ -853,7 +853,7 @@ class ExcelProcessor {
         };
 
         try {
-            console.log(`Attempting to recover from storage error: ${error.message}`);
+
 
             // Check if it's a connection error
             if (error.message.includes('connection') || error.message.includes('timeout')) {
@@ -995,18 +995,18 @@ class ExcelProcessor {
      */
     async triggerPhoneValidation(recordIds = null) {
         try {
-            console.log('Triggering Singapore phone validation for Excel records...');
+
 
             let validationResults;
 
             if (recordIds && Array.isArray(recordIds) && recordIds.length > 0) {
                 // Process specific Excel records
                 validationResults = await phoneValidationProcessor.processSpecificRecords(recordIds);
-                console.log(`Excel-specific validation completed for ${recordIds.length} records:`, validationResults);
+
             } else {
                 // Process all records in check_table (backup_table not used in PostgreSQL)
                 validationResults = await phoneValidationProcessor.processBackupRecords();
-                console.log('Batch validation completed for all Excel records:', validationResults);
+
             }
 
             return {
@@ -1034,15 +1034,15 @@ class ExcelProcessor {
      */
     async processExcelWithValidation(excelBuffer, sourceFile = null, autoValidate = true) {
         try {
-            console.log('Starting Excel processing with integrated validation...');
+
 
             // Step 1: Extract data from Excel
             const phoneRecords = await this.extractData(excelBuffer);
-            console.log(`Extracted ${phoneRecords.length} phone records from Excel`);
+
 
             // Step 2: Store to backup table
             const storageResult = await this.storeToBackupTable(phoneRecords, sourceFile);
-            console.log(`Storage completed: ${storageResult.storedRecords} records stored`);
+
 
             if (!storageResult.success) {
                 const errorDetails = storageResult.errors.length > 0
@@ -1310,7 +1310,7 @@ class ExcelProcessor {
      */
     async streamingExtractData(excelBuffer) {
         const startTime = Date.now();
-        console.log('Using streaming mode for large Excel file processing');
+
 
         try {
             // Parse workbook with streaming options
@@ -1341,7 +1341,7 @@ class ExcelProcessor {
             }
 
             const endTime = Date.now();
-            console.log(`Streaming processing completed in ${endTime - startTime}ms for ${allPhoneRecords.length} records`);
+
 
             return allPhoneRecords;
         } catch (error) {
@@ -1467,11 +1467,11 @@ class ExcelProcessor {
         const startTime = Date.now();
 
         try {
-            console.log('Starting simplified Excel processing - storing ALL data...');
+
 
             // Step 1: Read Excel directly without column detection
             const records = await this.extractDataSimplified(excelBuffer);
-            console.log(`Extracted ${records.length} records from Excel`);
+
 
             if (records.length === 0) {
                 return {
@@ -1552,12 +1552,7 @@ class ExcelProcessor {
             result.success = result.storedRecords > 0 || result.updatedRecords > 0;
 
             const processingTime = Date.now() - startTime;
-            console.log(`Excel processing completed in ${processingTime}ms:`);
-            console.log(`- Total: ${result.totalRecords}`);
-            console.log(`- New: ${result.storedRecords}`);
-            console.log(`- Updated: ${result.updatedRecords}`);
-            console.log(`- Valid SG: ${result.validRecords}`);
-            console.log(`- Invalid: ${result.invalidRecords}`);
+
 
             return result;
 
@@ -1610,7 +1605,7 @@ class ExcelProcessor {
                     defval: ''
                 });
 
-                console.log(`Processing worksheet "${sheetName}": ${jsonData.length} rows`);
+
 
                 // Map each row to our format
                 for (let i = 0; i < jsonData.length; i++) {
@@ -1646,11 +1641,11 @@ class ExcelProcessor {
                 }
             }
 
-            console.log(`Extracted ${allRecords.length} records total`);
+
             // Fallback: if no records found using simplified headers, try advanced extraction + mapping
             if (allRecords.length === 0) {
                 try {
-                    console.log('No records found with simplified extraction. Falling back to advanced detection...');
+
                     const advancedRecords = await this.extractData(excelBuffer);
                     const mapped = (advancedRecords || []).map((r, idx) => ({
                         id: r.id || `Row_${idx + 1}`,
@@ -1661,7 +1656,7 @@ class ExcelProcessor {
                         website: r.website || null
                     })).filter(r => r.phone);
 
-                    console.log(`Advanced fallback extracted ${mapped.length} records`);
+
                     return mapped;
                 } catch (fallbackErr) {
                     console.warn('Advanced extraction fallback failed:', fallbackErr.message);
@@ -1755,7 +1750,7 @@ class ExcelProcessor {
                 phone
             ]);
 
-            console.log(`Updated record: ID=${id}, Phone=${phone}`);
+
 
         } catch (error) {
             console.error(`Error updating record ${id}:`, error.message);
@@ -1822,7 +1817,7 @@ class ExcelProcessor {
                 phone
             ]);
 
-            console.log(`Updated company data for phone: ${phone}`);
+
 
         } catch (error) {
             console.error(`Error updating company data for ${phone}:`, error.message);

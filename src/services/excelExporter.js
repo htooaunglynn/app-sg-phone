@@ -187,7 +187,7 @@ class ExcelExporter {
             const sheetName = options.sheetName || 'Singapore Phone Records';
             XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
-            console.log(`Excel workbook generated with ${records.length} records using enhanced styling`);
+
             return workbook;
 
         } catch (error) {
@@ -348,7 +348,6 @@ class ExcelExporter {
                 duplicatePhoneInfo = identifyDuplicatePhoneNumbers(records);
 
                 if (duplicatePhoneInfo && duplicatePhoneInfo.duplicateCount > 0) {
-                    console.log(`Duplicate phone detection successful: ${duplicatePhoneInfo.duplicateCount} duplicate records found from ${duplicatePhoneInfo.duplicatePhoneNumbers.size} duplicate phone numbers`);
 
                     // Log duplicate detection success for audit trail
                     logStylingFailure('duplicatePhoneDetectionSuccess',
@@ -361,7 +360,6 @@ class ExcelExporter {
                         }
                     );
                 } else {
-                    console.log('Duplicate phone detection completed: No duplicate phone numbers found');
                 }
             } catch (duplicateError) {
                 duplicateDetectionFailed = true;
@@ -379,7 +377,7 @@ class ExcelExporter {
                     duplicatePhoneInfo = this.fallbackDuplicateDetection(records);
 
                     if (duplicatePhoneInfo.duplicateCount > 0) {
-                        console.log(`Fallback duplicate detection found ${duplicatePhoneInfo.duplicateCount} duplicates`);
+
                         logStylingFailure('duplicatePhoneDetectionFallbackSuccess',
                             `Fallback duplicate detection found ${duplicatePhoneInfo.duplicateCount} duplicates`,
                             {
@@ -615,7 +613,7 @@ class ExcelExporter {
                             });
 
                             if (duplicateStylingResult.successful > 0) {
-                                console.log(`Successfully applied duplicate styling to ${duplicateStylingResult.successful} cells`);
+
                             }
 
                             if (duplicateStylingResult.failed > 0) {
@@ -673,299 +671,300 @@ class ExcelExporter {
                         }
                     }
 
-                    console.log('Enhanced styling applied to worksheet with comprehensive validation and error handling:', {
-                        stylingOptions,
+
+                    // Enhanced styling applied (logging removed)
+
+                    stylingOptions,
                         baseStyles: baseStyleResult.successful,
-                        headerStyles: headerApplications.length,
-                        duplicateStyles: {
-                            attempted: duplicateApplications.length,
+                            headerStyles: headerApplications.length,
+                                duplicateStyles: {
+                        attempted: duplicateApplications.length,
                             successful: duplicateStylingResult.successful,
-                            failed: duplicateStylingResult.failed
-                        },
-                        statusStyles: statusApplications.length,
+                                failed: duplicateStylingResult.failed
+                    },
+                    statusStyles: statusApplications.length,
                         duplicatePhoneInfo: duplicatePhoneInfo ? {
                             duplicatePhoneNumbers: duplicatePhoneInfo.duplicatePhoneNumbers.size,
                             duplicateRecords: duplicatePhoneInfo.duplicateCount,
                             detectionFailed: duplicatePhoneInfo.detectionFailed || false
                         } : null,
-                        errorHandling: {
-                            duplicateDetectionFailed,
-                            duplicateStylingFailed: duplicateStylingResult.failed > 0,
-                            exportContinued: true
-                        },
-                        totalFailures: baseStyleResult.failed + duplicateStylingResult.failed + (headerApplications.length > 0 ? 0 : 0) + (statusApplications.length > 0 ? 0 : 0)
-                    });
-
-                } catch (stylingError) {
-                    logStylingFailure('worksheetStylingError', stylingError, {
-                        enableStyling,
-                        stylingOptions,
+                            errorHandling: {
                         duplicateDetectionFailed,
-                        severity: 'error'
-                    });
-                    console.warn('Styling failed but export will continue without formatting:', stylingError.message);
-                }
-            } else {
-                console.log('Styling disabled for this export');
-            }
+                            duplicateStylingFailed: duplicateStylingResult.failed > 0,
+                                exportContinued: true
+                    },
+                    totalFailures: baseStyleResult.failed + duplicateStylingResult.failed + (headerApplications.length > 0 ? 0 : 0) + (statusApplications.length > 0 ? 0 : 0)
+                });
 
-        } catch (error) {
-            logStylingFailure('applyWorksheetFormattingError', error, {
-                enableStyling: options.enableStyling,
-                recordCount: records.length,
-                severity: 'error'
-            });
-            console.warn('Failed to apply worksheet formatting, continuing without styling:', error.message);
-
-            // Ensure Excel export continues even if all formatting fails
-            // This is critical for maintaining export functionality
-            try {
-                // At minimum, ensure column widths and row heights are set with auto-fit
-                const columnWidths = this.calculateColumnWidths(worksheet, data);
-                worksheet['!cols'] = columnWidths;
-
-                const rowHeights = this.calculateRowHeights(worksheet, data);
-                worksheet['!rows'] = rowHeights;
-
-                console.log('Applied auto-fit column widths and row heights as fallback');
-            } catch (fallbackError) {
-                logStylingFailure('fallbackFormattingError', fallbackError, {
+            } catch (stylingError) {
+                logStylingFailure('worksheetStylingError', stylingError, {
+                    enableStyling,
+                    stylingOptions,
+                    duplicateDetectionFailed,
                     severity: 'error'
                 });
-                console.error('Even fallback formatting failed, export will continue with no formatting:', fallbackError.message);
+                console.warn('Styling failed but export will continue without formatting:', stylingError.message);
             }
-        }
-    }
-
-    /**
-     * Calculate optimal column widths based on content
-     * @param {Object} worksheet - XLSX worksheet object
-     * @param {Array} data - Worksheet data array
-     * @returns {Array} Array of column width objects
-     */
-    calculateColumnWidths(worksheet, data) {
-        const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
-        if (!range) {
-            // Return default widths if no range
-            return [
-                { wch: 20 }, { wch: 15 }, { wch: 25 },
-                { wch: 35 }, { wch: 25 }, { wch: 25 }
-            ];
+        } else {
         }
 
-        const columnWidths = [];
-        const minWidth = 10;
-        const maxWidth = 100;
-        const paddingChars = 2;
+    } catch(error) {
+        logStylingFailure('applyWorksheetFormattingError', error, {
+            enableStyling: options.enableStyling,
+            recordCount: records.length,
+            severity: 'error'
+        });
+        console.warn('Failed to apply worksheet formatting, continuing without styling:', error.message);
 
-        for (let col = range.s.c; col <= range.e.c; col++) {
-            let maxLength = 0;
-
-            // Check all rows for this column
-            for (let row = range.s.r; row <= range.e.r; row++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                const cell = worksheet[cellAddress];
-
-                if (cell && cell.v != null) {
-                    const cellValue = String(cell.v);
-                    const cellLength = cellValue.length;
-
-                    // Account for multi-line content
-                    const lines = cellValue.split('\n');
-                    const longestLine = Math.max(...lines.map(line => line.length));
-
-                    maxLength = Math.max(maxLength, longestLine);
-                }
-            }
-
-            // Add padding and constrain to min/max
-            const width = Math.min(Math.max(maxLength + paddingChars, minWidth), maxWidth);
-            columnWidths.push({ wch: width });
-        }
-
-        return columnWidths;
-    }
-
-    /**
-     * Calculate optimal row heights based on content
-     * @param {Object} worksheet - XLSX worksheet object
-     * @param {Array} data - Worksheet data array
-     * @returns {Array} Array of row height objects
-     */
-    calculateRowHeights(worksheet, data) {
-        const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
-        if (!range) {
-            return [];
-        }
-
-        const rowHeights = [];
-        const baseRowHeight = 15; // Base height in points
-        const lineHeight = 15; // Height per line in points
-        const maxRowHeight = 200; // Maximum row height
-
-        for (let row = range.s.r; row <= range.e.r; row++) {
-            let maxLines = 1;
-
-            // Check all columns for this row
-            for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-                const cell = worksheet[cellAddress];
-
-                if (cell && cell.v != null) {
-                    const cellValue = String(cell.v);
-                    const lines = cellValue.split('\n').length;
-                    maxLines = Math.max(maxLines, lines);
-                }
-            }
-
-            // Calculate height based on number of lines
-            const height = Math.min(baseRowHeight + ((maxLines - 1) * lineHeight), maxRowHeight);
-            rowHeights.push({ hpt: height });
-        }
-
-        return rowHeights;
-    }
-
-    /**
-     * Fallback duplicate detection for Excel export when main detection fails
-     * @param {Array} records - Array of records to check for duplicates
-     * @returns {Object} Fallback duplicate detection result
-     */
-    fallbackDuplicateDetection(records) {
-        console.log('Starting fallback duplicate detection for Excel export');
-
-        const fallbackResult = {
-            duplicatePhoneNumbers: new Set(),
-            duplicateRecordIndices: [],
-            phoneNumberMap: new Map(),
-            totalRecords: records.length,
-            duplicateCount: 0,
-            uniquePhoneCount: 0,
-            detectionFailed: false,
-            fallbackMethod: 'basic_phone_comparison',
-            errorHandling: {
-                fallbackUsed: true,
-                timestamp: new Date().toISOString()
-            }
-        };
-
+        // Ensure Excel export continues even if all formatting fails
+        // This is critical for maintaining export functionality
         try {
-            const phoneGroups = {};
-            const duplicateIndices = [];
+            // At minimum, ensure column widths and row heights are set with auto-fit
+            const columnWidths = this.calculateColumnWidths(worksheet, data);
+            worksheet['!cols'] = columnWidths;
 
-            // Simple phone number grouping without complex normalization
-            for (let i = 0; i < records.length; i++) {
-                try {
-                    const record = records[i];
-                    const phone = record.Phone || record.phone || record.phoneNumber || '';
+            const rowHeights = this.calculateRowHeights(worksheet, data);
+            worksheet['!rows'] = rowHeights;
 
-                    if (phone) {
-                        // Basic phone normalization - remove spaces and common separators
-                        const normalizedPhone = phone.toString()
-                            .replace(/[\s\-\(\)\+]/g, '')
-                            .toLowerCase()
-                            .trim();
-
-                        if (normalizedPhone) {
-                            if (!phoneGroups[normalizedPhone]) {
-                                phoneGroups[normalizedPhone] = [];
-                            }
-                            phoneGroups[normalizedPhone].push(i);
-                        }
-                    }
-                } catch (recordError) {
-                    console.warn(`Error processing record ${i} in fallback detection:`, recordError);
-                    // Continue with other records
-                }
-            }
-
-            // Identify duplicates from phone groups
-            for (const [phone, indices] of Object.entries(phoneGroups)) {
-                if (indices.length > 1) {
-                    fallbackResult.duplicatePhoneNumbers.add(phone);
-                    duplicateIndices.push(...indices);
-                    fallbackResult.phoneNumberMap.set(phone, indices);
-                }
-            }
-
-            fallbackResult.duplicateRecordIndices = duplicateIndices;
-            fallbackResult.duplicateCount = duplicateIndices.length;
-            fallbackResult.uniquePhoneCount = Object.keys(phoneGroups).length;
-
-            console.log(`Fallback duplicate detection completed: ${fallbackResult.duplicateCount} duplicates found`);
-
-            return fallbackResult;
 
         } catch (fallbackError) {
-            console.error('Fallback duplicate detection failed:', fallbackError);
-
-            // Return empty result as final fallback
-            fallbackResult.detectionFailed = true;
-            fallbackResult.errorHandling.fallbackError = fallbackError.message;
-            fallbackResult.errorHandling.gracefulDegradation = true;
-
-            return fallbackResult;
-        }
-    }
-
-    /**
-     * Format date for Excel display
-     * @param {Date|string} date - Date to format
-     * @returns {string} Formatted date string
-     */
-    formatDate(date) {
-        if (!date) return '';
-
-        try {
-            const dateObj = new Date(date);
-            if (isNaN(dateObj.getTime())) return '';
-
-            return dateObj.toLocaleString('en-SG', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
+            logStylingFailure('fallbackFormattingError', fallbackError, {
+                severity: 'error'
             });
-        } catch (error) {
-            console.warn('Failed to format date:', error.message);
-            return String(date);
+            console.error('Even fallback formatting failed, export will continue with no formatting:', fallbackError.message);
         }
     }
+}
 
-
-
-
-    /**
-     * Generate Excel file buffer from records
-     * @param {Array} records - Phone records array
-     * @param {Object} options - Export options
-     * @returns {Buffer} Excel file buffer
-     */
-    generateExcelBuffer(records, options = {}) {
-        try {
-            const workbook = this.generateExcel(records, options);
-
-            // Generate buffer with styling enabled
-            const writeOptions = {
-                type: 'buffer',
-                bookType: 'xlsx',
-                compression: true,
-                cellStyles: options.enableStyling !== false // Enable cell styling (default: true)
-            };
-
-            const buffer = XLSX.write(workbook, writeOptions);
-
-            console.log(`Excel buffer generated: ${buffer.length} bytes with styling ${writeOptions.cellStyles ? 'enabled' : 'disabled'}`);
-            return buffer;
-
-        } catch (error) {
-            console.error('Failed to generate Excel buffer:', error.message);
-            throw error;
-        }
+/**
+ * Calculate optimal column widths based on content
+ * @param {Object} worksheet - XLSX worksheet object
+ * @param {Array} data - Worksheet data array
+ * @returns {Array} Array of column width objects
+ */
+calculateColumnWidths(worksheet, data) {
+    const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+    if (!range) {
+        // Return default widths if no range
+        return [
+            { wch: 20 }, { wch: 15 }, { wch: 25 },
+            { wch: 35 }, { wch: 25 }, { wch: 25 }
+        ];
     }
+
+    const columnWidths = [];
+    const minWidth = 10;
+    const maxWidth = 100;
+    const paddingChars = 2;
+
+    for (let col = range.s.c; col <= range.e.c; col++) {
+        let maxLength = 0;
+
+        // Check all rows for this column
+        for (let row = range.s.r; row <= range.e.r; row++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+            const cell = worksheet[cellAddress];
+
+            if (cell && cell.v != null) {
+                const cellValue = String(cell.v);
+                const cellLength = cellValue.length;
+
+                // Account for multi-line content
+                const lines = cellValue.split('\n');
+                const longestLine = Math.max(...lines.map(line => line.length));
+
+                maxLength = Math.max(maxLength, longestLine);
+            }
+        }
+
+        // Add padding and constrain to min/max
+        const width = Math.min(Math.max(maxLength + paddingChars, minWidth), maxWidth);
+        columnWidths.push({ wch: width });
+    }
+
+    return columnWidths;
+}
+
+/**
+ * Calculate optimal row heights based on content
+ * @param {Object} worksheet - XLSX worksheet object
+ * @param {Array} data - Worksheet data array
+ * @returns {Array} Array of row height objects
+ */
+calculateRowHeights(worksheet, data) {
+    const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null;
+    if (!range) {
+        return [];
+    }
+
+    const rowHeights = [];
+    const baseRowHeight = 15; // Base height in points
+    const lineHeight = 15; // Height per line in points
+    const maxRowHeight = 200; // Maximum row height
+
+    for (let row = range.s.r; row <= range.e.r; row++) {
+        let maxLines = 1;
+
+        // Check all columns for this row
+        for (let col = range.s.c; col <= range.e.c; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+            const cell = worksheet[cellAddress];
+
+            if (cell && cell.v != null) {
+                const cellValue = String(cell.v);
+                const lines = cellValue.split('\n').length;
+                maxLines = Math.max(maxLines, lines);
+            }
+        }
+
+        // Calculate height based on number of lines
+        const height = Math.min(baseRowHeight + ((maxLines - 1) * lineHeight), maxRowHeight);
+        rowHeights.push({ hpt: height });
+    }
+
+    return rowHeights;
+}
+
+/**
+ * Fallback duplicate detection for Excel export when main detection fails
+ * @param {Array} records - Array of records to check for duplicates
+ * @returns {Object} Fallback duplicate detection result
+ */
+fallbackDuplicateDetection(records) {
+
+
+    const fallbackResult = {
+        duplicatePhoneNumbers: new Set(),
+        duplicateRecordIndices: [],
+        phoneNumberMap: new Map(),
+        totalRecords: records.length,
+        duplicateCount: 0,
+        uniquePhoneCount: 0,
+        detectionFailed: false,
+        fallbackMethod: 'basic_phone_comparison',
+        errorHandling: {
+            fallbackUsed: true,
+            timestamp: new Date().toISOString()
+        }
+    };
+
+    try {
+        const phoneGroups = {};
+        const duplicateIndices = [];
+
+        // Simple phone number grouping without complex normalization
+        for (let i = 0; i < records.length; i++) {
+            try {
+                const record = records[i];
+                const phone = record.Phone || record.phone || record.phoneNumber || '';
+
+                if (phone) {
+                    // Basic phone normalization - remove spaces and common separators
+                    const normalizedPhone = phone.toString()
+                        .replace(/[\s\-\(\)\+]/g, '')
+                        .toLowerCase()
+                        .trim();
+
+                    if (normalizedPhone) {
+                        if (!phoneGroups[normalizedPhone]) {
+                            phoneGroups[normalizedPhone] = [];
+                        }
+                        phoneGroups[normalizedPhone].push(i);
+                    }
+                }
+            } catch (recordError) {
+                console.warn(`Error processing record ${i} in fallback detection:`, recordError);
+                // Continue with other records
+            }
+        }
+
+        // Identify duplicates from phone groups
+        for (const [phone, indices] of Object.entries(phoneGroups)) {
+            if (indices.length > 1) {
+                fallbackResult.duplicatePhoneNumbers.add(phone);
+                duplicateIndices.push(...indices);
+                fallbackResult.phoneNumberMap.set(phone, indices);
+            }
+        }
+
+        fallbackResult.duplicateRecordIndices = duplicateIndices;
+        fallbackResult.duplicateCount = duplicateIndices.length;
+        fallbackResult.uniquePhoneCount = Object.keys(phoneGroups).length;
+
+
+
+        return fallbackResult;
+
+    } catch (fallbackError) {
+        console.error('Fallback duplicate detection failed:', fallbackError);
+
+        // Return empty result as final fallback
+        fallbackResult.detectionFailed = true;
+        fallbackResult.errorHandling.fallbackError = fallbackError.message;
+        fallbackResult.errorHandling.gracefulDegradation = true;
+
+        return fallbackResult;
+    }
+}
+
+/**
+ * Format date for Excel display
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted date string
+ */
+formatDate(date) {
+    if (!date) return '';
+
+    try {
+        const dateObj = new Date(date);
+        if (isNaN(dateObj.getTime())) return '';
+
+        return dateObj.toLocaleString('en-SG', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    } catch (error) {
+        console.warn('Failed to format date:', error.message);
+        return String(date);
+    }
+}
+
+
+
+
+/**
+ * Generate Excel file buffer from records
+ * @param {Array} records - Phone records array
+ * @param {Object} options - Export options
+ * @returns {Buffer} Excel file buffer
+ */
+generateExcelBuffer(records, options = {}) {
+    try {
+        const workbook = this.generateExcel(records, options);
+
+        // Generate buffer with styling enabled
+        const writeOptions = {
+            type: 'buffer',
+            bookType: 'xlsx',
+            compression: true,
+            cellStyles: options.enableStyling !== false // Enable cell styling (default: true)
+        };
+
+        const buffer = XLSX.write(workbook, writeOptions);
+
+
+        return buffer;
+
+    } catch (error) {
+        console.error('Failed to generate Excel buffer:', error.message);
+        throw error;
+    }
+}
 
     /**
      * Export records by range to Excel buffer with comprehensive validation
@@ -975,128 +974,128 @@ class ExcelExporter {
      * @returns {Object} Export result with buffer and metadata
      */
     async exportRecordsByRange(startRecord, endRecord, options = {}) {
-        const startTime = Date.now();
+    const startTime = Date.now();
 
-        try {
-            console.log(`Starting Excel export for records ${startRecord}-${endRecord}`);
+    try {
 
-            // Validate export request
-            const validation = await this.validateExportRequest(startRecord, endRecord);
-            if (!validation.valid) {
-                return {
-                    success: false,
-                    error: validation.error,
-                    buffer: null,
-                    metadata: {
-                        startRecord,
-                        endRecord,
-                        recordCount: 0,
-                        validationFailed: true,
-                        exportDate: new Date().toISOString()
-                    }
-                };
-            }
 
-            // Use validated parameters
-            const validatedStart = validation.startRecord;
-            const validatedEnd = validation.endRecord;
-
-            // Get records from check_table with error handling
-            const result = await this.getCheckRecordsWithRetry(validatedStart, validatedEnd);
-
-            if (!result.success) {
-                return {
-                    success: false,
-                    error: `Database error: ${result.error}`,
-                    buffer: null,
-                    metadata: {
-                        startRecord: validatedStart,
-                        endRecord: validatedEnd,
-                        recordCount: 0,
-                        databaseError: true,
-                        exportDate: new Date().toISOString()
-                    }
-                };
-            }
-
-            if (result.records.length === 0) {
-                return {
-                    success: true,
-                    buffer: null,
-                    metadata: {
-                        startRecord: validatedStart,
-                        endRecord: validatedEnd,
-                        recordCount: 0,
-                        totalAvailable: result.totalAvailable,
-                        message: 'No records found in specified range',
-                        exportDate: new Date().toISOString(),
-                        processingTimeMs: Date.now() - startTime
-                    }
-                };
-            }
-
-            // Generate Excel buffer with error handling and styling options
-            const buffer = await this.generateExcelBufferWithValidation(result.records, {
-                sheetName: options.sheetName || `Records ${validatedStart}-${result.endRecord}`,
-                customHeaders: options.customHeaders,
-                enableStyling: options.enableStyling !== false,
-                stylingOptions: options.stylingOptions || {}
-            });
-
-            if (!buffer) {
-                return {
-                    success: false,
-                    error: 'Failed to generate Excel file',
-                    buffer: null,
-                    metadata: {
-                        startRecord: validatedStart,
-                        endRecord: validatedEnd,
-                        recordCount: result.totalReturned,
-                        excelGenerationFailed: true,
-                        exportDate: new Date().toISOString()
-                    }
-                };
-            }
-
-            const metadata = {
-                startRecord: result.startRecord,
-                endRecord: result.endRecord,
-                requestedEndRecord: endRecord,
-                recordCount: result.totalReturned,
-                totalAvailable: result.totalAvailable,
-                fileSize: buffer.length,
-                exportDate: new Date().toISOString(),
-                processingTimeMs: Date.now() - startTime,
-                warning: validation.warning || (result.endRecord < endRecord ?
-                    `End record adjusted from ${endRecord} to ${result.endRecord}` : null)
-            };
-
-            console.log(`Excel export completed: ${metadata.recordCount} records, ${metadata.fileSize} bytes, ${metadata.processingTimeMs}ms`);
-
-            return {
-                success: true,
-                buffer,
-                metadata
-            };
-
-        } catch (error) {
-            console.error('Failed to export records by range:', error.message);
-
+        // Validate export request
+        const validation = await this.validateExportRequest(startRecord, endRecord);
+        if (!validation.valid) {
             return {
                 success: false,
-                error: `Export failed: ${error.message}`,
+                error: validation.error,
                 buffer: null,
                 metadata: {
                     startRecord,
                     endRecord,
                     recordCount: 0,
-                    unexpectedError: true,
+                    validationFailed: true,
+                    exportDate: new Date().toISOString()
+                }
+            };
+        }
+
+        // Use validated parameters
+        const validatedStart = validation.startRecord;
+        const validatedEnd = validation.endRecord;
+
+        // Get records from check_table with error handling
+        const result = await this.getCheckRecordsWithRetry(validatedStart, validatedEnd);
+
+        if (!result.success) {
+            return {
+                success: false,
+                error: `Database error: ${result.error}`,
+                buffer: null,
+                metadata: {
+                    startRecord: validatedStart,
+                    endRecord: validatedEnd,
+                    recordCount: 0,
+                    databaseError: true,
+                    exportDate: new Date().toISOString()
+                }
+            };
+        }
+
+        if (result.records.length === 0) {
+            return {
+                success: true,
+                buffer: null,
+                metadata: {
+                    startRecord: validatedStart,
+                    endRecord: validatedEnd,
+                    recordCount: 0,
+                    totalAvailable: result.totalAvailable,
+                    message: 'No records found in specified range',
                     exportDate: new Date().toISOString(),
                     processingTimeMs: Date.now() - startTime
                 }
             };
         }
+
+        // Generate Excel buffer with error handling and styling options
+        const buffer = await this.generateExcelBufferWithValidation(result.records, {
+            sheetName: options.sheetName || `Records ${validatedStart}-${result.endRecord}`,
+            customHeaders: options.customHeaders,
+            enableStyling: options.enableStyling !== false,
+            stylingOptions: options.stylingOptions || {}
+        });
+
+        if (!buffer) {
+            return {
+                success: false,
+                error: 'Failed to generate Excel file',
+                buffer: null,
+                metadata: {
+                    startRecord: validatedStart,
+                    endRecord: validatedEnd,
+                    recordCount: result.totalReturned,
+                    excelGenerationFailed: true,
+                    exportDate: new Date().toISOString()
+                }
+            };
+        }
+
+        const metadata = {
+            startRecord: result.startRecord,
+            endRecord: result.endRecord,
+            requestedEndRecord: endRecord,
+            recordCount: result.totalReturned,
+            totalAvailable: result.totalAvailable,
+            fileSize: buffer.length,
+            exportDate: new Date().toISOString(),
+            processingTimeMs: Date.now() - startTime,
+            warning: validation.warning || (result.endRecord < endRecord ?
+                `End record adjusted from ${endRecord} to ${result.endRecord}` : null)
+        };
+
+
+
+        return {
+            success: true,
+            buffer,
+            metadata
+        };
+
+    } catch (error) {
+        console.error('Failed to export records by range:', error.message);
+
+        return {
+            success: false,
+            error: `Export failed: ${error.message}`,
+            buffer: null,
+            metadata: {
+                startRecord,
+                endRecord,
+                recordCount: 0,
+                unexpectedError: true,
+                exportDate: new Date().toISOString(),
+                processingTimeMs: Date.now() - startTime
+            }
+        };
     }
+}
 
     /**
      * Get check table records with retry logic for database failures
@@ -1106,42 +1105,42 @@ class ExcelExporter {
      * @returns {Object} Database result
      */
     async getCheckRecordsWithRetry(startRecord, endRecord, maxRetries = 3) {
-        let lastError;
+    let lastError;
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                console.log(`Check table query attempt ${attempt}/${maxRetries}`);
-                const result = await CheckTable.getRecordsByRange(startRecord, endRecord);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
 
-                if (result.success) {
-                    return result;
-                }
+            const result = await CheckTable.getRecordsByRange(startRecord, endRecord);
 
-                lastError = new Error(result.error);
+            if (result.success) {
+                return result;
+            }
 
-                // Wait before retry (exponential backoff)
-                if (attempt < maxRetries) {
-                    const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-                    console.log(`Retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
+            lastError = new Error(result.error);
 
-            } catch (error) {
-                lastError = error;
-                console.error(`Check table query attempt ${attempt} failed:`, error.message);
+            // Wait before retry (exponential backoff)
+            if (attempt < maxRetries) {
+                const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
 
-                if (attempt < maxRetries) {
-                    const delay = Math.pow(2, attempt - 1) * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+
+        } catch (error) {
+            lastError = error;
+            console.error(`Check table query attempt ${attempt} failed:`, error.message);
+
+            if (attempt < maxRetries) {
+                const delay = Math.pow(2, attempt - 1) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
-
-        return {
-            success: false,
-            error: lastError ? lastError.message : 'Check table query failed after retries'
-        };
     }
+
+    return {
+        success: false,
+        error: lastError ? lastError.message : 'Check table query failed after retries'
+    };
+}
 
     /**
      * Generate Excel buffer with validation and error handling
@@ -1150,63 +1149,63 @@ class ExcelExporter {
      * @returns {Buffer|null} Excel file buffer or null on failure
      */
     async generateExcelBufferWithValidation(records, options = {}) {
-        try {
-            // Validate records array
-            if (!Array.isArray(records) || records.length === 0) {
-                throw new Error('Invalid records array provided');
-            }
-
-            // Validate record structure
-            const sampleRecord = records[0];
-            if (!this.validateRecordStructure(sampleRecord)) {
-                throw new Error('Invalid record structure detected');
-            }
-
-            // Generate Excel with memory monitoring and styling options
-            const memoryBefore = process.memoryUsage();
-            const buffer = this.generateExcelBuffer(records, {
-                ...options,
-                enableStyling: options.enableStyling !== false, // Ensure styling is enabled by default
-                stylingOptions: options.stylingOptions || {}
-            });
-            const memoryAfter = process.memoryUsage();
-
-            const memoryUsed = memoryAfter.heapUsed - memoryBefore.heapUsed;
-            console.log(`Excel generation memory usage: ${Math.round(memoryUsed / 1024 / 1024)}MB`);
-
-            // Validate generated buffer
-            if (!buffer || buffer.length === 0) {
-                throw new Error('Generated Excel buffer is empty');
-            }
-
-            // Check file size limits
-            if (buffer.length > this.maxFileSizeBytes) {
-                throw new Error(`Generated file too large: ${Math.round(buffer.length / 1024 / 1024)}MB`);
-            }
-
-            return buffer;
-
-        } catch (error) {
-            console.error('Excel buffer generation failed:', error.message);
-            return null;
-        }
-    }
-
-    /**
-     * Validate record structure for check table
-     * @param {Object} record - Check table record object
-     * @returns {boolean} True if valid structure
-     */
-    validateRecordStructure(record) {
-        if (!record || typeof record !== 'object') {
-            return false;
+    try {
+        // Validate records array
+        if (!Array.isArray(records) || records.length === 0) {
+            throw new Error('Invalid records array provided');
         }
 
-        // More flexible validation - just check for Id and Phone (minimum required)
-        // Status field is optional for exports from frontend
-        const requiredFields = ['Id', 'Phone'];
-        return requiredFields.every(field => record.hasOwnProperty(field));
+        // Validate record structure
+        const sampleRecord = records[0];
+        if (!this.validateRecordStructure(sampleRecord)) {
+            throw new Error('Invalid record structure detected');
+        }
+
+        // Generate Excel with memory monitoring and styling options
+        const memoryBefore = process.memoryUsage();
+        const buffer = this.generateExcelBuffer(records, {
+            ...options,
+            enableStyling: options.enableStyling !== false, // Ensure styling is enabled by default
+            stylingOptions: options.stylingOptions || {}
+        });
+        const memoryAfter = process.memoryUsage();
+
+        const memoryUsed = memoryAfter.heapUsed - memoryBefore.heapUsed;
+
+
+        // Validate generated buffer
+        if (!buffer || buffer.length === 0) {
+            throw new Error('Generated Excel buffer is empty');
+        }
+
+        // Check file size limits
+        if (buffer.length > this.maxFileSizeBytes) {
+            throw new Error(`Generated file too large: ${Math.round(buffer.length / 1024 / 1024)}MB`);
+        }
+
+        return buffer;
+
+    } catch (error) {
+        console.error('Excel buffer generation failed:', error.message);
+        return null;
     }
+}
+
+/**
+ * Validate record structure for check table
+ * @param {Object} record - Check table record object
+ * @returns {boolean} True if valid structure
+ */
+validateRecordStructure(record) {
+    if (!record || typeof record !== 'object') {
+        return false;
+    }
+
+    // More flexible validation - just check for Id and Phone (minimum required)
+    // Status field is optional for exports from frontend
+    const requiredFields = ['Id', 'Phone'];
+    return requiredFields.every(field => record.hasOwnProperty(field));
+}
 
     /**
      * Export all records to Excel buffer
@@ -1214,55 +1213,55 @@ class ExcelExporter {
      * @returns {Object} Export result with buffer and metadata
      */
     async exportAllRecords(options = {}) {
-        try {
-            console.log('Starting full Excel export');
+    try {
 
-            // Get total record count first
-            const totalRecords = await CheckTable.getTotalRecordCount();
 
-            if (totalRecords === 0) {
-                return {
-                    success: true,
-                    buffer: null,
-                    metadata: {
-                        recordCount: 0,
-                        message: 'No records available for export'
-                    }
-                };
-            }
+        // Get total record count first
+        const totalRecords = await CheckTable.getTotalRecordCount();
 
-            // Export all records (1 to totalRecords)
-            return await this.exportRecordsByRange(1, totalRecords, options);
-
-        } catch (error) {
-            console.error('Failed to export all records:', error.message);
-
+        if (totalRecords === 0) {
             return {
-                success: false,
-                error: error.message,
+                success: true,
                 buffer: null,
                 metadata: {
                     recordCount: 0,
-                    exportDate: new Date().toISOString()
+                    message: 'No records available for export'
                 }
             };
         }
+
+        // Export all records (1 to totalRecords)
+        return await this.exportRecordsByRange(1, totalRecords, options);
+
+    } catch (error) {
+        console.error('Failed to export all records:', error.message);
+
+        return {
+            success: false,
+            error: error.message,
+            buffer: null,
+            metadata: {
+                recordCount: 0,
+                exportDate: new Date().toISOString()
+            }
+        };
+    }
+}
+
+/**
+ * Get suggested filename for Excel export
+ * @param {Object} metadata - Export metadata
+ * @returns {string} Suggested filename
+ */
+getSuggestedFilename(metadata) {
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+
+    if (metadata.startRecord && metadata.endRecord) {
+        return `singapore_phone_check_${metadata.startRecord}-${metadata.endRecord}_${timestamp}.xlsx`;
     }
 
-    /**
-     * Get suggested filename for Excel export
-     * @param {Object} metadata - Export metadata
-     * @returns {string} Suggested filename
-     */
-    getSuggestedFilename(metadata) {
-        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-
-        if (metadata.startRecord && metadata.endRecord) {
-            return `singapore_phone_check_${metadata.startRecord}-${metadata.endRecord}_${timestamp}.xlsx`;
-        }
-
-        return `singapore_phone_check_${timestamp}.xlsx`;
-    }
+    return `singapore_phone_check_${timestamp}.xlsx`;
+}
 
     /**
      * Validate export parameters (legacy method for backward compatibility)
@@ -1271,134 +1270,134 @@ class ExcelExporter {
      * @returns {Object} Validation result
      */
     async validateExportParameters(startRecord, endRecord) {
-        return await this.validateExportRequest(startRecord, endRecord);
+    return await this.validateExportRequest(startRecord, endRecord);
+}
+
+/**
+ * Create user-friendly error messages for different failure scenarios
+ * @param {string} errorType - Type of error
+ * @param {Object} details - Error details
+ * @returns {string} User-friendly error message
+ */
+createUserFriendlyErrorMessage(errorType, details = {}) {
+    const errorMessages = {
+        'validation_failed': 'Invalid export parameters. Please check your start and end record numbers.',
+        'database_error': 'Unable to retrieve records from database. Please try again later.',
+        'no_records': 'No records found in the specified range.',
+        'file_too_large': 'The requested export is too large. Please try a smaller range.',
+        'excel_generation_failed': 'Failed to generate Excel file. Please try again.',
+        'network_error': 'Network connection issue. Please check your connection and try again.',
+        'server_error': 'Server error occurred. Please contact support if the problem persists.',
+        'timeout_error': 'Export request timed out. Please try a smaller range.',
+        'memory_error': 'Not enough memory to process this export. Please try a smaller range.'
+    };
+
+    let baseMessage = errorMessages[errorType] || 'An unexpected error occurred during export.';
+
+    // Add specific details if available
+    if (details.recordCount) {
+        baseMessage += ` (Requested: ${details.recordCount} records)`;
     }
 
-    /**
-     * Create user-friendly error messages for different failure scenarios
-     * @param {string} errorType - Type of error
-     * @param {Object} details - Error details
-     * @returns {string} User-friendly error message
-     */
-    createUserFriendlyErrorMessage(errorType, details = {}) {
-        const errorMessages = {
-            'validation_failed': 'Invalid export parameters. Please check your start and end record numbers.',
-            'database_error': 'Unable to retrieve records from database. Please try again later.',
-            'no_records': 'No records found in the specified range.',
-            'file_too_large': 'The requested export is too large. Please try a smaller range.',
-            'excel_generation_failed': 'Failed to generate Excel file. Please try again.',
-            'network_error': 'Network connection issue. Please check your connection and try again.',
-            'server_error': 'Server error occurred. Please contact support if the problem persists.',
-            'timeout_error': 'Export request timed out. Please try a smaller range.',
-            'memory_error': 'Not enough memory to process this export. Please try a smaller range.'
-        };
-
-        let baseMessage = errorMessages[errorType] || 'An unexpected error occurred during export.';
-
-        // Add specific details if available
-        if (details.recordCount) {
-            baseMessage += ` (Requested: ${details.recordCount} records)`;
-        }
-
-        if (details.suggestion) {
-            baseMessage += ` Suggestion: ${details.suggestion}`;
-        }
-
-        return baseMessage;
+    if (details.suggestion) {
+        baseMessage += ` Suggestion: ${details.suggestion}`;
     }
 
-    /**
-     * Handle and categorize different types of export errors
-     * @param {Error} error - The error object
-     * @param {Object} context - Context information
-     * @returns {Object} Categorized error response
-     */
-    handleExportError(error, context = {}) {
-        const errorMessage = error.message.toLowerCase();
-        let errorType = 'server_error';
-        let userMessage = '';
-        let suggestion = '';
+    return baseMessage;
+}
 
-        // Categorize error types
-        if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
-            errorType = 'validation_failed';
-            suggestion = 'Please ensure start and end record numbers are valid positive integers.';
-        } else if (errorMessage.includes('database') || errorMessage.includes('connection')) {
-            errorType = 'database_error';
-            suggestion = 'Please try again in a few moments.';
-        } else if (errorMessage.includes('timeout')) {
-            errorType = 'timeout_error';
-            suggestion = 'Try exporting a smaller range of records.';
-        } else if (errorMessage.includes('memory') || errorMessage.includes('heap')) {
-            errorType = 'memory_error';
-            suggestion = 'Try exporting fewer records at a time.';
-        } else if (errorMessage.includes('file size') || errorMessage.includes('too large')) {
-            errorType = 'file_too_large';
-            suggestion = 'Try exporting a smaller range of records.';
-        } else if (errorMessage.includes('excel') || errorMessage.includes('generation')) {
-            errorType = 'excel_generation_failed';
-            suggestion = 'Please try again or contact support if the problem persists.';
-        }
+/**
+ * Handle and categorize different types of export errors
+ * @param {Error} error - The error object
+ * @param {Object} context - Context information
+ * @returns {Object} Categorized error response
+ */
+handleExportError(error, context = {}) {
+    const errorMessage = error.message.toLowerCase();
+    let errorType = 'server_error';
+    let userMessage = '';
+    let suggestion = '';
 
-        userMessage = this.createUserFriendlyErrorMessage(errorType, {
-            recordCount: context.recordCount,
-            suggestion
+    // Categorize error types
+    if (errorMessage.includes('validation') || errorMessage.includes('invalid')) {
+        errorType = 'validation_failed';
+        suggestion = 'Please ensure start and end record numbers are valid positive integers.';
+    } else if (errorMessage.includes('database') || errorMessage.includes('connection')) {
+        errorType = 'database_error';
+        suggestion = 'Please try again in a few moments.';
+    } else if (errorMessage.includes('timeout')) {
+        errorType = 'timeout_error';
+        suggestion = 'Try exporting a smaller range of records.';
+    } else if (errorMessage.includes('memory') || errorMessage.includes('heap')) {
+        errorType = 'memory_error';
+        suggestion = 'Try exporting fewer records at a time.';
+    } else if (errorMessage.includes('file size') || errorMessage.includes('too large')) {
+        errorType = 'file_too_large';
+        suggestion = 'Try exporting a smaller range of records.';
+    } else if (errorMessage.includes('excel') || errorMessage.includes('generation')) {
+        errorType = 'excel_generation_failed';
+        suggestion = 'Please try again or contact support if the problem persists.';
+    }
+
+    userMessage = this.createUserFriendlyErrorMessage(errorType, {
+        recordCount: context.recordCount,
+        suggestion
+    });
+
+    return {
+        errorType,
+        userMessage,
+        originalError: error.message,
+        suggestion,
+        context
+    };
+}
+
+/**
+ * Get export status and progress information
+ * @param {Object} metadata - Export metadata
+ * @returns {Object} Status information
+ */
+getExportStatus(metadata) {
+    const status = {
+        isComplete: false,
+        hasWarnings: false,
+        hasErrors: false,
+        messages: []
+    };
+
+    if (metadata.success === false) {
+        status.hasErrors = true;
+        status.messages.push({
+            type: 'error',
+            message: metadata.error || 'Export failed'
         });
-
-        return {
-            errorType,
-            userMessage,
-            originalError: error.message,
-            suggestion,
-            context
-        };
+    } else {
+        status.isComplete = true;
+        status.messages.push({
+            type: 'success',
+            message: `Successfully exported ${metadata.recordCount} records`
+        });
     }
 
-    /**
-     * Get export status and progress information
-     * @param {Object} metadata - Export metadata
-     * @returns {Object} Status information
-     */
-    getExportStatus(metadata) {
-        const status = {
-            isComplete: false,
-            hasWarnings: false,
-            hasErrors: false,
-            messages: []
-        };
-
-        if (metadata.success === false) {
-            status.hasErrors = true;
-            status.messages.push({
-                type: 'error',
-                message: metadata.error || 'Export failed'
-            });
-        } else {
-            status.isComplete = true;
-            status.messages.push({
-                type: 'success',
-                message: `Successfully exported ${metadata.recordCount} records`
-            });
-        }
-
-        if (metadata.warning) {
-            status.hasWarnings = true;
-            status.messages.push({
-                type: 'warning',
-                message: metadata.warning
-            });
-        }
-
-        if (metadata.processingTimeMs > 30000) { // > 30 seconds
-            status.hasWarnings = true;
-            status.messages.push({
-                type: 'warning',
-                message: 'Export took longer than expected. Consider using smaller ranges for better performance.'
-            });
-        }
-
-        return status;
+    if (metadata.warning) {
+        status.hasWarnings = true;
+        status.messages.push({
+            type: 'warning',
+            message: metadata.warning
+        });
     }
+
+    if (metadata.processingTimeMs > 30000) { // > 30 seconds
+        status.hasWarnings = true;
+        status.messages.push({
+            type: 'warning',
+            message: 'Export took longer than expected. Consider using smaller ranges for better performance.'
+        });
+    }
+
+    return status;
+}
 
     /**
      * Export check table records to Excel buffer
@@ -1407,120 +1406,120 @@ class ExcelExporter {
      * @returns {Object} Export result with buffer and metadata
      */
     async exportCheckTableRecords(records, options = {}) {
-        const startTime = Date.now();
+    const startTime = Date.now();
 
-        try {
-            console.log(`Starting Excel export for ${records.length} check table records`);
+    try {
 
-            if (!Array.isArray(records) || records.length === 0) {
-                return {
-                    success: true,
-                    buffer: null,
-                    metadata: {
-                        recordCount: 0,
-                        message: 'No records provided for export',
-                        exportDate: new Date().toISOString(),
-                        processingTimeMs: Date.now() - startTime
-                    }
-                };
-            }
 
-            // Generate Excel buffer with styling options
-            const buffer = await this.generateExcelBufferWithValidation(records, {
-                sheetName: options.sheetName || 'Check Table Export',
-                customHeaders: options.customHeaders,
-                enableStyling: options.enableStyling !== false,
-                stylingOptions: options.stylingOptions || {}
-            });
-
-            if (!buffer) {
-                return {
-                    success: false,
-                    error: 'Failed to generate Excel file',
-                    buffer: null,
-                    metadata: {
-                        recordCount: records.length,
-                        excelGenerationFailed: true,
-                        exportDate: new Date().toISOString(),
-                        processingTimeMs: Date.now() - startTime
-                    }
-                };
-            }
-
-            const metadata = {
-                startRecord: options.startRecord || 1,
-                endRecord: options.endRecord || records.length,
-                recordCount: records.length,
-                totalAvailable: options.totalAvailable || records.length,
-                fileSize: buffer.length,
-                exportDate: new Date().toISOString(),
-                processingTimeMs: Date.now() - startTime,
-                source: 'check_table'
-            };
-
-            console.log(`Check table Excel export completed: ${metadata.recordCount} records, ${metadata.fileSize} bytes, ${metadata.processingTimeMs}ms`);
-
+        if (!Array.isArray(records) || records.length === 0) {
             return {
                 success: true,
-                buffer,
-                metadata
-            };
-
-        } catch (error) {
-            console.error('Failed to export check table records:', error.message);
-
-            return {
-                success: false,
-                error: `Export failed: ${error.message}`,
                 buffer: null,
                 metadata: {
-                    recordCount: records ? records.length : 0,
-                    unexpectedError: true,
+                    recordCount: 0,
+                    message: 'No records provided for export',
                     exportDate: new Date().toISOString(),
-                    processingTimeMs: Date.now() - startTime,
-                    source: 'check_table'
+                    processingTimeMs: Date.now() - startTime
                 }
             };
         }
+
+        // Generate Excel buffer with styling options
+        const buffer = await this.generateExcelBufferWithValidation(records, {
+            sheetName: options.sheetName || 'Check Table Export',
+            customHeaders: options.customHeaders,
+            enableStyling: options.enableStyling !== false,
+            stylingOptions: options.stylingOptions || {}
+        });
+
+        if (!buffer) {
+            return {
+                success: false,
+                error: 'Failed to generate Excel file',
+                buffer: null,
+                metadata: {
+                    recordCount: records.length,
+                    excelGenerationFailed: true,
+                    exportDate: new Date().toISOString(),
+                    processingTimeMs: Date.now() - startTime
+                }
+            };
+        }
+
+        const metadata = {
+            startRecord: options.startRecord || 1,
+            endRecord: options.endRecord || records.length,
+            recordCount: records.length,
+            totalAvailable: options.totalAvailable || records.length,
+            fileSize: buffer.length,
+            exportDate: new Date().toISOString(),
+            processingTimeMs: Date.now() - startTime,
+            source: 'check_table'
+        };
+
+
+
+        return {
+            success: true,
+            buffer,
+            metadata
+        };
+
+    } catch (error) {
+        console.error('Failed to export check table records:', error.message);
+
+        return {
+            success: false,
+            error: `Export failed: ${error.message}`,
+            buffer: null,
+            metadata: {
+                recordCount: records ? records.length : 0,
+                unexpectedError: true,
+                exportDate: new Date().toISOString(),
+                processingTimeMs: Date.now() - startTime,
+                source: 'check_table'
+            }
+        };
+    }
+}
+
+/**
+ * Get export recommendations based on request parameters
+ * @param {number} startRecord - Start record number
+ * @param {number} endRecord - End record number
+ * @param {number} totalRecords - Total available records
+ * @returns {Object} Recommendations
+ */
+getExportRecommendations(startRecord, endRecord, totalRecords) {
+    const requestedCount = endRecord - startRecord + 1;
+    const recommendations = [];
+
+    if (requestedCount > 10000) {
+        recommendations.push({
+            type: 'performance',
+            message: 'Large export detected. Consider breaking into smaller chunks for better performance.',
+            suggestion: `Try exporting in batches of 5,000-10,000 records.`
+        });
     }
 
-    /**
-     * Get export recommendations based on request parameters
-     * @param {number} startRecord - Start record number
-     * @param {number} endRecord - End record number
-     * @param {number} totalRecords - Total available records
-     * @returns {Object} Recommendations
-     */
-    getExportRecommendations(startRecord, endRecord, totalRecords) {
-        const requestedCount = endRecord - startRecord + 1;
-        const recommendations = [];
-
-        if (requestedCount > 10000) {
-            recommendations.push({
-                type: 'performance',
-                message: 'Large export detected. Consider breaking into smaller chunks for better performance.',
-                suggestion: `Try exporting in batches of 5,000-10,000 records.`
-            });
-        }
-
-        if (endRecord > totalRecords) {
-            recommendations.push({
-                type: 'range',
-                message: `End record ${endRecord} exceeds available records (${totalRecords}).`,
-                suggestion: `Export will be limited to record ${totalRecords}.`
-            });
-        }
-
-        if (startRecord > totalRecords * 0.9) {
-            recommendations.push({
-                type: 'efficiency',
-                message: 'Exporting from near the end of the dataset.',
-                suggestion: 'Consider if you need all these records or if a more recent subset would suffice.'
-            });
-        }
-
-        return recommendations;
+    if (endRecord > totalRecords) {
+        recommendations.push({
+            type: 'range',
+            message: `End record ${endRecord} exceeds available records (${totalRecords}).`,
+            suggestion: `Export will be limited to record ${totalRecords}.`
+        });
     }
+
+    if (startRecord > totalRecords * 0.9) {
+        recommendations.push({
+            type: 'efficiency',
+            message: 'Exporting from near the end of the dataset.',
+            suggestion: 'Consider if you need all these records or if a more recent subset would suffice.'
+        });
+    }
+
+    return recommendations;
+}
 }
 
 module.exports = ExcelExporter;

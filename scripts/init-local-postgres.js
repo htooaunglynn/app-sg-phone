@@ -11,7 +11,7 @@ const path = require('path');
 require('dotenv').config();
 
 async function initializeDatabase() {
-    console.log('🔧 Initializing PostgreSQL database...\n');
+
 
     // First, connect without database to create it
     const adminClient = new Client({
@@ -24,17 +24,17 @@ async function initializeDatabase() {
 
     try {
         await adminClient.connect();
-        console.log('✅ Connected to PostgreSQL');
+
 
         // Create database if it doesn't exist
         const dbName = process.env.DB_NAME || 'singapore_phone_db';
 
         try {
             await adminClient.query(`CREATE DATABASE ${dbName}`);
-            console.log(`✅ Created database: ${dbName}`);
+
         } catch (error) {
             if (error.code === '42P04') {
-                console.log(`ℹ️  Database ${dbName} already exists`);
+
             } else {
                 throw error;
             }
@@ -52,7 +52,7 @@ async function initializeDatabase() {
         });
 
         await client.connect();
-        console.log(`✅ Connected to database: ${dbName}`);
+
 
         // Read and execute schema
         const schemaPath = path.join(__dirname, '..', 'schema-postgres.sql');
@@ -62,13 +62,13 @@ async function initializeDatabase() {
 
         const schema = fs.readFileSync(schemaPath, 'utf8');
 
-        console.log(`\n📝 Executing SQL schema...`);
+
 
         // Execute the entire schema as one query
         // PostgreSQL can handle multiple statements in a single query
         try {
             await client.query(schema);
-            console.log('✅ Schema executed successfully');
+
         } catch (error) {
             console.error('❌ Error executing schema:', error.message);
             throw error;
@@ -82,23 +82,15 @@ async function initializeDatabase() {
             ORDER BY table_name
         `);
 
-        console.log('\n✅ Database initialized successfully!');
-        console.log('\n📊 Tables created:');
-        tables.rows.forEach(row => {
-            console.log(`   - ${row.table_name}`);
-        });
 
         await client.end();
 
-        console.log('\n🎉 PostgreSQL database is ready!');
-        console.log('\nYou can now run: npm run dev\n');
-
     } catch (error) {
-        console.error('\n❌ Failed to initialize database:', error.message);
-        console.error('\nMake sure:');
-        console.error('  1. PostgreSQL is installed and running');
-        console.error('  2. Your .env file has correct DB credentials');
-        console.error('  3. You can connect to PostgreSQL with these credentials\n');
+        // console.error('\n❌ Failed to initialize database:', error.message);
+        // console.error('\nMake sure:');
+        // console.error('  1. PostgreSQL is installed and running');
+        // console.error('  2. Your .env file has correct DB credentials');
+        // console.error('  3. You can connect to PostgreSQL with these credentials\n');
         process.exit(1);
     }
 }

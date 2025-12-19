@@ -34,9 +34,7 @@ class SingaporePhoneValidator {
                 isValidPhoneNumber(phoneNumber, this.singaporeCountryCode) &&
                 parsedNumber.country === this.singaporeCountryCode;
 
-            if (this.enableLogging) {
-                console.log(`Phone validation: ${phoneNumber} -> ${parsedNumber ? parsedNumber.formatInternational() : 'invalid'} -> ${isValid}`);
-            }
+            // logging intentionally removed
 
             return isValid;
         } catch (error) {

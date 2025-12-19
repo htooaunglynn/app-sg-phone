@@ -488,7 +488,7 @@ async function exportToExcel() {
         }
 
         // Fetch ALL records for export (not just current page)
-        console.log('Fetching all records for export...');
+
         const response = await fetch(`${API_BASE_URL}/api/companies?limit=${totalRecords || 10000}&offset=0`, {
             method: 'GET',
             credentials: 'include'
@@ -505,7 +505,7 @@ async function exportToExcel() {
             return;
         }
 
-        console.log(`Exporting ${result.data.length} records...`);
+
 
         // Prepare data for export
         const exportData = result.data.map(company => ({
@@ -541,7 +541,7 @@ async function exportToExcel() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        console.log(`Export completed: ${exportData.length} records`);
+
 
     } catch (error) {
         console.error('Export error:', error);
@@ -565,7 +565,7 @@ async function exportFinishData() {
             exportButton.innerHTML = '<span>↓</span> Exporting...';
         }
 
-        console.log('Exporting finish data (all fields filled)...');
+
         const response = await fetch(`${API_BASE_URL}/api/export/finish-data`, {
             method: 'GET',
             credentials: 'include'
@@ -597,7 +597,7 @@ async function exportFinishData() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        console.log('Finish data export completed');
+
 
     } catch (error) {
         console.error('Export error:', error);
@@ -621,7 +621,7 @@ async function exportNoData() {
             exportButton.innerHTML = '<span>↓</span> Exporting...';
         }
 
-        console.log('Exporting no data (all fields empty)...');
+
         const response = await fetch(`${API_BASE_URL}/api/export/no-data`, {
             method: 'GET',
             credentials: 'include'
@@ -653,7 +653,7 @@ async function exportNoData() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        console.log('No data export completed');
+
 
     } catch (error) {
         console.error('Export error:', error);
@@ -677,7 +677,7 @@ async function exportWrongNumber() {
             exportButton.innerHTML = '<span>↓</span> Exporting...';
         }
 
-        console.log('Exporting wrong numbers (invalid Singapore phone numbers)...');
+
         const response = await fetch(`${API_BASE_URL}/api/export/wrong-number`, {
             method: 'GET',
             credentials: 'include'
@@ -709,7 +709,7 @@ async function exportWrongNumber() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        console.log('Wrong number export completed');
+
 
     } catch (error) {
         console.error('Export error:', error);
@@ -907,6 +907,55 @@ function initTheme() {
     } else {
         root.setAttribute('data-theme', 'dark');
         if (themeIcon) themeIcon.textContent = '🌙';
+    }
+}
+
+// ============= DUPLICATE CHECKING =============
+
+async function checkDuplicates() {
+    try {
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<span aria-hidden="true">⏳</span> Checking...';
+        button.disabled = true;
+
+
+
+        // Call the backend API to process duplicates
+        const response = await fetch('/api/check-duplicates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`Duplicate check completed!\n\nResults:\n- ${result.processedCount} duplicate groups processed\n- ${result.updatedCount} records updated with missing data`);
+
+            // Refresh the data to show updates
+            await loadCompaniesData(currentPage);
+            await updateTotalValidationCounts();
+        } else {
+            throw new Error(result.error || 'Unknown error occurred');
+        }
+
+    } catch (error) {
+        console.error('Error checking duplicates:', error);
+        alert(`Error checking duplicates: ${error.message}`);
+    } finally {
+        // Restore button state
+        const button = document.querySelector('[onclick="checkDuplicates()"]');
+        if (button) {
+            button.innerHTML = '<span aria-hidden="true">🔍</span> Check Duplicates';
+            button.disabled = false;
+        }
     }
 }
 

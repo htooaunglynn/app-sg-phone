@@ -33,7 +33,7 @@ class DuplicateErrorHandler {
      */
     handleDuplicateDetectionError(error, records = [], context = {}) {
         this.updateErrorStats('detection', error);
-        
+
         const errorResult = {
             success: false,
             duplicateInfo: null,
@@ -58,18 +58,18 @@ class DuplicateErrorHandler {
                 errorResult.duplicateInfo = fallbackResult;
                 errorResult.errorHandling.gracefulDegradation = true;
                 errorResult.errorHandling.fallbackMethod = fallbackResult.fallbackMethod;
-                
+
                 this.errorStats.gracefulDegradations++;
-                
+
                 if (this.config.logErrors) {
-                    console.log(`Graceful degradation applied for duplicate detection: ${fallbackResult.fallbackMethod}`);
+                    // logging removed
                 }
-                
+
                 return errorResult;
-                
+
             } catch (fallbackError) {
                 errorResult.errorHandling.fallbackError = fallbackError.message;
-                
+
                 if (this.config.logErrors) {
                     console.error('Graceful degradation also failed:', fallbackError);
                 }
@@ -93,7 +93,7 @@ class DuplicateErrorHandler {
      */
     handleDuplicateStylingError(error, stylingContext = {}) {
         this.updateErrorStats('styling', error);
-        
+
         const errorResult = {
             success: false,
             stylingApplied: false,
@@ -118,18 +118,18 @@ class DuplicateErrorHandler {
                 errorResult.stylingApplied = fallbackResult.applied;
                 errorResult.errorHandling.fallbackUsed = true;
                 errorResult.errorHandling.fallbackMethod = fallbackResult.method;
-                
+
                 this.errorStats.fallbacksUsed++;
-                
+
                 if (this.config.logErrors) {
-                    console.log(`Fallback styling applied: ${fallbackResult.method}`);
+                    // logging removed
                 }
-                
+
                 return errorResult;
-                
+
             } catch (fallbackError) {
                 errorResult.errorHandling.fallbackError = fallbackError.message;
-                
+
                 if (this.config.logErrors) {
                     console.error('Fallback styling also failed:', fallbackError);
                 }
@@ -201,11 +201,11 @@ class DuplicateErrorHandler {
             const record = records[i];
             const phone = this.extractPhoneNumber(record);
             const recordId = this.extractRecordId(record);
-            
+
             if (phone && recordId) {
                 // Simple phone normalization
                 const normalizedPhone = phone.replace(/[\s\-\(\)\+]/g, '').toLowerCase();
-                
+
                 if (!phoneGroups[normalizedPhone]) {
                     phoneGroups[normalizedPhone] = [];
                 }
@@ -251,7 +251,7 @@ class DuplicateErrorHandler {
                 // Apply basic CSS class without complex logic
                 if (stylingContext.elements && Array.isArray(stylingContext.elements)) {
                     let appliedCount = 0;
-                    
+
                     for (const element of stylingContext.elements) {
                         try {
                             if (element && element.classList) {
@@ -262,7 +262,7 @@ class DuplicateErrorHandler {
                             // Skip problematic elements
                         }
                     }
-                    
+
                     fallbackResult.applied = appliedCount > 0;
                     fallbackResult.method = 'basic_css_class';
                     fallbackResult.details.elementsStyled = appliedCount;
@@ -326,9 +326,9 @@ class DuplicateErrorHandler {
      */
     extractPhoneNumber(record) {
         try {
-            return record.phone || record.Phone || record.phoneNumber || 
-                   record.phone_number || record.PhoneNumber || 
-                   record.mobile || record.Mobile || null;
+            return record.phone || record.Phone || record.phoneNumber ||
+                record.phone_number || record.PhoneNumber ||
+                record.mobile || record.Mobile || null;
         } catch (error) {
             return null;
         }
@@ -341,9 +341,9 @@ class DuplicateErrorHandler {
      */
     extractRecordId(record) {
         try {
-            return record.id || record.Id || record.ID || 
-                   record.recordId || record.record_id || 
-                   String(record.index || 0);
+            return record.id || record.Id || record.ID ||
+                record.recordId || record.record_id ||
+                String(record.index || 0);
         } catch (error) {
             return null;
         }
@@ -356,13 +356,13 @@ class DuplicateErrorHandler {
      */
     updateErrorStats(errorType, error) {
         this.errorStats.lastErrorTimestamp = new Date().toISOString();
-        
+
         if (errorType === 'detection') {
             this.errorStats.detectionErrors++;
         } else if (errorType === 'styling') {
             this.errorStats.stylingErrors++;
         }
-        
+
         const errorKey = error.code || error.constructor.name || 'unknown';
         this.errorStats.errorTypes[errorKey] = (this.errorStats.errorTypes[errorKey] || 0) + 1;
     }
@@ -375,7 +375,7 @@ class DuplicateErrorHandler {
         return {
             ...this.errorStats,
             totalErrors: this.errorStats.detectionErrors + this.errorStats.stylingErrors,
-            fallbackRate: this.errorStats.fallbacksUsed > 0 ? 
+            fallbackRate: this.errorStats.fallbacksUsed > 0 ?
                 (this.errorStats.fallbacksUsed / (this.errorStats.detectionErrors + this.errorStats.stylingErrors)) * 100 : 0
         };
     }
@@ -412,13 +412,13 @@ class DuplicateErrorHandler {
     getHealthStatus() {
         const stats = this.getErrorStats();
         const totalOperations = stats.totalErrors + stats.fallbacksUsed + stats.gracefulDegradations;
-        
+
         let status = 'healthy';
         let message = 'Duplicate detection system is operating normally';
-        
+
         if (totalOperations > 0) {
             const errorRate = (stats.totalErrors / totalOperations) * 100;
-            
+
             if (errorRate > 50) {
                 status = 'unhealthy';
                 message = 'High error rate detected in duplicate detection system';
@@ -430,7 +430,7 @@ class DuplicateErrorHandler {
                 message = 'Duplicate detection system is using fallback mechanisms';
             }
         }
-        
+
         return {
             status,
             message,
@@ -448,27 +448,27 @@ class DuplicateErrorHandler {
      */
     getHealthRecommendations(stats) {
         const recommendations = [];
-        
+
         if (stats.detectionErrors > stats.stylingErrors * 2) {
             recommendations.push('Consider optimizing duplicate detection algorithms or database queries');
         }
-        
+
         if (stats.stylingErrors > stats.detectionErrors * 2) {
             recommendations.push('Review styling application logic and error handling');
         }
-        
+
         if (stats.fallbacksUsed > 10) {
             recommendations.push('Investigate root causes of failures requiring fallback mechanisms');
         }
-        
+
         if (stats.errorTypes.NetworkError || stats.errorTypes.ECONNREFUSED) {
             recommendations.push('Check database connectivity and network stability');
         }
-        
+
         if (stats.errorTypes.TimeoutError || stats.errorTypes.ETIMEDOUT) {
             recommendations.push('Consider optimizing query performance or increasing timeout limits');
         }
-        
+
         return recommendations;
     }
 }

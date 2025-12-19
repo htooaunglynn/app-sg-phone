@@ -57,7 +57,7 @@ class PostgresDatabaseManager {
 
         // Monitor pool events
         this.pool.on('connect', (client) => {
-            console.log('New PostgreSQL connection established');
+            // connection established (logging removed)
         });
 
         this.pool.on('error', (err, client) => {
@@ -90,7 +90,6 @@ class PostgresDatabaseManager {
 
             this.isConnected = true;
             this.retryAttempts = 0;
-            console.log('PostgreSQL connected successfully');
             return this.pool;
 
         } catch (error) {
@@ -100,7 +99,7 @@ class PostgresDatabaseManager {
                 this.retryAttempts++;
                 const delay = this.retryDelay * Math.pow(2, this.retryAttempts - 1);
 
-                console.log(`Retrying database connection in ${delay}ms (attempt ${this.retryAttempts}/${this.maxRetries})`);
+                // retrying connection (logging removed)
 
                 await new Promise(resolve => setTimeout(resolve, delay));
                 return this.connect();
@@ -189,7 +188,6 @@ class PostgresDatabaseManager {
             await this.pool.end();
             this.pool = null;
             this.isConnected = false;
-            console.log('PostgreSQL connections closed');
         }
     }
 
