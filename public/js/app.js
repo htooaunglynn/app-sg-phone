@@ -756,6 +756,20 @@ function copyPhoneNumber() {
     });
 }
 
+function markBothFieldsEmpty(btn) {
+    const nameInput = document.getElementById('editCompanyName');
+    const addrInput = document.getElementById('editPhysicalAddress');
+    if (nameInput) nameInput.value = '---';
+    if (addrInput) addrInput.value = '---';
+
+    const button = btn || (typeof event !== 'undefined' ? event.target : null);
+    if (button) {
+        const original = button.textContent;
+        button.textContent = '✓';
+        setTimeout(() => { button.textContent = original; }, 1200);
+    }
+}
+
 // ============= EDIT MODAL FUNCTIONS =============
 
 function openEditModal(id) {
@@ -960,6 +974,64 @@ async function checkDuplicates() {
 }
 
 // ============= INITIALIZATION =============
+
+// ============= CHECK EMPTY FIELDS =============
+
+async function checkEmpty() {
+    try {
+        if (!companiesData || companiesData.length === 0) {
+            alert('No data loaded on this page to check.');
+            return;
+        }
+
+        let updatedCount = 0;
+        let delay = 0;
+
+        // Operate on the currently loaded page of data
+        companiesData.forEach((company) => {
+            const companyName = company.CompanyName || company['Company Name'] || company.companyName || company.company_name || '';
+            const physicalAddress = company.PhysicalAddress || company['Physical Address'] || company.physicalAddress || company.physical_address || '';
+
+            const missingCompany = !String(companyName).trim();
+            const missingAddress = !String(physicalAddress).trim();
+            const missingEmail = !String(company.Email || company.email || '').trim();
+            const missingWebsite = !String(company.Website || company.website || '').trim();
+
+            // Only act when Company, Address, Email and Website are ALL missing
+            if (missingCompany && missingAddress && missingEmail && missingWebsite) {
+                if (missingCompany) company.CompanyName = '---';
+                if (missingAddress) company.PhysicalAddress = '---';
+                updatedCount++;
+
+                // Open Google searches for the phone number (staggered)
+                const rawPhone = String(company.Phone || company.phone || '');
+                const cleanPhone = rawPhone.replace(/\D+/g, '');
+                if (cleanPhone.length >= 4) {
+                    const formattedPhone = cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2');
+                    const encodedFormattedPhone = encodeURIComponent(formattedPhone);
+                    const encodedCleanPhone = encodeURIComponent(cleanPhone.replace(/(\d{4})(\d{4})/, '$1 $2'));
+
+                    setTimeout(() => {
+                        // +65 search
+                        window.open(`https://www.google.com/search?q=%2B65+${encodedFormattedPhone}`, '_blank');
+                        // 'quotes' search
+                        window.open(`https://www.google.com/search?q=%27${encodedCleanPhone}%27`, '_blank');
+                    }, delay);
+
+                    delay += 500; // stagger to avoid opening too many tabs at once
+                }
+            }
+        });
+
+        // Re-render table to show placeholders
+        renderTable(companiesData);
+
+        alert(`Check completed. Updated ${updatedCount} record(s) on this page.`);
+    } catch (err) {
+        console.error('Error in checkEmpty:', err);
+        alert('Error checking empty fields: ' + err.message);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize theme before anything else
