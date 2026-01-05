@@ -181,9 +181,24 @@
                 <p id="fileName" class="text-sm mt-2" style="color: var(--text-tertiary);" aria-live="polite"></p>
             </div>
 
+            <!-- Upload status / animation -->
+            <div id="uploadStatus" class="hidden mb-4 text-center" aria-live="polite">
+                <div id="uploadSpinner" class="inline-flex items-center gap-2">
+                    <svg class="w-6 h-6 animate-spin-slow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.08)" stroke-width="4"></circle>
+                        <path d="M22 12a10 10 0 00-10-10" stroke="var(--accent-blue)" stroke-width="4"
+                            stroke-linecap="round"></path>
+                    </svg>
+                    <span id="uploadStatusText" class="text-sm" style="color: var(--text-secondary);">Preparing
+                        upload...</span>
+                </div>
+            </div>
+
             <div class="button-group">
-                <button type="button" onclick="closeExcelModal()" class="btn-secondary flex-1">Cancel</button>
-                <button type="button" onclick="uploadExcel()" class="btn-primary flex-1">Upload</button>
+                <button id="excelCancelBtn" type="button" onclick="closeExcelModal()"
+                    class="btn-secondary flex-1">Cancel</button>
+                <button id="excelUploadBtn" type="button" onclick="uploadExcel()"
+                    class="btn-primary flex-1">Upload</button>
             </div>
         </div>
     </div>

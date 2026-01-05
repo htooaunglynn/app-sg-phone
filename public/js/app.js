@@ -80,6 +80,31 @@ function handleFileUpload(event) {
     }
 }
 
+// Show upload status spinner and message
+function showUploadStatus(message) {
+    const status = document.getElementById('uploadStatus');
+    const statusText = document.getElementById('uploadStatusText');
+    const cancelBtn = document.getElementById('excelCancelBtn');
+    const closeBtns = document.querySelectorAll('.modal-close-btn');
+
+    if (statusText) statusText.textContent = message || 'Uploading...';
+    if (status) status.classList.remove('hidden');
+    if (cancelBtn) cancelBtn.disabled = true;
+    if (closeBtns) closeBtns.forEach(b => b.disabled = true);
+}
+
+function hideUploadStatus() {
+    const status = document.getElementById('uploadStatus');
+    const statusText = document.getElementById('uploadStatusText');
+    const cancelBtn = document.getElementById('excelCancelBtn');
+    const closeBtns = document.querySelectorAll('.modal-close-btn');
+
+    if (statusText) statusText.textContent = '';
+    if (status) status.classList.add('hidden');
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (closeBtns) closeBtns.forEach(b => b.disabled = false);
+}
+
 async function uploadExcel() {
     if (!selectedFile) {
         alert('Please select a file first');
@@ -92,13 +117,14 @@ async function uploadExcel() {
     try {
         // Find the upload button within the modal
         const modal = document.getElementById('excelModal');
-        const uploadButton = modal?.querySelector('button[onclick="uploadExcel()"]');
+        const uploadButton = document.getElementById('excelUploadBtn') || modal?.querySelector('button[onclick="uploadExcel()"]');
 
-        // Show loading state
+        // Show loading state + spinner
         if (uploadButton) {
             uploadButton.textContent = 'Uploading...';
             uploadButton.disabled = true;
         }
+        showUploadStatus('Uploading...');
 
         const response = await fetch(`${API_BASE_URL}/api/upload`, {
             method: 'POST',
@@ -148,11 +174,12 @@ async function uploadExcel() {
     } finally {
         // Reset button state
         const modal = document.getElementById('excelModal');
-        const uploadButton = modal?.querySelector('button[onclick="uploadExcel()"]');
+        const uploadButton = document.getElementById('excelUploadBtn') || modal?.querySelector('button[onclick="uploadExcel()"]');
         if (uploadButton) {
             uploadButton.textContent = 'Upload';
             uploadButton.disabled = false;
         }
+        hideUploadStatus();
     }
 }
 
