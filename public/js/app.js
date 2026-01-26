@@ -783,6 +783,68 @@ function copyPhoneNumber() {
     });
 }
 
+// Copy the phone number and open two Google search tabs (+65 and quoted search)
+function copyAndSearch() {
+    const phoneInput = document.getElementById('editPhone');
+    const button = event?.target || document.querySelector('button[onclick="copyAndSearch()"]');
+    if (!phoneInput) return;
+
+    const rawPhone = phoneInput.value.replace(/\D+/g, '');
+    const formattedPhone = rawPhone.replace(/(\d{4})(\d{4})/, '$1 $2');
+
+    // Copy to clipboard first
+    navigator.clipboard.writeText(formattedPhone).then(() => {
+        // Open searches only if phone has enough digits
+        if (rawPhone.length >= 4) {
+            // Create proper encoded URLs (using same format as working table links)
+            const encodedFormattedPhone = encodeURIComponent(formattedPhone);
+            const encodedCleanPhone = encodeURIComponent(formattedPhone);
+
+            const plus65Url = `https://www.google.com/search?q=%2B65+${encodedFormattedPhone}`;
+            const quotesUrl = `https://www.google.com/search?q=%27${encodedCleanPhone}%27`;
+
+            // Try to open both windows synchronously (no setTimeout to avoid popup blockers)
+            try {
+                window.open(plus65Url, '_blank', 'noopener,noreferrer');
+                window.open(quotesUrl, '_blank', 'noopener,noreferrer');
+            } catch (err) {
+                console.error('Failed to open search windows:', err);
+                // Fallback: show alert with URLs
+                alert(`Phone copied! Open these searches manually:\n\n+65 search: ${plus65Url}\n\nQuoted search: ${quotesUrl}`);
+            }
+
+            // Also update the modal's anchor links so the user can see both searches
+            const plus65Link = document.getElementById('editPhoneSearchPlus65');
+            const quotesLink = document.getElementById('editPhoneSearchQuotes');
+            if (plus65Link) plus65Link.href = plus65Url;
+            if (quotesLink) quotesLink.href = quotesUrl;
+        }
+
+        // Provide feedback on the button
+        if (button) {
+            const original = button.textContent;
+            button.textContent = '✓ Copied & Searched';
+            setTimeout(() => { button.textContent = original; }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy phone number:', err);
+        // Even if copy fails, try to open searches
+        if (rawPhone.length >= 4) {
+            const formattedForSearch = rawPhone.replace(/(\d{4})(\d{4})/, '$1 $2');
+            const encodedFormattedPhone = encodeURIComponent(formattedForSearch);
+            const encodedCleanPhone = encodeURIComponent(formattedForSearch);
+
+            try {
+                window.open(`https://www.google.com/search?q=%2B65+${encodedFormattedPhone}`, '_blank');
+                window.open(`https://www.google.com/search?q=%27${encodedCleanPhone}%27`, '_blank');
+            } catch (e) {
+                console.error('Failed to open searches:', e);
+            }
+        }
+        alert('Failed to copy phone number, but searches should still open');
+    });
+}
+
 function markBothFieldsEmpty(btn) {
     const nameInput = document.getElementById('editCompanyName');
     const addrInput = document.getElementById('editPhysicalAddress');
@@ -834,6 +896,9 @@ function openEditModal(id) {
             quotesLink.href = cleanPhone ? `https://www.google.com/search?q=%27${encodedCleanPhone}%27` : '#';
         }
 
+        // Update navigation buttons state
+        updateNavigationButtons();
+
         modal.classList.remove('hidden');
         modal.classList.add('modal-opening');
         // Remove animation class after animation completes
@@ -856,6 +921,52 @@ function closeEditModal() {
         }, 200);
     }
     editingCompanyId = null;
+}
+
+function getCurrentRecordIndex() {
+    if (!editingCompanyId) return -1;
+    return companiesData.findIndex(c => String(getField(c, 'Id', 'id')) === String(editingCompanyId));
+}
+
+function updateNavigationButtons() {
+    const currentIndex = getCurrentRecordIndex();
+    const prevBtn = document.getElementById('prevRecordBtn');
+    const nextBtn = document.getElementById('nextRecordBtn');
+    const recordPosition = document.getElementById('recordPosition');
+
+    // Update position indicator
+    if (recordPosition) {
+        recordPosition.textContent = `${currentIndex + 1} / ${companiesData.length}`;
+    }
+
+    if (prevBtn) {
+        prevBtn.disabled = currentIndex <= 0;
+        prevBtn.style.opacity = currentIndex <= 0 ? '0.5' : '1';
+        prevBtn.style.cursor = currentIndex <= 0 ? 'not-allowed' : 'pointer';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = currentIndex >= companiesData.length - 1;
+        nextBtn.style.opacity = currentIndex >= companiesData.length - 1 ? '0.5' : '1';
+        nextBtn.style.cursor = currentIndex >= companiesData.length - 1 ? 'not-allowed' : 'pointer';
+    }
+}
+
+function navigatePreviousRecord() {
+    const currentIndex = getCurrentRecordIndex();
+    if (currentIndex > 0) {
+        const previousCompany = companiesData[currentIndex - 1];
+        const previousId = getField(previousCompany, 'Id', 'id');
+        openEditModal(previousId);
+    }
+}
+
+function navigateNextRecord() {
+    const currentIndex = getCurrentRecordIndex();
+    if (currentIndex < companiesData.length - 1) {
+        const nextCompany = companiesData[currentIndex + 1];
+        const nextId = getField(nextCompany, 'Id', 'id');
+        openEditModal(nextId);
+    }
 }
 
 async function saveEdit() {

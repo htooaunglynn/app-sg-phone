@@ -19,6 +19,9 @@ const app = express()
 const upload = multer({ storage: multer.memoryStorage() })
 const excelProcessor = new ExcelProcessor()
 const excelExporter = new ExcelExporter()
+const PORT = process.env.PORT || 4200
+console.log(PORT);
+
 
 // Trust proxy for production (required for secure cookies behind reverse proxy)
 if (process.env.NODE_ENV === 'production') {
@@ -978,7 +981,7 @@ app.post('/api/check-duplicates', requireAuth, async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 4000
+
 
 // Initialize database connection
 async function startServer() {
@@ -993,6 +996,7 @@ async function startServer() {
 
         // Start server
         app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);
