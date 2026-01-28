@@ -952,6 +952,16 @@ function updateNavigationButtons() {
 }
 
 function navigatePreviousRecord() {
+    // Clear any background colors from previous save feedback
+    const inputs = ['editCompanyName', 'editPhysicalAddress', 'editEmail', 'editWebsite'];
+    inputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.style.backgroundColor = '';
+            input.style.color = '';
+        }
+    });
+
     const currentIndex = getCurrentRecordIndex();
     if (currentIndex > 0) {
         const previousCompany = companiesData[currentIndex - 1];
@@ -961,6 +971,16 @@ function navigatePreviousRecord() {
 }
 
 function navigateNextRecord() {
+    // Clear any background colors from previous save feedback
+    const inputs = ['editCompanyName', 'editPhysicalAddress', 'editEmail', 'editWebsite'];
+    inputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.style.backgroundColor = '';
+            input.style.color = '';
+        }
+    });
+
     const currentIndex = getCurrentRecordIndex();
     if (currentIndex < companiesData.length - 1) {
         const nextCompany = companiesData[currentIndex + 1];
