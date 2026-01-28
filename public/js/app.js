@@ -1021,10 +1021,51 @@ async function saveEdit() {
         }
 
         renderTable(companiesData, true);
-        closeEditModal();
+
+        // Show success feedback with green background
+        const inputs = ['editCompanyName', 'editPhysicalAddress', 'editEmail', 'editWebsite'];
+        inputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.style.backgroundColor = '#22c55e';
+                input.style.color = 'white';
+            }
+        });
+
+        // Reset colors after 2 seconds
+        setTimeout(() => {
+            inputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.style.backgroundColor = '';
+                    input.style.color = '';
+                }
+            });
+        }, 6000);
+
     } catch (err) {
         console.error('Save edit failed:', err);
-        alert('Failed to save changes');
+
+        // Show error feedback with red background
+        const inputs = ['editCompanyName', 'editPhysicalAddress', 'editEmail', 'editWebsite'];
+        inputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.style.backgroundColor = '#ef4444';
+                input.style.color = 'white';
+            }
+        });
+
+        // Reset colors after 2 seconds
+        setTimeout(() => {
+            inputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.style.backgroundColor = '';
+                    input.style.color = '';
+                }
+            });
+        }, 6000);
     } finally {
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = originalText || 'Save'; }
     }
